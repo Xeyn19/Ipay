@@ -53,31 +53,31 @@ const segments: Segment[] = [
   {
     title: "SMEs",
     description:
-      "Retail, Restaurants, Salons, Service Providers, and Multi-branch Businesses requiring reliable POS integration.",
+      "Retail, restaurants, salons, service providers, and multi-branch businesses that need dependable payment acceptance and fast operational visibility.",
     eyebrow: "Who We Serve",
     points: [
-      "QR Ph & Card Acceptance",
-      "Next-day Settlements",
+      "QR Ph and card acceptance",
+      "Next-day settlements",
     ],
   },
   {
     title: "Institutions",
     description:
-      "Schools, Clinics, Cooperatives, Associations, and Utility Providers needing structured collections.",
+      "Schools, clinics, cooperatives, associations, and utility providers that require structured collections with clear controls and reporting.",
     eyebrow: "Who We Serve",
     points: [
-      "Bulk Collection Tools",
-      "Real-time Reporting",
+      "Bulk collection tools",
+      "Real-time reporting",
     ],
   },
   {
     title: "Platforms & Systems",
     description:
-      "SaaS, Marketplaces, Booking Systems, and Enterprise Platforms looking for embedded payments.",
+      "SaaS products, marketplaces, booking systems, and enterprise platforms looking to embed payments without building the rails themselves.",
     eyebrow: "Who We Serve",
     points: [
       "Robust API",
-      "White-label Options",
+      "White-label options",
     ],
   },
 ];
@@ -399,7 +399,7 @@ function SectionHeader({
 
 function Navbar() {
   return (
-    <header className="sticky top-0 z-50 h-20 border-b border-[var(--border-light)] bg-white/92 backdrop-blur">
+    <header className="fixed inset-x-0 top-0 z-50 h-20 border-b border-[var(--border-light)] bg-white/92 backdrop-blur">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
         <Link href="#home" className="flex items-center gap-3">
           <Image src={logo} alt="iPay logo" className="h-11 w-auto" priority />
@@ -563,47 +563,59 @@ function TrustBar() {
 
 function WhoWeServe() {
   return (
-    <section id="who-we-serve" className="bg-white/82 py-24 sm:py-20">
+    <section id="who-we-serve" className="bg-white/82 py-28 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
           label="Who We Serve"
           title={
             <>
-              Tailored payment infrastructure for
-              <span className="text-[var(--brand)]"> diverse business needs</span>
+              Tailored payment infrastructure
+              <br />
+              <span className="text-[var(--brand)]">for every growth stage</span>
             </>
           }
-          description="Who We Serve"
+          description="From growing merchants to complex institutions and embedded platforms, iPay supports distinct payment flows with the same dependable infrastructure."
           align="center"
         />
 
-        <div className="mt-14 grid gap-6 lg:grid-cols-[1.15fr_0.85fr_1fr]">
-          {segments.map((segment, index) => (
+        <div className="mx-auto mt-16 grid max-w-6xl gap-6 lg:grid-cols-3">
+          {segments.map((segment) => (
             <article
               key={segment.title}
-              className={`rounded-[24px] border border-[var(--border-light)] bg-white p-7 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)] ${index === 0 ? "lg:row-span-2" : ""
-                }`}
+              className="flex h-full flex-col rounded-[28px] border border-[var(--border-light)] bg-white p-7 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
             >
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">
+              <p className="w-fit rounded-full border border-[var(--border-orange)] bg-[var(--brand-pale)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">
                 {segment.eyebrow}
               </p>
-              <h3 className="font-heading mt-4 text-2xl font-semibold tracking-[-0.03em] text-[var(--text-primary)]">
+              <h3 className="font-heading mt-5 text-3xl font-semibold tracking-[-0.04em] text-[var(--text-primary)]">
                 {segment.title}
               </h3>
               <p className="mt-4 text-base leading-7 text-[var(--text-muted)]">
                 {segment.description}
               </p>
-              <div className="mt-6 space-y-3">
-                {segment.points.map((point) => (
-                  <div key={point} className="flex items-start gap-3">
-                    <span className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand-pale)] text-[var(--brand)]">
-                      OK
-                    </span>
-                    <p className="text-sm leading-6 text-[var(--text-secondary)]">
-                      {point}
-                    </p>
-                  </div>
-                ))}
+
+              <div className="mt-auto pt-8">
+                <div className="space-y-4 border-t border-[var(--border-light)] pt-6">
+                  {segment.points.map((point) => (
+                    <div key={point} className="flex items-start gap-3">
+                      <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--brand-pale)] text-[var(--brand)] ring-1 ring-[var(--border-orange)]/50">
+                        <svg
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          className="h-3.5 w-3.5"
+                          aria-hidden="true"
+                        >
+                          <path d="m5.75 10.25 2.5 2.5 6-6.5" />
+                        </svg>
+                      </span>
+                      <p className="text-sm leading-6 text-[var(--text-secondary)]">
+                        {point}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </article>
           ))}
@@ -964,7 +976,7 @@ function Footer() {
 
 export default function Home() {
   return (
-    <main className="overflow-x-hidden bg-[var(--bg-base)] text-[var(--text-primary)]">
+    <main className="overflow-x-hidden bg-[var(--bg-base)] pt-[var(--nav-height)] text-[var(--text-primary)]">
       <Navbar />
       <Hero />
       <TrustBar />

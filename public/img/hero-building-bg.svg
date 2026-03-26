@@ -1,0 +1,66 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <g opacity="0.95">
+    <path d="M954 900V362L1386 72L1600 86V900H954Z" fill="url(#towerFront)"/>
+    <path d="M822 900V516L1082 338L1088 900H822Z" fill="url(#towerSide)"/>
+    <path d="M1082 338L1386 72L1600 86L1298 356L1082 338Z" fill="url(#roof)"/>
+  </g>
+  <g opacity="0.82" stroke="#4D7FC3" stroke-width="4">
+    <path d="M996 392L1380 110"/>
+    <path d="M1048 427L1432 145"/>
+    <path d="M1102 463L1484 181"/>
+    <path d="M1154 498L1538 216"/>
+    <path d="M1208 534L1592 252"/>
+    <path d="M1260 570L1600 321"/>
+    <path d="M1313 606L1600 395"/>
+    <path d="M1366 642L1600 469"/>
+    <path d="M1418 677L1600 544"/>
+    <path d="M1472 714L1600 621"/>
+    <path d="M1524 749L1600 694"/>
+    <path d="M954 472H1600"/>
+    <path d="M954 586H1600"/>
+    <path d="M954 700H1600"/>
+    <path d="M954 814H1600"/>
+    <path d="M858 555H1086"/>
+    <path d="M858 641H1087"/>
+    <path d="M858 727H1088"/>
+    <path d="M858 813H1088"/>
+    <path d="M910 457V900"/>
+    <path d="M986 406V900"/>
+    <path d="M1060 355V900"/>
+    <path d="M1140 301V900"/>
+    <path d="M1216 248V900"/>
+    <path d="M1292 195V900"/>
+    <path d="M1368 142V900"/>
+    <path d="M1444 110V900"/>
+    <path d="M1520 116V900"/>
+  </g>
+  <g opacity="0.7">
+    <ellipse cx="330" cy="308" rx="148" ry="82" fill="#F3FBFF"/>
+    <ellipse cx="416" cy="336" rx="130" ry="68" fill="#E3F4FF"/>
+    <ellipse cx="280" cy="350" rx="122" ry="62" fill="#E7F6FF"/>
+    <ellipse cx="1148" cy="138" rx="40" ry="22" fill="#F7FDFF"/>
+    <ellipse cx="1202" cy="154" rx="62" ry="28" fill="#E9F8FF"/>
+  </g>
+  <defs>
+    <linearGradient id="sky" x1="52" y1="50" x2="1490" y2="786" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#35A1F0"/>
+      <stop offset="1" stop-color="#0D63C9"/>
+    </linearGradient>
+    <linearGradient id="towerFront" x1="1114" y1="122" x2="1578" y2="898" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8EDCFF"/>
+      <stop offset="0.2" stop-color="#409BE8"/>
+      <stop offset="0.55" stop-color="#164CBE"/>
+      <stop offset="1" stop-color="#081B58"/>
+    </linearGradient>
+    <linearGradient id="towerSide" x1="862" y1="352" x2="1106" y2="894" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5BB8F3"/>
+      <stop offset="0.45" stop-color="#154FAF"/>
+      <stop offset="1" stop-color="#07163F"/>
+    </linearGradient>
+    <linearGradient id="roof" x1="1112" y1="99" x2="1584" y2="242" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C7F0FF"/>
+      <stop offset="1" stop-color="#0C3E97"/>
+    </linearGradient>
+  </defs>
+</svg>

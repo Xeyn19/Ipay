@@ -1,26 +1,84 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --brand: #f17a1e;
+  --brand-dark: #d4651a;
+  --brand-light: #f99547;
+  --brand-pale: rgba(241, 122, 30, 0.08);
+  --bg-base: #ffffff;
+  --bg-subtle: #f8f9fa;
+  --bg-warm: #fffaf6;
+  --bg-tint: rgba(241, 122, 30, 0.04);
+  --border-light: #e5e7eb;
+  --border-medium: #d1d5db;
+  --border-orange: rgba(241, 122, 30, 0.3);
+  --text-primary: #111827;
+  --text-secondary: #374151;
+  --text-muted: #6b7280;
+  --text-faint: #9ca3af;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.1),
+    0 8px 32px rgba(241, 122, 30, 0.1);
+  --shadow-button: 0 4px 14px rgba(241, 122, 30, 0.35);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg-base);
+  --color-foreground: var(--text-primary);
+  --font-sans: "Aptos", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Aptos Display", "Aptos", "Trebuchet MS", "Segoe UI", sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: "Aptos", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+a,
+button {
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+::selection {
+  background: rgba(241, 122, 30, 0.18);
+  color: var(--text-primary);
+}
+
+.hero-warm::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 246, 0.16) 0%, rgba(255, 255, 255, 0.08) 52%, rgba(255, 255, 255, 0.26) 100%),
+    radial-gradient(
+      ellipse 900px 520px at 5% 32%,
+      rgba(241, 122, 30, 0.03),
+      transparent 70%
+    );
+  pointer-events: none;
+}
+
+#main {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.18)),
+    url("/img/hero-building-bg.svg");
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: 100% auto;
 }

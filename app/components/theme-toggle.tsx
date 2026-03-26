@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
 
@@ -12,16 +12,19 @@ function applyTheme(theme: Theme) {
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (
-      typeof document !== "undefined" &&
-      document.documentElement.dataset.theme === "dark"
-    ) {
-      return "dark";
-    }
+  const [theme, setTheme] = useState<Theme>("light");
 
-    return "light";
-  });
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setTheme(
+        document.documentElement.dataset.theme === "dark" ? "dark" : "light",
+      );
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, []);
 
   const nextTheme = theme === "dark" ? "light" : "dark";
 

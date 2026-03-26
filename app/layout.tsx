@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 const themeInitScript = `
@@ -38,7 +39,9 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full bg-[var(--bg-base)] font-sans antialiased transition-colors duration-300">
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <Script id="theme-init" strategy="beforeInteractive">
+          {themeInitScript}
+        </Script>
         {children}
       </body>
     </html>

@@ -50,7 +50,7 @@ export default function PartnersCarousel({
 
     const timer = window.setInterval(() => {
       setCurrent((value) => (value + 1) % total);
-    }, 4000);
+    }, 5000);
 
     return () => {
       window.clearInterval(timer);

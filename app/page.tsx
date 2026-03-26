@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import logo from "@/public/img/ipaylogo.webp";
+import SpotlightCardTracker from "@/app/spotlight-card-tracker";
 
 type NavItem = { label: string; href: string };
 type Segment = {
@@ -474,6 +475,10 @@ function TrustBar() {
 function WhoWeServe() {
   return (
     <section id="who-we-serve" className="bg-white/82 py-28 sm:py-24">
+      <SpotlightCardTracker
+        containerSelector=".who-we-serve-grid"
+        cardSelector=".who-we-serve-card"
+      />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
           label="Who We Serve"
@@ -488,11 +493,11 @@ function WhoWeServe() {
           align="center"
         />
 
-        <div className="mx-auto mt-16 grid max-w-6xl gap-6 lg:grid-cols-3">
+        <div className="who-we-serve-grid mx-auto mt-16 grid max-w-6xl gap-6 lg:grid-cols-3">
           {segments.map((segment) => (
             <article
               key={segment.title}
-              className="flex h-full flex-col rounded-[28px] border border-[var(--border-light)] bg-white p-7 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
+              className="who-we-serve-card flex h-full flex-col rounded-[28px] p-7 transition-all duration-300 ease-out"
             >
               <p className="w-fit rounded-full border border-[var(--border-orange)] bg-[var(--brand-pale)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">
                 {segment.eyebrow}
@@ -508,7 +513,7 @@ function WhoWeServe() {
                 <div className="space-y-4 border-t border-[var(--border-light)] pt-6">
                   {segment.points.map((point) => (
                     <div key={point} className="flex items-start gap-3">
-                      <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--brand-pale)] text-[var(--brand)] ring-1 ring-[var(--border-orange)]/50">
+                      <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--brand-pale)] text-[var(--brand)] ring-1 ring-[var(--border-orange)]/70">
                         <svg
                           viewBox="0 0 20 20"
                           fill="none"

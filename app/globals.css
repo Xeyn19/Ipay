@@ -59,7 +59,7 @@ button {
   color: var(--text-primary);
 }
 
-.hero-warm::before {
+/* .hero-warm::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -69,16 +69,20 @@ button {
     radial-gradient(
       ellipse 900px 520px at 5% 32%,
       rgba(241, 122, 30, 0.03),
-      transparent 70%
+      transparent 10%
     );
   pointer-events: none;
+} */
+
+#home {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.06)),
+    url("/img/ipay-bg.jpg");
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 #main {
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.18)),
-    url("/img/hero-building-bg.svg");
-  background-position: center top;
-  background-repeat: no-repeat;
-  background-size: 100% auto;
+  background: transparent;
 }

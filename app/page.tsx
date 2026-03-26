@@ -22,110 +22,99 @@ const navigation: NavItem[] = [
 
 const segments: Segment[] = [
   {
-    title: "SMEs & Retail Groups",
+    title: "SMEs",
     description:
-      "Deploy QR Ph, wallets, card acceptance, and daily reporting across branches without forcing operations teams into messy manual reconciliation.",
-    eyebrow: "For growing merchants",
+      "Retail, Restaurants, Salons, Service Providers, and Multi-branch Businesses requiring reliable POS integration.",
+    eyebrow: "Who We Serve",
     points: [
-      "Branch-ready collections",
-      "Daily settlement visibility",
-      "Support for field and counter teams",
+      "QR Ph & Card Acceptance",
+      "Next-day Settlements",
     ],
   },
   {
-    title: "Schools, Clinics & Cooperatives",
+    title: "Institutions",
     description:
-      "Centralize fee collection and finance workflows with payment rails designed for high-volume receivables and institution-grade controls.",
-    eyebrow: "For institutions",
+      "Schools, Clinics, Cooperatives, Associations, and Utility Providers needing structured collections.",
+    eyebrow: "Who We Serve",
     points: [
-      "Student and patient billing",
-      "Approval-led finance workflows",
-      "Collections across online and onsite channels",
+      "Bulk Collection Tools",
+      "Real-time Reporting",
     ],
   },
   {
-    title: "Platforms & Enterprise Teams",
+    title: "Platforms & Systems",
     description:
-      "Embed dependable payment acceptance and payout operations into your product or internal finance stack with implementation support from iPay.",
-    eyebrow: "For platforms",
+      "SaaS, Marketplaces, Booking Systems, and Enterprise Platforms looking for embedded payments.",
+    eyebrow: "Who We Serve",
     points: [
-      "Gateway and payout orchestration",
-      "Partner onboarding support",
-      "Integration for enterprise operations",
+      "Robust API",
+      "White-label Options",
     ],
   },
 ];
 
 const services: Service[] = [
   {
-    title: "QR Ph Collections",
+    title: "Payment Acceptance",
     description:
-      "Launch branded QR acceptance for branch counters, field representatives, and merchant networks with operational reporting.",
+      "Omnichannel collections via QR Ph, payment links, APIs, and digital wallets through a single integration layer.",
   },
   {
-    title: "Payment Gateway",
+    title: "Billing & Invoicing",
     description:
-      "Unify cards, bank transfer flows, and local digital payment methods behind one merchant-ready integration layer.",
+      "Automated recurring billing, digital invoicing, and scheduled collections with configurable workflows.",
   },
   {
-    title: "Bulk Disbursements",
+    title: "Disbursement",
     description:
-      "Coordinate supplier payouts, incentives, and approved releases with clearer controls for finance and operations teams.",
+      "Real-time and batch payouts to banks and e-wallets nationwide, with automated status tracking.",
   },
   {
-    title: "Settlement Reporting",
+    title: "Reporting & Reconciliation",
     description:
-      "Give finance teams a clean daily view of receivables, cutoff windows, settlement timing, and exceptions.",
+      "Live transaction monitoring, automated settlement matching, and exportable financial reports.",
   },
   {
-    title: "Merchant Onboarding",
+    title: "Developer API",
     description:
-      "Move from due diligence to launch with rollout support tailored for Philippine business payment operations.",
-  },
-  {
-    title: "Enterprise Payment Advisory",
-    description:
-      "Structure collection and payout programs around your institution, platform, or multi-entity business model.",
+      "Secure RESTful APIs and webhooks designed for seamless system integration and scalability.",
   },
 ];
 
 const steps: Step[] = [
   {
     number: "01",
-    title: "Map your payment flow",
+    title: "Fragmented Payment Infrastructure",
     description:
-      "We review your collection channels, settlement expectations, approval steps, and reporting requirements.",
+      "Managing multiple QR codes, bank portals, and separate e-wallet dashboards creates operational silos and reconciliation complexity.",
   },
   {
     number: "02",
-    title: "Configure channels and controls",
+    title: "Compliance & Control Gaps",
     description:
-      "iPay aligns QR Ph, gateway, payout, and reconciliation workflows around your operating model.",
+      "Sharing bank credentials for verification exposes organizations to fraud, internal control weaknesses, and audit risks.",
   },
   {
     number: "03",
-    title: "Launch with operations support",
+    title: "Manual & Error-Prone Reconciliation",
     description:
-      "Your team goes live with clearer visibility, dependable handoff, and a proposal built around scale.",
+      "Time-consuming spreadsheet matching leads to delayed reporting, discrepancies, and operational inefficiencies.",
   },
 ];
 
 const strengths = [
-  "Built around Philippine payment behavior, compliance expectations, and enterprise workflows",
-  "Dependable uptime and reporting designed to reduce reconciliation friction",
-  "Hands-on rollout support for institutions, merchants, and platform partners",
-  "A proposal-led engagement model for serious operators, not self-serve guesswork",
+  "Unified Payment Ecosystem: One integration point for QR Ph, cards, banks, and e-wallets eliminating fragmentation and simplifying operations.",
+  "Enterprise-Grade Governance: Role-based access controls, audit logs, and secure transaction visibility without sharing banking credentials.",
+  "Automated Reconciliation & Settlement: Real-time transaction monitoring and system-generated settlement reports aligned with banking records.",
 ];
 
 const partnerGroups = [
-  "SME operators",
-  "Retail networks",
-  "Schools and universities",
-  "Clinics and health groups",
-  "Cooperatives",
-  "SaaS platforms",
-  "Enterprise finance teams",
-  "Marketplace operators",
+  "Regulatory Compliant",
+  "OPSCOR-2025-0002",
+  "BSP-Registered",
+  "Operator of Payment System",
+  "Enterprise Grade",
+  "Secure Infrastructure",
 ];
 
 function Button({
@@ -221,12 +210,6 @@ function Navbar() {
 }
 
 function Hero() {
-  const metrics = [
-    { label: "businesses supported", value: "5,000+" },
-    { label: "platform uptime", value: "99.9%" },
-    { label: "implementation visibility", value: "24 hrs" },
-  ];
-
   return (
     <section
       id="home"
@@ -237,18 +220,14 @@ function Hero() {
         className="relative z-10 mx-auto grid max-w-7xl gap-14 px-4 py-16 sm:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:px-8"
       >
         <div className="flex flex-col justify-center">
-          <p className="mb-5 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--brand)]">
-            Dependable Philippine B2B payments
-          </p>
           <h1 className="font-heading max-w-4xl text-[clamp(2.65rem,5.3vw,4.25rem)] font-bold leading-[0.98] tracking-[-0.045em] text-[var(--text-primary)]">
-            Powering seamless
-            <span className="text-[var(--brand)]"> business payments </span>
-            across the Philippines
+            Powering Seamless
+            <span className="text-[var(--brand)]"> Business Payments </span>
+            Across the Philippines
           </h1>
           <p className="mt-6 max-w-2xl text-[1.05rem] leading-8 text-[var(--text-secondary)]">
-            iPay helps SMEs, institutions, and enterprise platforms collect,
-            settle, and reconcile payments with a cleaner operational model and
-            proposal-led implementation support.
+            Dependable, efficient, and secure payment solutions for growing
+            enterprises, SMEs, and institutions.
           </p>
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
@@ -256,22 +235,6 @@ function Hero() {
             <Button href="#services" variant="secondary">
               Explore Services
             </Button>
-          </div>
-
-          <div className="mt-12 grid gap-4 sm:grid-cols-3">
-            {metrics.map((metric) => (
-              <div
-                key={metric.label}
-                className="rounded-2xl border border-[var(--border-light)] bg-white p-5 shadow-[var(--shadow-card)]"
-              >
-                <p className="font-heading text-3xl font-bold tracking-[-0.04em] text-[var(--text-primary)]">
-                  {metric.value}
-                </p>
-                <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-faint)]">
-                  {metric.label}
-                </p>
-              </div>
-            ))}
           </div>
         </div>
 
@@ -282,25 +245,88 @@ function Hero() {
 }
 
 function TrustBar() {
-  const items = ["QR Ph", "InstaPay", "Settlement Controls", "Reconciliation"];
+  const items = [
+    {
+      title: "Regulatory Compliant",
+      description: "OPSCOR-2025-0002",
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          className="h-6 w-6"
+          aria-hidden="true"
+        >
+          <path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" />
+          <path d="m9.5 12 1.7 1.7 3.8-4.2" />
+        </svg>
+      ),
+    },
+    {
+      title: "BSP-Registered",
+      description: "Operator of Payment System",
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          className="h-6 w-6"
+          aria-hidden="true"
+        >
+          <path d="M4 20h16" />
+          <path d="M6 20V10h12v10" />
+          <path d="M12 4 4 8v2h16V8l-8-4Z" />
+          <path d="M9 14v2" />
+          <path d="M12 14v2" />
+          <path d="M15 14v2" />
+        </svg>
+      ),
+    },
+    {
+      title: "Enterprise Grade",
+      description: "Secure Infrastructure",
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          className="h-6 w-6"
+          aria-hidden="true"
+        >
+          <rect x="4" y="4" width="16" height="16" rx="3" />
+          <path d="M8 9h8" />
+          <path d="M8 12h8" />
+          <path d="M8 15h5" />
+        </svg>
+      ),
+    },
+  ];
 
   return (
-    <section className="border-y border-[var(--border-light)] bg-[var(--bg-subtle)]">
-      <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-7 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-        <p className="text-sm font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
-          Trusted by growing Philippine businesses, institutions, and payment
-          operations teams
-        </p>
-        <div className="flex flex-wrap gap-3">
-          {items.map((item) => (
-            <span
-              key={item}
-              className="rounded-full border border-[var(--border-light)] bg-white px-4 py-2 text-sm text-[var(--text-secondary)]"
-            >
-              {item}
-            </span>
-          ))}
-        </div>
+    <section className="border-y border-[var(--border-light)] bg-[#f5f5f5]">
+      <div
+        id="hero_2"
+        className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 md:grid-cols-3 lg:px-8"
+      >
+        {items.map((item) => (
+          <article
+            key={item.title}
+            className="flex flex-col items-center rounded-[20px] border border-[var(--border-light)] bg-white px-6 py-8 text-center shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[0_14px_32px_rgba(15,23,42,0.1)]"
+          >
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#f3f4f6] text-[var(--text-secondary)]">
+              {item.icon}
+            </div>
+            <h3 className="mt-5 text-lg font-semibold text-[var(--text-primary)]">
+              {item.title}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-[#6b7280]">
+              {item.description}
+            </p>
+          </article>
+        ))}
       </div>
     </section>
   );
@@ -308,17 +334,17 @@ function TrustBar() {
 
 function WhoWeServe() {
   return (
-    <section id="who-we-serve" className="bg-white/82 py-24 backdrop-blur-[2px] sm:py-20">
+    <section id="who-we-serve" className="bg-white/82 py-24 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
           label="Who We Serve"
           title={
             <>
-              Payment infrastructure shaped for
-              <span className="text-[var(--brand)]"> real business operators</span>
+              Tailored payment infrastructure for
+              <span className="text-[var(--brand)]"> diverse business needs</span>
             </>
           }
-          description="iPay is positioned for organizations that need dependable collections, finance visibility, and rollout support that fits Philippine operating realities."
+          description="Who We Serve"
           align="center"
         />
 
@@ -366,14 +392,14 @@ function Services() {
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
-          label="Services"
+          label="Core Capabilities"
           title={
             <>
-              A premium light-theme front door for
-              <span className="text-[var(--brand)]"> enterprise payment solutions</span>
+              Built for scale,
+              <span className="text-[var(--brand)]"> designed for reliability</span>
             </>
           }
-          description="The service layer is presented with clean cards, visible structure, and trust-first copy so the brand feels credible to SME and enterprise buyers at first glance."
+          description="Core Capabilities"
         />
 
         <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -404,14 +430,14 @@ function HowItWorks() {
     <section id="how-it-works" className="bg-white/80 py-24 backdrop-blur-[2px] sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
-          label="How It Works"
+          label="Operational Payment Complexity"
           title={
             <>
-              Clear rollout steps for teams that need
-              <span className="text-[var(--brand)]"> operational confidence</span>
+              We replace fragmented, manual processes with
+              <span className="text-[var(--brand)]"> a single, automated infrastructure</span>
             </>
           }
-          description="The experience is positioned like a serious B2B engagement: understand the workflow, configure the rails, and launch with stronger reporting and support."
+          description="The Challenge"
           align="center"
         />
 
@@ -441,10 +467,9 @@ function HowItWorks() {
 
 function WhyChooseUs() {
   const stats = [
-    { value: "PHP 2B+", label: "annualized payment volume visibility" },
-    { value: "5,000+", label: "businesses and institutions supported" },
-    { value: "99.9%", label: "uptime target posture" },
-    { value: "24 hrs", label: "settlement insight turnaround" },
+    { value: "One", label: "integration point for QR Ph, cards, banks, and e-wallets" },
+    { value: "Role-based", label: "access controls, audit logs, and secure visibility" },
+    { value: "Real-time", label: "transaction monitoring and settlement reports" },
   ];
 
   return (
@@ -452,14 +477,14 @@ function WhyChooseUs() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr]">
           <SectionHeader
-            label="Why Choose iPay"
+            label="The IPAY Solution"
             title={
               <>
-                Fintech credibility with
-                <span className="text-[var(--brand)]"> a cleaner buying signal</span>
+                Unified controls for
+                <span className="text-[var(--brand)]"> modern payment operations</span>
               </>
             }
-            description="This section keeps the brand grounded in trust, operational maturity, and Philippine market relevance instead of generic startup language."
+            description="Unified Payment Ecosystem, Enterprise-Grade Governance, and Automated Reconciliation & Settlement."
           />
 
           <div className="grid gap-5 sm:grid-cols-2">
@@ -504,14 +529,14 @@ function Partners() {
     <section id="partners" className="bg-white/82 py-24 backdrop-blur-[2px] sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
-          label="Partners"
+          label="Trust Signals"
           title={
             <>
-              Built for the operators that keep
-              <span className="text-[var(--brand)]"> payment ecosystems moving</span>
+              Regulatory, operational, and infrastructure
+              <span className="text-[var(--brand)]"> trust markers</span>
             </>
           }
-          description="The partner section is intentionally restrained: grayscale trust treatment, visible structure, and enough hierarchy to feel enterprise-grade without becoming noisy."
+          description="Regulatory Compliant, BSP-Registered, and Enterprise Grade."
           align="center"
         />
 
@@ -541,11 +566,11 @@ function CTABanner() {
           <div className="mt-4 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <h2 className="font-heading text-[clamp(2.2rem,4vw,3.5rem)] font-semibold leading-[1.02] tracking-[-0.04em]">
-                Ready to modernize collections, settlement visibility, and payment operations?
+                Design Your Payment Infrastructure
               </h2>
               <p className="mt-4 text-lg leading-8 text-white/82">
-                Start with a proposal tailored for your business model, volume,
-                rollout constraints, and Philippine payment requirements.
+                Join the growing number of Philippine enterprises streamlining
+                their financial operations with IPAY INTERNATIONAL.
               </p>
             </div>
             <div className="flex flex-col gap-4 sm:flex-row">
@@ -569,10 +594,11 @@ function CTABanner() {
 
 function Footer() {
   const footerServices = [
-    "QR Ph Collections",
-    "Payment Gateway",
-    "Bulk Disbursements",
-    "Settlement Reporting",
+    "Payment Acceptance",
+    "Billing & Invoicing",
+    "Disbursement",
+    "Reporting & Reconciliation",
+    "Developer API",
   ];
 
   return (
@@ -582,17 +608,14 @@ function Footer() {
           <div className="flex items-center gap-3">
             <Image src={logo} alt="iPay logo" className="h-11 w-auto" />
             <div>
-              <p className="font-heading text-sm font-semibold tracking-[0.28em] text-[var(--brand)]">
-                IPAY
-              </p>
               <p className="text-xs text-slate-400">
-                Payment infrastructure for Philippine businesses
+                Powering Seamless Business Payments Across the Philippines
               </p>
             </div>
           </div>
           <p className="mt-5 max-w-xs text-sm leading-7 text-slate-400">
-            Dependable payment solutions for SMEs, institutions, and enterprise
-            platforms across the Philippines.
+            Dependable, efficient, and secure payment solutions for growing
+            enterprises, SMEs, and institutions.
           </p>
         </div>
 
@@ -622,12 +645,12 @@ function Footer() {
 
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white">
-            Trust Signals
+            Credentials
           </p>
           <div className="mt-4 space-y-3 text-sm text-slate-400">
-            <p>BSP-ready implementation posture</p>
-            <p>QR Ph and InstaPay-aligned payment operations</p>
-            <p>Proposal-led onboarding for enterprise buyers</p>
+            <p>Regulatory Compliant OPSCOR-2025-0002</p>
+            <p>BSP-Registered Operator of Payment System</p>
+            <p>Enterprise Grade Secure Infrastructure</p>
           </div>
         </div>
       </div>
@@ -635,7 +658,7 @@ function Footer() {
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 text-sm text-slate-400 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
           <p>(c) 2026 iPay. All rights reserved.</p>
-          <p>BSP-facing fintech positioning for Philippine business payments.</p>
+          <p>Join the growing number of Philippine enterprises streamlining their financial operations with IPAY INTERNATIONAL.</p>
         </div>
       </div>
     </footer>

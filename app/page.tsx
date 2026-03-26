@@ -574,7 +574,10 @@ function TrustBar() {
 
 function WhoWeServe() {
   return (
-    <section id="who-we-serve" className="bg-white/82 py-28 sm:py-24">
+    <section
+      id="who-we-serve"
+      className="bg-[var(--section-default)] py-28 backdrop-blur-[2px] sm:py-24"
+    >
       <SpotlightCardTracker
         containerSelector=".who-we-serve-grid"
         cardSelector=".who-we-serve-card"

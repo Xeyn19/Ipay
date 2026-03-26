@@ -277,7 +277,7 @@ body {
       rgba(249, 149, 71, calc(var(--glow-alpha) * 0.08)) 24%,
       transparent 56%
     ),
-    linear-gradient(180deg, #ffffff 0%, #fffaf6 100%);
+    linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-warm) 100%);
   box-shadow: var(--shadow-card);
   transform: translateY(0);
   transition:

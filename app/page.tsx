@@ -176,8 +176,8 @@ function SectionHeader({
 
 function Navbar() {
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--border-light)] bg-white/92 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 h-20 border-b border-[var(--border-light)] bg-white/92 backdrop-blur">
+      <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
         <Link href="#home" className="flex items-center gap-3">
           <Image src={logo} alt="iPay logo" className="h-11 w-auto" priority />
         </Link>
@@ -213,26 +213,32 @@ function Hero() {
   return (
     <section
       id="home"
-      className="hero-warm relative overflow-hidden bg-transparent"
+      className="hero-warm relative min-h-[calc(100svh-var(--nav-height))] overflow-hidden bg-transparent"
     >
       <div
         id="main"
-        className="relative z-10 mx-auto grid max-w-7xl gap-14 px-4 py-16 sm:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:px-8"
+        className="relative z-10 mx-auto grid min-h-[calc(100svh-var(--nav-height))] max-w-7xl gap-14 px-4 py-16 sm:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:px-8"
       >
         <div className="flex flex-col justify-center">
-          <h1 className="font-heading max-w-4xl text-[clamp(2.65rem,5.3vw,4.25rem)] font-bold leading-[0.98] tracking-[-0.045em] text-[var(--text-primary)]">
-            Powering Seamless
-            <span className="text-[var(--brand)]"> Business Payments </span>
-            Across the Philippines
+          <h1 className="font-heading max-w-4xl text-[clamp(3rem,6vw,5.25rem)] font-bold leading-[0.96] tracking-[-0.05em] text-[var(--text-primary)]">
+            <span className="block lg:whitespace-nowrap">Powering Seamless</span>
+            <span className="block text-[var(--brand)] lg:whitespace-nowrap">
+              Business Payments
+            </span>
+            <span className="block lg:whitespace-nowrap">
+              Across the Philippines
+            </span>
           </h1>
-          <p className="mt-6 max-w-2xl text-[1.05rem] leading-8 text-[var(--text-secondary)]">
+          <p className="mt-6 max-w-2xl text-[clamp(1.125rem,1.5vw,1.35rem)] leading-9 text-[var(--text-secondary)]">
             Dependable, efficient, and secure payment solutions for growing
             enterprises, SMEs, and institutions.
           </p>
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-            <Button href="#proposal">Request Proposal</Button>
-            <Button href="#services" variant="secondary">
+            <Button href="#proposal" className="text-base">
+              Request Proposal
+            </Button>
+            <Button href="#services" variant="secondary" className="text-base">
               Explore Services
             </Button>
           </div>

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --nav-height: 5rem;
   --brand: #f17a1e;
   --brand-dark: #d4651a;
   --brand-light: #f99547;

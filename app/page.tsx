@@ -11,6 +11,15 @@ type Segment = {
 };
 type Service = { title: string; description: string };
 type Step = { number: string; title: string; description: string };
+type PartnerLogo = {
+  name: string;
+  src: string;
+  width: number;
+  height: number;
+  className?: string;
+  wrapperClassName?: string;
+};
+type PartnerCategory = { title: string; logos: PartnerLogo[] };
 
 const navigation: NavItem[] = [
   { label: "Home", href: "#home" },
@@ -108,13 +117,137 @@ const strengths = [
   "Automated Reconciliation & Settlement: Real-time transaction monitoring and system-generated settlement reports aligned with banking records.",
 ];
 
-const partnerGroups = [
-  "Regulatory Compliant",
-  "OPSCOR-2025-0002",
-  "BSP-Registered",
-  "Operator of Payment System",
-  "Enterprise Grade",
-  "Secure Infrastructure",
+const partnerGroups: PartnerCategory[] = [
+  {
+    title: "Digital Collection Channels",
+    logos: [
+      {
+        name: "GCash",
+        src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/gcash-logo.png",
+        width: 210,
+        height: 72,
+      },
+      {
+        name: "Maya",
+        src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/maya_logo.svg_.png",
+        width: 180,
+        height: 72,
+      },
+      {
+        name: "Grab",
+        src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/grab_company-logo.wine_.png",
+        width: 210,
+        height: 72,
+      },
+      {
+        name: "InstaPay",
+        src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/1500-instapay-14072022.png",
+        width: 220,
+        height: 72,
+      },
+      {
+        name: "Shopee",
+        src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/shopee.svg_.png",
+        width: 200,
+        height: 72,
+      },
+    ],
+  },
+  {
+    title: "Digital Disbursement Channels",
+    logos: [
+      {
+        name: "GCash",
+        src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/gcash-logo.png",
+        width: 210,
+        height: 72,
+      },
+      {
+        name: "Maya",
+        src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/maya_logo.svg_.png",
+        width: 180,
+        height: 72,
+      },
+      {
+        name: "Grab",
+        src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/grab_company-logo.wine_.png",
+        width: 210,
+        height: 72,
+      },
+      {
+        name: "InstaPay",
+        src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/1500-instapay-14072022.png",
+        width: 220,
+        height: 72,
+      },
+    ],
+  },
+];
+
+const partnerShowcaseGroups: PartnerCategory[] = [
+  {
+    title: "Merchant",
+    logos: [
+      {
+        name: "DailyBest",
+        src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/daily-best.png",
+        width: 132,
+        height: 132,
+        wrapperClassName: "h-[156px] w-[156px] rounded-[18px] bg-[#ffd83d] p-5 shadow-sm",
+        className: "h-full w-full object-contain",
+      },
+      {
+        name: "Nameless Cafe",
+        src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/nameless.png",
+        width: 132,
+        height: 132,
+        wrapperClassName: "h-[156px] w-[156px] rounded-[18px] bg-black p-5 shadow-sm",
+        className: "h-full w-full object-contain",
+      },
+      {
+        name: "SG Clinic",
+        src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/sg-clinic-1.png",
+        width: 132,
+        height: 132,
+        wrapperClassName: "h-[156px] w-[156px] rounded-[18px] bg-[#f4f4f4] p-5 shadow-sm",
+        className: "h-full w-full object-contain",
+      },
+    ],
+  },
+  {
+    title: "E-Commerce",
+    logos: [
+      {
+        name: "XMeta",
+        src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/xmeta.png",
+        width: 132,
+        height: 132,
+        wrapperClassName: "h-[156px] w-[156px] rounded-[18px] bg-[#ff6a2f] p-5 shadow-sm",
+        className: "h-full w-full object-contain",
+      },
+      {
+        name: "Rulls",
+        src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/rulls.png",
+        width: 132,
+        height: 132,
+        wrapperClassName: "h-[156px] w-[156px] rounded-[18px] bg-white p-0 shadow-sm ring-1 ring-black/6",
+        className: "h-full w-full object-cover rounded-[18px]",
+      },
+    ],
+  },
+  {
+    title: "Office\nAutomation",
+    logos: [
+      {
+        name: "SOOA",
+        src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/soooa-1.png",
+        width: 132,
+        height: 132,
+        wrapperClassName: "h-[156px] w-[156px] rounded-[18px] bg-[#f4f4f4] p-5 shadow-sm",
+        className: "h-full w-full object-contain",
+      },
+    ],
+  },
 ];
 
 function Button({
@@ -526,27 +659,77 @@ function WhyChooseUs() {
 
 function Partners() {
   return (
-    <section id="partners" className="bg-white/82 py-24 backdrop-blur-[2px] sm:py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <SectionHeader
-          label="Trust Signals"
-          title={
-            <>
-              Regulatory, operational, and infrastructure
-              <span className="text-[var(--brand)]"> trust markers</span>
-            </>
-          }
-          description="Regulatory Compliant, BSP-Registered, and Enterprise Grade."
-          align="center"
-        />
+    <section id="partners" className="bg-white py-24 sm:py-20">
+      <div className="mx-auto max-w-[1100px] px-6 sm:px-8">
+        <div className="mx-auto max-w-[480px] text-center">
+          <h2 className="font-heading text-[clamp(2rem,5vw,3rem)] font-bold tracking-[-0.03em] text-[#0d0d1a]">
+            Partner With IPAY PH
+          </h2>
+          <p className="mt-4 text-[1.05rem] leading-7 text-[#555]">
+            Join our ecosystem to deliver superior financial technology to your
+            clients.
+          </p>
+        </div>
 
-        <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {partnerGroups.map((partner) => (
+        <div className="mt-14">
+          {partnerGroups.map((group, index) => (
             <div
-              key={partner}
-              className="rounded-[18px] border border-[var(--border-light)] bg-[var(--bg-subtle)] px-5 py-6 text-center text-base font-semibold tracking-[0.04em] text-slate-500"
+              key={group.title}
+              className={`flex flex-col items-start gap-6 py-12 sm:gap-8 md:flex-row md:items-center md:gap-10 ${index > 0 ? "border-t border-[#e5e5e5]" : ""}`}
             >
-              {partner}
+              <div className="w-full shrink-0 md:w-[180px]">
+                <h3 className="font-heading text-[1.1rem] font-bold leading-6 text-[#0d0d1a]">
+                  {group.title}
+                </h3>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-10 gap-y-6">
+                {group.logos.map((logo) => (
+                  <div key={`${group.title}-${logo.name}`} className="flex items-center">
+                    <Image
+                      src={logo.src}
+                      alt={logo.name}
+                      width={logo.width}
+                      height={logo.height}
+                      className={`h-9 w-auto object-contain transition duration-200 ease-out hover:scale-[1.08] hover:[filter:drop-shadow(0_4px_12px_rgba(0,0,0,0.12))] sm:h-11 ${logo.className ?? ""}`}
+                      unoptimized
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-8">
+          {partnerShowcaseGroups.map((group, index) => (
+            <div
+              key={group.title}
+              className={`flex flex-col items-start gap-6 py-12 sm:gap-8 md:flex-row md:items-center md:gap-10 ${index < partnerShowcaseGroups.length - 1 ? "border-b border-[#b8b8b8]" : ""}`}
+            >
+              <div className="w-full shrink-0 md:w-[180px]">
+                <h3 className="font-heading whitespace-pre-line text-[clamp(1.2rem,3vw,1.4rem)] font-bold leading-[1.45] text-[#0d0d1a]">
+                  {group.title}
+                </h3>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-6 md:gap-7">
+                {group.logos.map((logo) => (
+                  <div
+                    key={`${group.title}-${logo.name}`}
+                    className={`flex items-center justify-center overflow-hidden transition duration-200 ease-out hover:scale-[1.03] hover:[filter:drop-shadow(0_10px_20px_rgba(0,0,0,0.08))] ${logo.wrapperClassName ?? ""}`}
+                  >
+                    <Image
+                      src={logo.src}
+                      alt={logo.name}
+                      width={logo.width}
+                      height={logo.height}
+                      className={logo.className ?? "h-full w-full object-contain"}
+                      unoptimized
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>

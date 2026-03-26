@@ -1,7 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import logo from "@/public/img/ipaylogo.webp";
+<<<<<<< HEAD
 import SpotlightCardTracker from "@/app/spotlight-card-tracker";
+=======
+import PartnersCarousel from "@/app/components/partners-carousel";
+import ThemeToggle from "@/app/components/theme-toggle";
+>>>>>>> 14bcaca31d921a48120ff7a61d1c489518f55738
 
 type NavItem = { label: string; href: string };
 type Segment = {
@@ -12,15 +17,34 @@ type Segment = {
 };
 type Service = { title: string; description: string };
 type Step = { number: string; title: string; description: string };
+type SolutionFeature = {
+  title: string;
+  subtitle: string;
+  body: string;
+  tag: string;
+  tone: "gold" | "green" | "blue";
+};
+type SolutionDetail = { title: string; body: string };
 type PartnerLogo = {
   name: string;
-  src: string;
-  width: number;
-  height: number;
+  src?: string;
+  width?: number;
+  height?: number;
+  label?: string;
   className?: string;
   wrapperClassName?: string;
+  labelClassName?: string;
 };
-type PartnerCategory = { title: string; logos: PartnerLogo[] };
+type PartnerCategory = {
+  title: string;
+  panelTitle: string;
+  tabLabel: string;
+  tabIcon: string;
+  counterLabel: string;
+  description: string;
+  layout: "pill" | "card";
+  logos: PartnerLogo[];
+};
 
 const navigation: NavItem[] = [
   { label: "Home", href: "#home" },
@@ -112,15 +136,55 @@ const steps: Step[] = [
   },
 ];
 
-const strengths = [
-  "Unified Payment Ecosystem: One integration point for QR Ph, cards, banks, and e-wallets eliminating fragmentation and simplifying operations.",
-  "Enterprise-Grade Governance: Role-based access controls, audit logs, and secure transaction visibility without sharing banking credentials.",
-  "Automated Reconciliation & Settlement: Real-time transaction monitoring and system-generated settlement reports aligned with banking records.",
+const solutionFeatures: SolutionFeature[] = [
+  {
+    title: "One",
+    subtitle: "Integration point for QR PH, cards, banks and e-wallets",
+    body: "Connect once. Accept everywhere. Our single API replaces separate integrations and shortens go-live time from months to days.",
+    tag: "Integration",
+    tone: "gold",
+  },
+  {
+    title: "Role-based",
+    subtitle: "Access controls, audit logs and secure visibility",
+    body: "Enterprise-grade permissions with full audit trails so finance, operations, and compliance teams each see exactly what they need.",
+    tag: "Governance",
+    tone: "blue",
+  },
+  {
+    title: "Real-time",
+    subtitle: "Transaction monitoring and settlement reports",
+    body: "Watch every payment move as it happens with system-generated settlement reports aligned to your banking records.",
+    tag: "Monitoring",
+    tone: "green",
+  },
 ];
 
-const partnerGroups: PartnerCategory[] = [
+const solutionDetails: SolutionDetail[] = [
+  {
+    title: "Unified Ecosystem",
+    body: "One integration for QR Ph, cards, banks, and e-wallets, eliminating fragmentation and simplifying operations across teams.",
+  },
+  {
+    title: "Enterprise Governance",
+    body: "Role-based access controls, audit logs, and secure transaction visibility without sharing banking credentials.",
+  },
+  {
+    title: "Auto Reconciliation and Settlement",
+    body: "Real-time monitoring and system-generated settlement reports aligned with banking records so books close on time.",
+  },
+];
+
+const partnerCategories: PartnerCategory[] = [
   {
     title: "Digital Collection Channels",
+    panelTitle: "Digital Collection Channels",
+    tabLabel: "Digital Collection",
+    tabIcon: "💳",
+    counterLabel: "5 Channels",
+    description:
+      "Accept payments from the Philippines' most-used wallets and platforms.",
+    layout: "pill",
     logos: [
       {
         name: "GCash",
@@ -156,6 +220,12 @@ const partnerGroups: PartnerCategory[] = [
   },
   {
     title: "Digital Disbursement Channels",
+    panelTitle: "Digital Disbursement Channels",
+    tabLabel: "Disbursement",
+    tabIcon: "📤",
+    counterLabel: "4 Channels",
+    description: "Send funds instantly to any e-wallet or bank account.",
+    layout: "pill",
     logos: [
       {
         name: "GCash",
@@ -185,45 +255,61 @@ const partnerGroups: PartnerCategory[] = [
   },
 ];
 
-const partnerShowcaseGroups: PartnerCategory[] = [
+partnerCategories.push(
   {
     title: "Merchant",
+    panelTitle: "Merchant Partners",
+    tabLabel: "Merchant",
+    tabIcon: "🏪",
+    counterLabel: "3 Partners",
+    description: "Trusted by brands across retail, food, and services.",
+    layout: "card",
     logos: [
       {
-        name: "DailyBest",
+        name: "Daily Best",
         src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/daily-best.png",
         width: 132,
         height: 132,
-        wrapperClassName: "h-[156px] w-[156px] rounded-[18px] bg-[#ffd83d] p-5 shadow-sm",
+        wrapperClassName:
+          "h-[90px] w-[90px] rounded-[18px] bg-[#ffd83d] p-3 shadow-[0_10px_24px_rgba(0,0,0,0.08)] sm:h-[92px] sm:w-[92px]",
         className: "h-full w-full object-contain",
       },
       {
-        name: "Nameless Cafe",
+        name: "Nameless",
         src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/nameless.png",
         width: 132,
         height: 132,
-        wrapperClassName: "h-[156px] w-[156px] rounded-[18px] bg-black p-5 shadow-sm",
+        wrapperClassName:
+          "h-[90px] w-[90px] rounded-[18px] bg-[#111111] p-3 shadow-[0_10px_24px_rgba(0,0,0,0.08)] sm:h-[92px] sm:w-[92px]",
         className: "h-full w-full object-contain",
       },
       {
-        name: "SG Clinic",
+        name: "SG",
         src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/sg-clinic-1.png",
         width: 132,
         height: 132,
-        wrapperClassName: "h-[156px] w-[156px] rounded-[18px] bg-[#f4f4f4] p-5 shadow-sm",
+        wrapperClassName:
+          "h-[90px] w-[90px] rounded-[18px] bg-[#f0f0f0] p-3 shadow-[0_10px_24px_rgba(0,0,0,0.08)] sm:h-[92px] sm:w-[92px]",
         className: "h-full w-full object-contain",
       },
     ],
   },
   {
     title: "E-Commerce",
+    panelTitle: "E-Commerce Partners",
+    tabLabel: "E-Commerce",
+    tabIcon: "🛒",
+    counterLabel: "2 Partners",
+    description: "Powering online stores with fast, reliable checkout.",
+    layout: "card",
     logos: [
       {
         name: "XMeta",
         src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/xmeta.png",
         width: 132,
         height: 132,
-        wrapperClassName: "h-[156px] w-[156px] rounded-[18px] bg-[#ff6a2f] p-5 shadow-sm",
+        wrapperClassName:
+          "h-[90px] w-[90px] rounded-[18px] bg-[#ff6a2f] p-3 shadow-[0_10px_24px_rgba(0,0,0,0.08)] sm:h-[92px] sm:w-[92px]",
         className: "h-full w-full object-contain",
       },
       {
@@ -231,25 +317,33 @@ const partnerShowcaseGroups: PartnerCategory[] = [
         src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/rulls.png",
         width: 132,
         height: 132,
-        wrapperClassName: "h-[156px] w-[156px] rounded-[18px] bg-white p-0 shadow-sm ring-1 ring-black/6",
-        className: "h-full w-full object-cover rounded-[18px]",
+        wrapperClassName:
+          "h-[90px] w-[90px] rounded-[18px] bg-white p-0 shadow-[0_10px_24px_rgba(0,0,0,0.08)] sm:h-[92px] sm:w-[92px]",
+        className: "h-full w-full rounded-[18px] object-cover",
       },
     ],
   },
   {
-    title: "Office\nAutomation",
+    title: "Office Automation",
+    panelTitle: "Office Automation",
+    tabLabel: "Office Automation",
+    tabIcon: "🖥",
+    counterLabel: "1 Partner",
+    description: "Smart tools for billing, payroll, and back-office ops.",
+    layout: "card",
     logos: [
       {
-        name: "SOOA",
+        name: "Soon",
         src: "https://ipay99.wordpress.com/wp-content/uploads/2026/02/soooa-1.png",
         width: 132,
         height: 132,
-        wrapperClassName: "h-[156px] w-[156px] rounded-[18px] bg-[#f4f4f4] p-5 shadow-sm",
+        wrapperClassName:
+          "h-[90px] w-[90px] rounded-[18px] bg-[#f4f4f4] p-3 shadow-[0_10px_24px_rgba(0,0,0,0.08)] sm:h-[92px] sm:w-[92px]",
         className: "h-full w-full object-contain",
       },
     ],
   },
-];
+);
 
 function Button({
   href,
@@ -264,10 +358,11 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-[linear-gradient(135deg,var(--brand),var(--brand-light))] text-white shadow-[var(--shadow-button)] hover:bg-[var(--brand-dark)] hover:shadow-[0_10px_28px_rgba(241,122,30,0.38)]",
+      "bg-[linear-gradient(135deg,var(--brand),var(--brand-light))] text-white shadow-[var(--shadow-button)] hover:bg-[var(--brand-dark)] hover:shadow-[var(--shadow-button-hover)]",
     secondary:
       "border-2 border-[var(--brand)] text-[var(--brand)] hover:bg-[var(--brand)] hover:text-white",
-    inverse: "bg-white text-[var(--brand)] shadow-sm hover:bg-[var(--bg-subtle)]",
+    inverse:
+      "bg-[var(--bg-elevated)] text-[var(--brand)] shadow-[var(--shadow-control)] hover:bg-[var(--bg-subtle)]",
   };
 
   return (
@@ -310,10 +405,15 @@ function SectionHeader({
 
 function Navbar() {
   return (
-    <header className="fixed inset-x-0 top-0 z-50 h-20 border-b border-[var(--border-light)] bg-white/92 backdrop-blur">
+    <header className="fixed inset-x-0 top-0 z-50 h-20 border-b border-[var(--border-light)] bg-[var(--nav-bg)] backdrop-blur">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
-        <Link href="#home" className="flex items-center gap-3">
-          <Image src={logo} alt="iPay logo" className="h-11 w-auto" priority />
+        <Link href="#home" className="brand-logo-shell flex items-center gap-3">
+          <Image
+            src={logo}
+            alt="iPay logo"
+            className="brand-logo-image h-11 w-auto"
+            priority
+          />
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex">
@@ -328,16 +428,19 @@ function Navbar() {
           ))}
         </nav>
 
-        <Button href="#proposal" className="hidden md:inline-flex">
-          Request Proposal
-        </Button>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Button href="#proposal" className="hidden md:inline-flex">
+            Request Proposal
+          </Button>
 
-        <Link
-          href="#proposal"
-          className="inline-flex min-h-11 items-center rounded-md border border-[var(--border-light)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] md:hidden"
-        >
-          Proposal
-        </Link>
+          <Link
+            href="#proposal"
+            className="inline-flex min-h-11 items-center rounded-md border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] md:hidden"
+          >
+            Proposal
+          </Link>
+        </div>
       </div>
     </header>
   );
@@ -446,7 +549,7 @@ function TrustBar() {
   ];
 
   return (
-    <section className="border-y border-[var(--border-light)] bg-[#f5f5f5]">
+    <section className="border-y border-[var(--border-light)] bg-[var(--bg-soft)]">
       <div
         id="hero_2"
         className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 md:grid-cols-3 lg:px-8"
@@ -454,15 +557,15 @@ function TrustBar() {
         {items.map((item) => (
           <article
             key={item.title}
-            className="flex flex-col items-center rounded-[20px] border border-[var(--border-light)] bg-white px-6 py-8 text-center shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[0_14px_32px_rgba(15,23,42,0.1)]"
+            className="flex flex-col items-center rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-elevated)] px-6 py-8 text-center shadow-[var(--shadow-soft)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-soft-hover)]"
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#f3f4f6] text-[var(--text-secondary)]">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--bg-soft-strong)] text-[var(--text-secondary)]">
               {item.icon}
             </div>
             <h3 className="mt-5 text-lg font-semibold text-[var(--text-primary)]">
               {item.title}
             </h3>
-            <p className="mt-2 text-sm leading-6 text-[#6b7280]">
+            <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
               {item.description}
             </p>
           </article>
@@ -474,11 +577,15 @@ function TrustBar() {
 
 function WhoWeServe() {
   return (
+<<<<<<< HEAD
     <section id="who-we-serve" className="bg-white/82 py-28 sm:py-24">
       <SpotlightCardTracker
         containerSelector=".who-we-serve-grid"
         cardSelector=".who-we-serve-card"
       />
+=======
+    <section id="who-we-serve" className="bg-[var(--section-default)] py-28 sm:py-24">
+>>>>>>> 14bcaca31d921a48120ff7a61d1c489518f55738
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
           label="Who We Serve"
@@ -497,7 +604,11 @@ function WhoWeServe() {
           {segments.map((segment) => (
             <article
               key={segment.title}
+<<<<<<< HEAD
               className="who-we-serve-card flex h-full flex-col rounded-[28px] p-7 transition-all duration-300 ease-out"
+=======
+              className="flex h-full flex-col rounded-[28px] border border-[var(--border-light)] bg-[var(--bg-elevated)] p-7 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
+>>>>>>> 14bcaca31d921a48120ff7a61d1c489518f55738
             >
               <p className="w-fit rounded-full border border-[var(--border-orange)] bg-[var(--brand-pale)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">
                 {segment.eyebrow}
@@ -544,7 +655,7 @@ function Services() {
   return (
     <section
       id="services"
-      className="bg-[color:rgb(248_249_250_/_0.8)] py-24 backdrop-blur-[2px] sm:py-20"
+      className="bg-[var(--section-muted)] py-24 backdrop-blur-[2px] sm:py-20"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
@@ -562,7 +673,7 @@ function Services() {
           {services.map((service, index) => (
             <article
               key={service.title}
-              className="rounded-[20px] border border-[var(--border-light)] bg-white p-6 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
+              className="rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-elevated)] p-6 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-pale)] text-lg font-semibold text-[var(--brand)]">
                 {String(index + 1).padStart(2, "0")}
@@ -583,7 +694,10 @@ function Services() {
 
 function HowItWorks() {
   return (
-    <section id="how-it-works" className="bg-white/80 py-24 backdrop-blur-[2px] sm:py-20">
+    <section
+      id="how-it-works"
+      className="bg-[var(--section-default)] py-24 backdrop-blur-[2px] sm:py-20"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
           label="Operational Payment Complexity"
@@ -602,7 +716,7 @@ function HowItWorks() {
           {steps.map((step) => (
             <article
               key={step.number}
-              className="relative rounded-[24px] border border-[var(--border-light)] bg-white p-7 shadow-[var(--shadow-card)]"
+              className="relative rounded-[24px] border border-[var(--border-light)] bg-[var(--bg-elevated)] p-7 shadow-[var(--shadow-card)]"
             >
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--brand-pale)] font-heading text-xl font-bold text-[var(--brand)]">
                 {step.number}
@@ -622,59 +736,135 @@ function HowItWorks() {
 }
 
 function WhyChooseUs() {
-  const stats = [
-    { value: "One", label: "integration point for QR Ph, cards, banks, and e-wallets" },
-    { value: "Role-based", label: "access controls, audit logs, and secure visibility" },
-    { value: "Real-time", label: "transaction monitoring and settlement reports" },
-  ];
-
   return (
-    <section className="bg-[color:rgb(248_249_250_/_0.8)] py-24 backdrop-blur-[2px] sm:py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr]">
-          <SectionHeader
-            label="The IPAY Solution"
-            title={
-              <>
-                Unified controls for
-                <span className="text-[var(--brand)]"> modern payment operations</span>
-              </>
-            }
-            description="Unified Payment Ecosystem, Enterprise-Grade Governance, and Automated Reconciliation & Settlement."
-          />
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-[20px] border border-[var(--border-light)] bg-white p-6 shadow-[var(--shadow-card)]"
-              >
-                <p className="font-heading text-5xl font-bold tracking-[-0.05em] text-[var(--brand)]">
-                  {stat.value}
-                </p>
-                <p className="mt-3 text-sm uppercase tracking-[0.16em] text-[var(--text-faint)]">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
+    <section className="bg-[var(--bg-contrast)] py-24 sm:py-20">
+      <div className="mx-auto max-w-[1100px] px-5 sm:px-8">
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-[var(--tone-gold-muted)]">
+            <span className="block h-0.5 w-6 rounded-full bg-[var(--tone-gold)]" aria-hidden="true" />
+            The IPAY Solution
           </div>
+          <h2 className="font-heading mt-4 text-[clamp(2rem,4.5vw,3rem)] font-extrabold leading-[1.1] tracking-[-0.04em] text-[var(--text-strong)]">
+            Unified controls for
+            <span className="block text-[var(--tone-gold)]">modern payment operations</span>
+          </h2>
+          <p className="mx-auto mt-4 max-w-[520px] text-base leading-8 text-[var(--text-soft)]">
+            One platform to collect, disburse, and reconcile across every major
+            Philippine payment rail. No fragmentation. No manual settlement.
+          </p>
         </div>
 
-        <div className="mt-12 grid gap-4 md:grid-cols-2">
-          {strengths.map((strength) => (
-            <div
-              key={strength}
-              className="flex items-start gap-4 rounded-[18px] border border-[var(--border-light)] bg-white p-5 shadow-[var(--shadow-card)]"
+        <div className="my-12 h-px bg-[var(--border-contrast)]" />
+
+        <div className="grid gap-5 md:grid-cols-3">
+          {solutionFeatures.map((feature) => (
+            <article
+              key={feature.title}
+              className="group relative overflow-hidden rounded-[20px] border border-[var(--border-contrast)] bg-[var(--bg-elevated)] px-6 py-[26px] transition duration-300 ease-out hover:-translate-y-1.5 hover:border-[var(--border-accent)] hover:shadow-[var(--shadow-large)]"
             >
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand-pale)] text-lg font-semibold text-[var(--brand)]">
-                OK
-              </span>
-              <p className="text-base leading-7 text-[var(--text-secondary)]">
-                {strength}
+              <div
+                className={`absolute inset-x-0 bottom-0 h-[3px] rounded-b-[20px] opacity-0 transition duration-300 group-hover:opacity-100 ${
+                  feature.tone === "green"
+                    ? "bg-[var(--tone-green)]"
+                    : feature.tone === "blue"
+                      ? "bg-[var(--tone-blue)]"
+                      : "bg-[var(--tone-gold)]"
+                }`}
+              />
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div
+                  className={`flex h-[52px] w-[52px] items-center justify-center rounded-[14px] ${
+                    feature.tone === "green"
+                      ? "bg-[var(--tone-green-soft)]"
+                      : feature.tone === "blue"
+                        ? "bg-[var(--tone-blue-soft)]"
+                        : "bg-[var(--tone-gold-soft)]"
+                  }`}
+                  aria-hidden="true"
+                >
+                  {feature.tone === "gold" ? (
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-5 w-5 text-[var(--tone-gold)]"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="M12 5v14" />
+                    </svg>
+                  ) : feature.tone === "blue" ? (
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-5 w-5 text-[var(--tone-blue)]"
+                    >
+                      <path d="M12 3 5 6v5c0 4.5 3 8.5 7 10 4-1.5 7-5.5 7-10V6l-7-3Z" />
+                      <path d="m9.5 12 1.7 1.7 3.8-4.2" />
+                    </svg>
+                  ) : (
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-5 w-5 text-[var(--tone-green)]"
+                    >
+                      <path d="M12 5v14" />
+                      <path d="M5 12h14" />
+                      <path d="M8 8h8v8H8z" opacity="0.18" />
+                    </svg>
+                  )}
+                </div>
+                <span className="rounded-full bg-[var(--bg-badge)] px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-[0.09em] text-[var(--text-subtle)]">
+                  {feature.tag}
+                </span>
+              </div>
+
+              <h3 className="font-heading text-[1.7rem] font-extrabold leading-none text-[var(--tone-gold)]">
+                {feature.title}
+              </h3>
+              <p className="mt-2 text-[0.68rem] font-bold uppercase tracking-[0.1em] text-[var(--text-subtle)]">
+                {feature.subtitle}
               </p>
-            </div>
+              <p className="mt-3 text-[0.88rem] leading-7 text-[var(--text-soft)]">
+                {feature.body}
+              </p>
+            </article>
           ))}
         </div>
+
+        <div className="mt-12 grid gap-4 md:grid-cols-3">
+          {solutionDetails.map((detail) => (
+            <article
+              key={detail.title}
+              className="rounded-[16px] border border-[var(--border-contrast)] bg-[var(--bg-elevated)] px-5 py-[18px] transition duration-200 ease-out hover:-translate-y-[3px] hover:border-[var(--border-accent)] hover:shadow-[var(--shadow-soft)]"
+            >
+              <div className="mb-2.5 flex items-center gap-2.5">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--tone-gold-soft)]">
+                  <svg viewBox="0 0 14 14" fill="none" className="h-[13px] w-[13px]" aria-hidden="true">
+                    <path
+                      d="M2.5 7 5.5 10 11.5 4"
+                      stroke="var(--tone-gold)"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <h3 className="font-heading text-[0.9rem] font-bold text-[var(--text-strong)]">
+                  {detail.title}
+                </h3>
+              </div>
+              <p className="text-[0.83rem] leading-7 text-[var(--text-soft)]">
+                {detail.body}
+              </p>
+            </article>
+          ))}
+        </div>
+
       </div>
     </section>
   );
@@ -682,115 +872,64 @@ function WhyChooseUs() {
 
 function Partners() {
   return (
-    <section id="partners" className="bg-white py-24 sm:py-20">
-      <div className="mx-auto max-w-[1100px] px-6 sm:px-8">
-        <div className="mx-auto max-w-[480px] text-center">
-          <h2 className="font-heading text-[clamp(2rem,5vw,3rem)] font-bold tracking-[-0.03em] text-[#0d0d1a]">
-            Partner With IPAY PH
+    <section
+      id="partners"
+      className="relative overflow-hidden py-24 sm:py-20"
+      style={{ background: "var(--partners-bg)" }}
+    >
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-40"
+        style={{ background: "var(--partners-overlay)" }}
+      />
+      <div className="relative mx-auto max-w-[1200px]">
+        <div className="px-6 text-center sm:px-8">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-badge)] bg-[var(--partners-badge-bg)] px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.1em] text-[var(--tone-gold-muted)] shadow-[var(--shadow-badge)] backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--tone-gold)]" aria-hidden="true" />
+            Trusted Ecosystem
+          </div>
+          <h2 className="font-heading mt-5 text-[clamp(2.2rem,5vw,3.2rem)] font-extrabold leading-[1.08] tracking-[-0.04em] text-[var(--text-strong)]">
+            Partner With <span className="text-[var(--tone-gold)]">IPAY PH</span>
           </h2>
-          <p className="mt-4 text-[1.05rem] leading-7 text-[#555]">
-            Join our ecosystem to deliver superior financial technology to your
-            clients.
+          <p className="mx-auto mt-4 max-w-[480px] text-base leading-8 text-[var(--text-soft)]">
+            Join our growing network of top-tier financial technology partners
+            and deliver seamless payment solutions to your clients.
           </p>
         </div>
 
-        <div className="mt-14">
-          {partnerGroups.map((group, index) => (
-            <div
-              key={group.title}
-              className={`flex flex-col items-start gap-6 py-12 sm:gap-8 md:flex-row md:items-center md:gap-10 ${index > 0 ? "border-t border-[#e5e5e5]" : ""}`}
-            >
-              <div className="w-full shrink-0 md:w-[180px]">
-                <h3 className="font-heading text-[1.1rem] font-bold leading-6 text-[#0d0d1a]">
-                  {group.title}
-                </h3>
-              </div>
+        <PartnersCarousel groups={partnerCategories} />
 
-              <div className="flex flex-wrap items-center gap-x-10 gap-y-6">
-                {group.logos.map((logo) => (
-                  <div key={`${group.title}-${logo.name}`} className="flex items-center">
-                    <Image
-                      src={logo.src}
-                      alt={logo.name}
-                      width={logo.width}
-                      height={logo.height}
-                      className={`h-9 w-auto object-contain transition duration-200 ease-out hover:scale-[1.08] hover:[filter:drop-shadow(0_4px_12px_rgba(0,0,0,0.12))] sm:h-11 ${logo.className ?? ""}`}
-                      unoptimized
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-8">
-          {partnerShowcaseGroups.map((group, index) => (
-            <div
-              key={group.title}
-              className={`flex flex-col items-start gap-6 py-12 sm:gap-8 md:flex-row md:items-center md:gap-10 ${index < partnerShowcaseGroups.length - 1 ? "border-b border-[#b8b8b8]" : ""}`}
-            >
-              <div className="w-full shrink-0 md:w-[180px]">
-                <h3 className="font-heading whitespace-pre-line text-[clamp(1.2rem,3vw,1.4rem)] font-bold leading-[1.45] text-[#0d0d1a]">
-                  {group.title}
-                </h3>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-6 md:gap-7">
-                {group.logos.map((logo) => (
-                  <div
-                    key={`${group.title}-${logo.name}`}
-                    className={`flex items-center justify-center overflow-hidden transition duration-200 ease-out hover:scale-[1.03] hover:[filter:drop-shadow(0_10px_20px_rgba(0,0,0,0.08))] ${logo.wrapperClassName ?? ""}`}
-                  >
-                    <Image
-                      src={logo.src}
-                      alt={logo.name}
-                      width={logo.width}
-                      height={logo.height}
-                      className={logo.className ?? "h-full w-full object-contain"}
-                      unoptimized
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function CTABanner() {
-  return (
-    <section id="proposal" className="bg-[var(--brand)] py-20">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-[28px] border border-white/20 bg-[linear-gradient(135deg,rgba(255,255,255,0.1),rgba(255,255,255,0.02))] px-8 py-10 text-white shadow-[0_24px_60px_rgba(241,122,30,0.24)] md:px-12">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/80">
-            Request a Proposal
-          </p>
-          <div className="mt-4 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
-              <h2 className="font-heading text-[clamp(2.2rem,4vw,3.5rem)] font-semibold leading-[1.02] tracking-[-0.04em]">
-                Design Your Payment Infrastructure
-              </h2>
-              <p className="mt-4 text-lg leading-8 text-white/82">
-                Join the growing number of Philippine enterprises streamlining
-                their financial operations with IPAY INTERNATIONAL.
+        <div className="px-6 pb-2 pt-10 sm:px-8">
+          <div
+            className="flex flex-col items-start justify-between gap-6 rounded-[24px] border border-white/10 px-6 py-8 shadow-[var(--shadow-large-strong)] sm:px-10 md:flex-row md:items-center md:px-12"
+            style={{ background: "var(--partners-cta-bg)" }}
+          >
+            <div>
+              <h3 className="font-heading max-w-[420px] text-[clamp(1.2rem,2.5vw,1.7rem)] font-bold leading-[1.3] text-[var(--text-inverse)]">
+                Ready to grow with <span className="text-[var(--tone-gold)]">IPAY PH?</span>
+              </h3>
+              <p className="mt-1.5 text-[0.85rem] leading-6 text-[var(--text-inverse-muted)]">
+                Join hundreds of businesses already thriving in our ecosystem.
               </p>
             </div>
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <Button href="mailto:hello@ipay.com.ph" variant="inverse">
-                Request Proposal
-              </Button>
-              <Button
-                href="#home"
-                variant="inverse"
-                className="bg-transparent text-white ring-1 ring-white/50 hover:bg-white hover:text-[var(--brand)]"
+
+            <Link
+              href="#proposal"
+              className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[var(--tone-gold)] px-[30px] py-[15px] font-heading text-[0.9rem] font-bold text-[var(--text-cta)] shadow-[var(--shadow-gold)] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--brand-light)] hover:shadow-[var(--shadow-gold-hover)]"
+            >
+              Become a Partner
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                aria-hidden="true"
               >
-                Back to Top
-              </Button>
-            </div>
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </Link>
           </div>
         </div>
       </div>
@@ -808,11 +947,17 @@ function Footer() {
   ];
 
   return (
-    <footer className="bg-[#111827] text-white">
+    <footer className="bg-[var(--bg-footer)] text-[var(--text-inverse)]">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div>
           <div className="flex items-center gap-3">
-            <Image src={logo} alt="iPay logo" className="h-11 w-auto" />
+            <div className="brand-logo-shell">
+              <Image
+                src={logo}
+                alt="iPay logo"
+                className="brand-logo-image h-11 w-auto"
+              />
+            </div>
             <div>
               <p className="text-xs text-slate-400">
                 Powering Seamless Business Payments Across the Philippines
@@ -882,7 +1027,6 @@ export default function Home() {
       <HowItWorks />
       <WhyChooseUs />
       <Partners />
-      <CTABanner />
       <Footer />
     </main>
   );

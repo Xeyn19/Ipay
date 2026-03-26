@@ -1,5 +1,24 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
+
+const themeInitScript = `
+(() => {
+  const storageKey = "ipay-theme";
+  const root = document.documentElement;
+  let theme = "light";
+
+  try {
+    const storedTheme = window.localStorage.getItem(storageKey);
+    if (storedTheme === "light" || storedTheme === "dark") {
+      theme = storedTheme;
+    }
+  } catch {}
+
+  root.dataset.theme = theme;
+  root.style.colorScheme = theme;
+})();
+`;
 
 export const metadata: Metadata = {
   title: "iPay | Business Payments Across the Philippines",
@@ -13,8 +32,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full scroll-smooth">
-      <body className="min-h-full bg-[var(--bg-base)] font-sans antialiased">
+    <html
+      lang="en"
+      className="h-full scroll-smooth"
+      data-theme="light"
+      suppressHydrationWarning
+    >
+      <body className="min-h-full bg-[var(--bg-base)] font-sans antialiased transition-colors duration-300">
+        <Script id="theme-init" strategy="beforeInteractive">
+          {themeInitScript}
+        </Script>
         {children}
       </body>
     </html>

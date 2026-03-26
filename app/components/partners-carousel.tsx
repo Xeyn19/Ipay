@@ -1,7 +1,7 @@
 'use client'
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type PartnerLogo = {
   name: string;
@@ -31,6 +31,7 @@ export default function PartnersCarousel({
   groups: PartnerCategory[];
 }) {
   const [current, setCurrent] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const total = groups.length;
 
@@ -41,6 +42,20 @@ export default function PartnersCarousel({
   const navigate = (direction: number) => {
     setCurrent((value) => (value + direction + total) % total);
   };
+
+  useEffect(() => {
+    if (total <= 1 || isPaused) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setCurrent((value) => (value + 1) % total);
+    }, 4000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [isPaused, total]);
 
   if (total === 0) {
     return null;
@@ -53,7 +68,7 @@ export default function PartnersCarousel({
       <div
         role="tablist"
         aria-label="Partner categories"
-        className="mx-auto mb-8 flex w-fit max-w-full items-center justify-center gap-1.5 overflow-x-auto rounded-[18px] border border-[#dfe3e8] bg-[#f3f4f6] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="mx-auto mb-8 flex w-fit max-w-full items-center justify-center gap-1.5 overflow-x-auto rounded-[18px] border border-[var(--border-soft)] bg-[var(--bg-tab-list)] p-2 shadow-[var(--shadow-tab-inset)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {groups.map((item, index) => {
           const isActive = index === current;
@@ -69,14 +84,16 @@ export default function PartnersCarousel({
               onClick={() => goTo(index)}
               className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-[12px] border px-[18px] py-[10px] text-[0.85rem] transition duration-200 ${
                 isActive
-                  ? "border-[#111827] bg-[#111827] font-semibold text-white shadow-[0_10px_24px_rgba(17,24,39,0.18)]"
-                  : "border-transparent bg-transparent text-[#667085] hover:border-[#e5e7eb] hover:bg-white hover:text-[#0d0d1a]"
+                  ? "border-[var(--bg-tab-active)] bg-[var(--bg-tab-active)] font-semibold text-[var(--text-tab-active)] shadow-[var(--shadow-tab-active)]"
+                  : "border-transparent bg-transparent text-[var(--text-tab)] hover:border-[var(--border-light)] hover:bg-[var(--bg-tab-hover)] hover:text-[var(--text-strong)]"
               }`}
             >
               <span
                 aria-hidden="true"
                 className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[13px] leading-none ${
-                  isActive ? "bg-white/14" : "bg-white text-[#4b5563]"
+                  isActive
+                    ? "bg-[var(--bg-tab-active-icon)]"
+                    : "bg-[var(--bg-tab-icon)] text-[var(--text-tab-icon)]"
                 }`}
               >
                 {item.tabIcon}
@@ -88,8 +105,20 @@ export default function PartnersCarousel({
       </div>
 
       <div
-        className="overflow-hidden rounded-[24px] border border-[#dfe3e8] bg-[linear-gradient(180deg,#ffffff_0%,#fbfbfc_100%)] shadow-[0_24px_60px_rgba(15,23,42,0.08)]"
+        className="overflow-hidden rounded-[24px] border border-[var(--border-soft)] shadow-[var(--shadow-large)]"
+        style={{ background: "var(--carousel-bg)" }}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        onFocusCapture={() => setIsPaused(true)}
+        onBlurCapture={(event) => {
+          const nextFocused = event.relatedTarget as Node | null;
+
+          if (!event.currentTarget.contains(nextFocused)) {
+            setIsPaused(false);
+          }
+        }}
         onTouchStart={(event) => {
+          setIsPaused(true);
           touchStartX.current = event.touches[0]?.clientX ?? null;
         }}
         onTouchEnd={(event) => {
@@ -105,6 +134,8 @@ export default function PartnersCarousel({
           if (Math.abs(diff) > 40) {
             navigate(diff > 0 ? 1 : -1);
           }
+
+          setIsPaused(false);
         }}
         onKeyDown={(event) => {
           if (event.key === "ArrowRight") {
@@ -126,20 +157,23 @@ export default function PartnersCarousel({
           aria-labelledby={`partner-tab-${current}`}
           className="relative px-[22px] py-7 text-center sm:px-10 sm:py-10"
         >
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[linear-gradient(180deg,rgba(245,166,35,0.08)_0%,rgba(255,255,255,0)_100%)]" />
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-24"
+            style={{ background: "var(--carousel-top-glow)" }}
+          />
           <div className="mb-8 flex flex-col items-center gap-4">
             <div className="relative z-10 flex max-w-[420px] flex-col items-center">
-              <p className="text-[0.72rem] font-bold uppercase tracking-[0.16em] text-[#98a2b3]">
+              <p className="text-[0.72rem] font-bold uppercase tracking-[0.16em] text-[var(--text-badge)]">
                 Partner Category
               </p>
-              <h3 className="font-heading mt-2 text-[1.3rem] font-bold text-[#0d0d1a]">
+              <h3 className="font-heading mt-2 text-[1.3rem] font-bold text-[var(--text-strong)]">
                 {group.panelTitle}
               </h3>
-              <p className="mt-2 max-w-[380px] text-[0.86rem] leading-6 text-[#667085]">
+              <p className="mt-2 max-w-[380px] text-[0.86rem] leading-6 text-[var(--text-tab)]">
                 {group.description}
               </p>
             </div>
-            <span className="relative z-10 rounded-full border border-[#e7eaee] bg-white px-3 py-[5px] text-[0.75rem] font-semibold text-[#667085] shadow-[0_4px_12px_rgba(15,23,42,0.04)]">
+            <span className="relative z-10 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-[5px] text-[0.75rem] font-semibold text-[var(--text-tab)] shadow-[var(--shadow-pill)]">
               {group.counterLabel}
             </span>
           </div>
@@ -149,7 +183,7 @@ export default function PartnersCarousel({
               {group.logos.map((logo) => (
                 <div
                   key={`${group.title}-${logo.name}`}
-                  className="flex h-[78px] min-w-[148px] items-center justify-center rounded-[16px] border border-[#e7eaee] bg-white px-7 shadow-[0_1px_0_rgba(255,255,255,0.9),0_8px_24px_rgba(15,23,42,0.04)] transition duration-200 ease-out hover:-translate-y-0.5 hover:border-[#f0c26e] hover:shadow-[0_16px_32px_rgba(15,23,42,0.08)]"
+                  className="flex h-[78px] min-w-[148px] items-center justify-center rounded-[16px] border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-7 shadow-[var(--shadow-surface)] transition duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--border-accent)] hover:shadow-[var(--shadow-surface-hover)]"
                 >
                   {logo.src && logo.width && logo.height ? (
                     <Image
@@ -161,7 +195,7 @@ export default function PartnersCarousel({
                       unoptimized
                     />
                   ) : (
-                    <span className="text-sm font-semibold text-[#0d0d1a]">
+                    <span className="text-sm font-semibold text-[var(--text-strong)]">
                       {logo.label ?? logo.name}
                     </span>
                   )}
@@ -173,7 +207,7 @@ export default function PartnersCarousel({
               {group.logos.map((logo) => (
                 <div
                   key={`${group.title}-${logo.name}`}
-                  className={`flex !h-[124px] !w-[124px] items-center justify-center overflow-hidden !rounded-[24px] border border-[#e7eaee] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.05)] transition duration-200 ease-out hover:-translate-y-1 hover:border-[#f0c26e] hover:shadow-[0_18px_36px_rgba(15,23,42,0.1)] ${logo.wrapperClassName ?? ""}`}
+                  className={`flex !h-[124px] !w-[124px] items-center justify-center overflow-hidden !rounded-[24px] border border-[var(--border-subtle)] bg-[var(--bg-elevated)] shadow-[var(--shadow-tile)] transition duration-200 ease-out hover:-translate-y-1 hover:border-[var(--border-accent)] hover:shadow-[var(--shadow-tile-hover)] ${logo.wrapperClassName ?? ""}`}
                 >
                   {logo.src && logo.width && logo.height ? (
                     <Image
@@ -195,7 +229,7 @@ export default function PartnersCarousel({
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t border-[#e7eaee] bg-[#f8f9fb] px-[22px] py-4 sm:px-10 sm:py-5">
+        <div className="flex items-center justify-center border-t border-[var(--border-subtle)] bg-[var(--bg-carousel-footer)] px-[22px] py-4 sm:px-10 sm:py-5">
           <div className="flex gap-2">
             {groups.map((item, index) => (
               <button
@@ -204,51 +238,12 @@ export default function PartnersCarousel({
                 onClick={() => goTo(index)}
                 aria-label={`Go to ${item.tabLabel}`}
                 className={`h-2 rounded-full transition-all duration-200 ${
-                  index === current ? "w-6 bg-[#f5a623]" : "w-2 bg-[#d5dae1] hover:bg-[#bfc6d1]"
+                  index === current
+                    ? "w-6 bg-[var(--bg-dot-active)]"
+                    : "w-2 bg-[var(--bg-dot-inactive)] hover:bg-[var(--bg-dot-inactive-hover)]"
                 }`}
               />
             ))}
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              aria-label="Previous partner category"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#dfe3e8] bg-white text-[#0d0d1a] shadow-[0_4px_12px_rgba(15,23,42,0.04)] transition duration-200 ease-out hover:scale-[1.03] hover:border-[#111827] hover:bg-[#111827] hover:text-white"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate(1)}
-              aria-label="Next partner category"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#dfe3e8] bg-white text-[#0d0d1a] shadow-[0_4px_12px_rgba(15,23,42,0.04)] transition duration-200 ease-out hover:scale-[1.03] hover:border-[#111827] hover:bg-[#111827] hover:text-white"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path d="M9 18l6-6-6-6" />
-              </svg>
-            </button>
           </div>
         </div>
       </div>

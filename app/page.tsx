@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import logo from "@/public/img/ipaylogo.webp";
 import PartnersCarousel from "@/app/components/partners-carousel";
+import ThemeToggle from "@/app/components/theme-toggle";
 
 type NavItem = { label: string; href: string };
 type Segment = {
@@ -353,10 +354,11 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-[linear-gradient(135deg,var(--brand),var(--brand-light))] text-white shadow-[var(--shadow-button)] hover:bg-[var(--brand-dark)] hover:shadow-[0_10px_28px_rgba(241,122,30,0.38)]",
+      "bg-[linear-gradient(135deg,var(--brand),var(--brand-light))] text-white shadow-[var(--shadow-button)] hover:bg-[var(--brand-dark)] hover:shadow-[var(--shadow-button-hover)]",
     secondary:
       "border-2 border-[var(--brand)] text-[var(--brand)] hover:bg-[var(--brand)] hover:text-white",
-    inverse: "bg-white text-[var(--brand)] shadow-sm hover:bg-[var(--bg-subtle)]",
+    inverse:
+      "bg-[var(--bg-elevated)] text-[var(--brand)] shadow-[var(--shadow-control)] hover:bg-[var(--bg-subtle)]",
   };
 
   return (
@@ -399,10 +401,15 @@ function SectionHeader({
 
 function Navbar() {
   return (
-    <header className="fixed inset-x-0 top-0 z-50 h-20 border-b border-[var(--border-light)] bg-white/92 backdrop-blur">
+    <header className="fixed inset-x-0 top-0 z-50 h-20 border-b border-[var(--border-light)] bg-[var(--nav-bg)] backdrop-blur">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
-        <Link href="#home" className="flex items-center gap-3">
-          <Image src={logo} alt="iPay logo" className="h-11 w-auto" priority />
+        <Link href="#home" className="brand-logo-shell flex items-center gap-3">
+          <Image
+            src={logo}
+            alt="iPay logo"
+            className="brand-logo-image h-11 w-auto"
+            priority
+          />
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex">
@@ -417,16 +424,19 @@ function Navbar() {
           ))}
         </nav>
 
-        <Button href="#proposal" className="hidden md:inline-flex">
-          Request Proposal
-        </Button>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Button href="#proposal" className="hidden md:inline-flex">
+            Request Proposal
+          </Button>
 
-        <Link
-          href="#proposal"
-          className="inline-flex min-h-11 items-center rounded-md border border-[var(--border-light)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] md:hidden"
-        >
-          Proposal
-        </Link>
+          <Link
+            href="#proposal"
+            className="inline-flex min-h-11 items-center rounded-md border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] md:hidden"
+          >
+            Proposal
+          </Link>
+        </div>
       </div>
     </header>
   );
@@ -535,7 +545,7 @@ function TrustBar() {
   ];
 
   return (
-    <section className="border-y border-[var(--border-light)] bg-[#f5f5f5]">
+    <section className="border-y border-[var(--border-light)] bg-[var(--bg-soft)]">
       <div
         id="hero_2"
         className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 md:grid-cols-3 lg:px-8"
@@ -543,15 +553,15 @@ function TrustBar() {
         {items.map((item) => (
           <article
             key={item.title}
-            className="flex flex-col items-center rounded-[20px] border border-[var(--border-light)] bg-white px-6 py-8 text-center shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[0_14px_32px_rgba(15,23,42,0.1)]"
+            className="flex flex-col items-center rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-elevated)] px-6 py-8 text-center shadow-[var(--shadow-soft)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-soft-hover)]"
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#f3f4f6] text-[var(--text-secondary)]">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--bg-soft-strong)] text-[var(--text-secondary)]">
               {item.icon}
             </div>
             <h3 className="mt-5 text-lg font-semibold text-[var(--text-primary)]">
               {item.title}
             </h3>
-            <p className="mt-2 text-sm leading-6 text-[#6b7280]">
+            <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
               {item.description}
             </p>
           </article>
@@ -563,7 +573,7 @@ function TrustBar() {
 
 function WhoWeServe() {
   return (
-    <section id="who-we-serve" className="bg-white/82 py-28 sm:py-24">
+    <section id="who-we-serve" className="bg-[var(--section-default)] py-28 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
           label="Who We Serve"
@@ -582,7 +592,7 @@ function WhoWeServe() {
           {segments.map((segment) => (
             <article
               key={segment.title}
-              className="flex h-full flex-col rounded-[28px] border border-[var(--border-light)] bg-white p-7 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
+              className="flex h-full flex-col rounded-[28px] border border-[var(--border-light)] bg-[var(--bg-elevated)] p-7 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
             >
               <p className="w-fit rounded-full border border-[var(--border-orange)] bg-[var(--brand-pale)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">
                 {segment.eyebrow}
@@ -629,7 +639,7 @@ function Services() {
   return (
     <section
       id="services"
-      className="bg-[color:rgb(248_249_250_/_0.8)] py-24 backdrop-blur-[2px] sm:py-20"
+      className="bg-[var(--section-muted)] py-24 backdrop-blur-[2px] sm:py-20"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
@@ -647,7 +657,7 @@ function Services() {
           {services.map((service, index) => (
             <article
               key={service.title}
-              className="rounded-[20px] border border-[var(--border-light)] bg-white p-6 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
+              className="rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-elevated)] p-6 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-pale)] text-lg font-semibold text-[var(--brand)]">
                 {String(index + 1).padStart(2, "0")}
@@ -668,7 +678,10 @@ function Services() {
 
 function HowItWorks() {
   return (
-    <section id="how-it-works" className="bg-white/80 py-24 backdrop-blur-[2px] sm:py-20">
+    <section
+      id="how-it-works"
+      className="bg-[var(--section-default)] py-24 backdrop-blur-[2px] sm:py-20"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
           label="Operational Payment Complexity"
@@ -687,7 +700,7 @@ function HowItWorks() {
           {steps.map((step) => (
             <article
               key={step.number}
-              className="relative rounded-[24px] border border-[var(--border-light)] bg-white p-7 shadow-[var(--shadow-card)]"
+              className="relative rounded-[24px] border border-[var(--border-light)] bg-[var(--bg-elevated)] p-7 shadow-[var(--shadow-card)]"
             >
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--brand-pale)] font-heading text-xl font-bold text-[var(--brand)]">
                 {step.number}
@@ -708,48 +721,48 @@ function HowItWorks() {
 
 function WhyChooseUs() {
   return (
-    <section className="bg-[#f7f7f5] py-24 sm:py-20">
+    <section className="bg-[var(--bg-contrast)] py-24 sm:py-20">
       <div className="mx-auto max-w-[1100px] px-5 sm:px-8">
         <div className="text-center">
-          <div className="inline-flex items-center gap-2 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-[#e8960f]">
-            <span className="block h-0.5 w-6 rounded-full bg-[#f5a623]" aria-hidden="true" />
+          <div className="inline-flex items-center gap-2 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-[var(--tone-gold-muted)]">
+            <span className="block h-0.5 w-6 rounded-full bg-[var(--tone-gold)]" aria-hidden="true" />
             The IPAY Solution
           </div>
-          <h2 className="font-heading mt-4 text-[clamp(2rem,4.5vw,3rem)] font-extrabold leading-[1.1] tracking-[-0.04em] text-[#0d0d1a]">
+          <h2 className="font-heading mt-4 text-[clamp(2rem,4.5vw,3rem)] font-extrabold leading-[1.1] tracking-[-0.04em] text-[var(--text-strong)]">
             Unified controls for
-            <span className="block text-[#f5a623]">modern payment operations</span>
+            <span className="block text-[var(--tone-gold)]">modern payment operations</span>
           </h2>
-          <p className="mx-auto mt-4 max-w-[520px] text-base leading-8 text-[#4a4a4a]">
+          <p className="mx-auto mt-4 max-w-[520px] text-base leading-8 text-[var(--text-soft)]">
             One platform to collect, disburse, and reconcile across every major
             Philippine payment rail. No fragmentation. No manual settlement.
           </p>
         </div>
 
-        <div className="my-12 h-px bg-[#e8e8e8]" />
+        <div className="my-12 h-px bg-[var(--border-contrast)]" />
 
         <div className="grid gap-5 md:grid-cols-3">
           {solutionFeatures.map((feature) => (
             <article
               key={feature.title}
-              className="group relative overflow-hidden rounded-[20px] border border-[#e8e8e8] bg-white px-6 py-[26px] transition duration-300 ease-out hover:-translate-y-1.5 hover:border-[#edd48a] hover:shadow-[0_20px_48px_rgba(0,0,0,0.08)]"
+              className="group relative overflow-hidden rounded-[20px] border border-[var(--border-contrast)] bg-[var(--bg-elevated)] px-6 py-[26px] transition duration-300 ease-out hover:-translate-y-1.5 hover:border-[var(--border-accent)] hover:shadow-[var(--shadow-large)]"
             >
               <div
                 className={`absolute inset-x-0 bottom-0 h-[3px] rounded-b-[20px] opacity-0 transition duration-300 group-hover:opacity-100 ${
                   feature.tone === "green"
-                    ? "bg-[#1db87a]"
+                    ? "bg-[var(--tone-green)]"
                     : feature.tone === "blue"
-                      ? "bg-[#2563eb]"
-                      : "bg-[#f5a623]"
+                      ? "bg-[var(--tone-blue)]"
+                      : "bg-[var(--tone-gold)]"
                 }`}
               />
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div
                   className={`flex h-[52px] w-[52px] items-center justify-center rounded-[14px] ${
                     feature.tone === "green"
-                      ? "bg-[#ebf9f2]"
+                      ? "bg-[var(--tone-green-soft)]"
                       : feature.tone === "blue"
-                        ? "bg-[#eff4ff]"
-                        : "bg-[#fff8ec]"
+                        ? "bg-[var(--tone-blue-soft)]"
+                        : "bg-[var(--tone-gold-soft)]"
                   }`}
                   aria-hidden="true"
                 >
@@ -759,7 +772,7 @@ function WhyChooseUs() {
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="1.8"
-                      className="h-5 w-5 text-[#f5a623]"
+                      className="h-5 w-5 text-[var(--tone-gold)]"
                     >
                       <path d="M5 12h14" />
                       <path d="M12 5v14" />
@@ -770,7 +783,7 @@ function WhyChooseUs() {
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="1.8"
-                      className="h-5 w-5 text-[#2563eb]"
+                      className="h-5 w-5 text-[var(--tone-blue)]"
                     >
                       <path d="M12 3 5 6v5c0 4.5 3 8.5 7 10 4-1.5 7-5.5 7-10V6l-7-3Z" />
                       <path d="m9.5 12 1.7 1.7 3.8-4.2" />
@@ -781,7 +794,7 @@ function WhyChooseUs() {
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="1.8"
-                      className="h-5 w-5 text-[#1db87a]"
+                      className="h-5 w-5 text-[var(--tone-green)]"
                     >
                       <path d="M12 5v14" />
                       <path d="M5 12h14" />
@@ -789,18 +802,18 @@ function WhyChooseUs() {
                     </svg>
                   )}
                 </div>
-                <span className="rounded-full bg-[#f7f7f5] px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-[0.09em] text-[#888888]">
+                <span className="rounded-full bg-[var(--bg-badge)] px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-[0.09em] text-[var(--text-subtle)]">
                   {feature.tag}
                 </span>
               </div>
 
-              <h3 className="font-heading text-[1.7rem] font-extrabold leading-none text-[#f5a623]">
+              <h3 className="font-heading text-[1.7rem] font-extrabold leading-none text-[var(--tone-gold)]">
                 {feature.title}
               </h3>
-              <p className="mt-2 text-[0.68rem] font-bold uppercase tracking-[0.1em] text-[#888888]">
+              <p className="mt-2 text-[0.68rem] font-bold uppercase tracking-[0.1em] text-[var(--text-subtle)]">
                 {feature.subtitle}
               </p>
-              <p className="mt-3 text-[0.88rem] leading-7 text-[#4a4a4a]">
+              <p className="mt-3 text-[0.88rem] leading-7 text-[var(--text-soft)]">
                 {feature.body}
               </p>
             </article>
@@ -811,25 +824,25 @@ function WhyChooseUs() {
           {solutionDetails.map((detail) => (
             <article
               key={detail.title}
-              className="rounded-[16px] border border-[#e8e8e8] bg-white px-5 py-[18px] transition duration-200 ease-out hover:-translate-y-[3px] hover:border-[#edd48a] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]"
+              className="rounded-[16px] border border-[var(--border-contrast)] bg-[var(--bg-elevated)] px-5 py-[18px] transition duration-200 ease-out hover:-translate-y-[3px] hover:border-[var(--border-accent)] hover:shadow-[var(--shadow-soft)]"
             >
               <div className="mb-2.5 flex items-center gap-2.5">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#fff8ec]">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--tone-gold-soft)]">
                   <svg viewBox="0 0 14 14" fill="none" className="h-[13px] w-[13px]" aria-hidden="true">
                     <path
                       d="M2.5 7 5.5 10 11.5 4"
-                      stroke="#F5A623"
+                      stroke="var(--tone-gold)"
                       strokeWidth="1.8"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
                   </svg>
                 </span>
-                <h3 className="font-heading text-[0.9rem] font-bold text-[#0d0d1a]">
+                <h3 className="font-heading text-[0.9rem] font-bold text-[var(--text-strong)]">
                   {detail.title}
                 </h3>
               </div>
-              <p className="text-[0.83rem] leading-7 text-[#4a4a4a]">
+              <p className="text-[0.83rem] leading-7 text-[var(--text-soft)]">
                 {detail.body}
               </p>
             </article>
@@ -845,19 +858,23 @@ function Partners() {
   return (
     <section
       id="partners"
-      className="relative overflow-hidden bg-[radial-gradient(circle_at_top,#fff5df_0%,#fafaf8_26%,#f7f7f5_100%)] py-24 sm:py-20"
+      className="relative overflow-hidden py-24 sm:py-20"
+      style={{ background: "var(--partners-bg)" }}
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0)_100%)]" />
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-40"
+        style={{ background: "var(--partners-overlay)" }}
+      />
       <div className="relative mx-auto max-w-[1200px]">
         <div className="px-6 text-center sm:px-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#f3dfb8] bg-white/80 px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.1em] text-[#e8960f] shadow-[0_10px_30px_rgba(245,166,35,0.08)] backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#f5a623]" aria-hidden="true" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-badge)] bg-[var(--partners-badge-bg)] px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.1em] text-[var(--tone-gold-muted)] shadow-[var(--shadow-badge)] backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--tone-gold)]" aria-hidden="true" />
             Trusted Ecosystem
           </div>
-          <h2 className="font-heading mt-5 text-[clamp(2.2rem,5vw,3.2rem)] font-extrabold leading-[1.08] tracking-[-0.04em] text-[#0d0d1a]">
-            Partner With <span className="text-[#f5a623]">IPAY PH</span>
+          <h2 className="font-heading mt-5 text-[clamp(2.2rem,5vw,3.2rem)] font-extrabold leading-[1.08] tracking-[-0.04em] text-[var(--text-strong)]">
+            Partner With <span className="text-[var(--tone-gold)]">IPAY PH</span>
           </h2>
-          <p className="mx-auto mt-4 max-w-[480px] text-base leading-8 text-[#4a4a4a]">
+          <p className="mx-auto mt-4 max-w-[480px] text-base leading-8 text-[var(--text-soft)]">
             Join our growing network of top-tier financial technology partners
             and deliver seamless payment solutions to your clients.
           </p>
@@ -866,19 +883,22 @@ function Partners() {
         <PartnersCarousel groups={partnerCategories} />
 
         <div className="px-6 pb-2 pt-10 sm:px-8">
-          <div className="flex flex-col items-start justify-between gap-6 rounded-[24px] border border-white/10 bg-[linear-gradient(135deg,#0d0d1a_0%,#12192a_48%,#1a1a3e_100%)] px-6 py-8 shadow-[0_24px_60px_rgba(15,23,42,0.22)] sm:px-10 md:flex-row md:items-center md:px-12">
+          <div
+            className="flex flex-col items-start justify-between gap-6 rounded-[24px] border border-white/10 px-6 py-8 shadow-[var(--shadow-large-strong)] sm:px-10 md:flex-row md:items-center md:px-12"
+            style={{ background: "var(--partners-cta-bg)" }}
+          >
             <div>
-              <h3 className="font-heading max-w-[420px] text-[clamp(1.2rem,2.5vw,1.7rem)] font-bold leading-[1.3] text-white">
-                Ready to grow with <span className="text-[#f5a623]">IPAY PH?</span>
+              <h3 className="font-heading max-w-[420px] text-[clamp(1.2rem,2.5vw,1.7rem)] font-bold leading-[1.3] text-[var(--text-inverse)]">
+                Ready to grow with <span className="text-[var(--tone-gold)]">IPAY PH?</span>
               </h3>
-              <p className="mt-1.5 text-[0.85rem] leading-6 text-white/45">
+              <p className="mt-1.5 text-[0.85rem] leading-6 text-[var(--text-inverse-muted)]">
                 Join hundreds of businesses already thriving in our ecosystem.
               </p>
             </div>
 
             <Link
               href="#proposal"
-              className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#f5a623] px-[30px] py-[15px] font-heading text-[0.9rem] font-bold text-[#0d0d1a] shadow-[0_12px_28px_rgba(245,166,35,0.28)] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#ffb93a] hover:shadow-[0_14px_32px_rgba(245,166,35,0.38)]"
+              className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[var(--tone-gold)] px-[30px] py-[15px] font-heading text-[0.9rem] font-bold text-[var(--text-cta)] shadow-[var(--shadow-gold)] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--brand-light)] hover:shadow-[var(--shadow-gold-hover)]"
             >
               Become a Partner
               <svg
@@ -911,11 +931,17 @@ function Footer() {
   ];
 
   return (
-    <footer className="bg-[#111827] text-white">
+    <footer className="bg-[var(--bg-footer)] text-[var(--text-inverse)]">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div>
           <div className="flex items-center gap-3">
-            <Image src={logo} alt="iPay logo" className="h-11 w-auto" />
+            <div className="brand-logo-shell">
+              <Image
+                src={logo}
+                alt="iPay logo"
+                className="brand-logo-image h-11 w-auto"
+              />
+            </div>
             <div>
               <p className="text-xs text-slate-400">
                 Powering Seamless Business Payments Across the Philippines

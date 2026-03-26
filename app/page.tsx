@@ -1,12 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import logo from "@/public/img/ipaylogo.webp";
-<<<<<<< HEAD
 import SpotlightCardTracker from "@/app/spotlight-card-tracker";
-=======
 import PartnersCarousel from "@/app/components/partners-carousel";
 import ThemeToggle from "@/app/components/theme-toggle";
->>>>>>> 14bcaca31d921a48120ff7a61d1c489518f55738
 
 type NavItem = { label: string; href: string };
 type Segment = {
@@ -577,15 +574,11 @@ function TrustBar() {
 
 function WhoWeServe() {
   return (
-<<<<<<< HEAD
     <section id="who-we-serve" className="bg-white/82 py-28 sm:py-24">
       <SpotlightCardTracker
         containerSelector=".who-we-serve-grid"
         cardSelector=".who-we-serve-card"
       />
-=======
-    <section id="who-we-serve" className="bg-[var(--section-default)] py-28 sm:py-24">
->>>>>>> 14bcaca31d921a48120ff7a61d1c489518f55738
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
           label="Who We Serve"
@@ -604,11 +597,7 @@ function WhoWeServe() {
           {segments.map((segment) => (
             <article
               key={segment.title}
-<<<<<<< HEAD
-              className="who-we-serve-card flex h-full flex-col rounded-[28px] p-7 transition-all duration-300 ease-out"
-=======
-              className="flex h-full flex-col rounded-[28px] border border-[var(--border-light)] bg-[var(--bg-elevated)] p-7 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
->>>>>>> 14bcaca31d921a48120ff7a61d1c489518f55738
+              className="who-we-serve-card flex h-full flex-col rounded-[28px] border border-[var(--border-light)] bg-[var(--bg-elevated)] p-7 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
             >
               <p className="w-fit rounded-full border border-[var(--border-orange)] bg-[var(--brand-pale)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">
                 {segment.eyebrow}

@@ -1,11 +1,13 @@
+import Image from "next/image";
 import Link from "next/link";
 import { BrandLogo } from "@/app/components/home/brand-logo";
 import { footerServices, navigation } from "@/app/components/home/data";
+import logoDark from "@/public/img/ipaylogo-white.png";
 
 const googlePlayUrl =
   "https://play.google.com/store/apps/details?id=ph.ipay.android";
 const appStoreUrl = "https://apps.apple.com/ph/app/ipays/id6479975365";
-const qrBackgroundImage = `url("https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=0&format=png&ecc=H&color=F17A1E&bgcolor=FFFFFF&data=${encodeURIComponent(
+const qrBackgroundImage = `url("https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=0&format=png&ecc=H&data=${encodeURIComponent(
   googlePlayUrl,
 )}")`;
 const credentials = [
@@ -130,18 +132,33 @@ export function Footer() {
               </h3>
             </div>
 
-            <div className="qr-orbit-shell mt-5">
-              <div aria-hidden="true" className="qr-orbit-frame" />
-              <div className="qr-orbit-card relative w-[220px] max-w-full rounded-[14px] bg-white p-3 shadow-[0_18px_36px_rgba(2,6,23,0.18)]">
-                <div className="relative flex items-center justify-center rounded-[6px]">
+            <div className="mt-5 flex justify-center">
+              <div className="qr-orbit-card qr-scan-card relative w-[220px] max-w-full rounded-[14px] bg-[#0b0f1a] p-3 shadow-[0_18px_36px_rgba(2,6,23,0.18)]">
+                <div aria-hidden="true" className="qr-scan-glow" />
+                <div aria-hidden="true" className="qr-scan-frame" />
+                <div className="qr-code-panel relative z-[1] flex items-center justify-center overflow-hidden rounded-[6px]">
+                  <div aria-hidden="true" className="qr-scan-corners">
+                    <span className="qr-scan-corner qr-scan-corner-tl" />
+                    <span className="qr-scan-corner qr-scan-corner-tr" />
+                    <span className="qr-scan-corner qr-scan-corner-bl" />
+                    <span className="qr-scan-corner qr-scan-corner-br" />
+                  </div>
+                  <div aria-hidden="true" className="qr-scan-tint" />
+                  <div aria-hidden="true" className="qr-scan-beam" />
+                  <div aria-hidden="true" className="qr-scan-line" />
+                  <div aria-hidden="true" className="qr-code-shimmer" />
                   <div
                     aria-label="QR code for the iPay Google Play app page"
                     className="aspect-square w-full rounded-[6px] bg-white bg-cover bg-center bg-no-repeat"
                     style={{ backgroundImage: qrBackgroundImage }}
                   />
-                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <div className="rounded-[6px] bg-[var(--tone-gold)] px-3.5 py-1.5 font-heading text-[0.82rem] font-extrabold uppercase tracking-[0.1em] text-[#0b0f1a] shadow-[0_8px_18px_rgba(245,166,35,0.28)]">
-                      IPAY
+                  <div className="pointer-events-none absolute inset-0 z-[4] flex items-center justify-center">
+                    <div className="flex h-[42px] w-[96px] items-center justify-center rounded-[12px] bg-[#0b0f1a]/96 px-3 py-2 shadow-[0_14px_28px_rgba(2,6,23,0.28)] ring-1 ring-[rgba(255,255,255,0.08)] backdrop-blur-[2px]">
+                      <Image
+                        src={logoDark}
+                        alt="iPay logo"
+                        className="h-auto w-full object-contain"
+                      />
                     </div>
                   </div>
                 </div>

@@ -1,21 +1,15 @@
-import Image from "next/image";
 import Link from "next/link";
 import ThemeToggle from "@/app/components/theme-toggle";
+import { BrandLogo } from "@/app/components/home/brand-logo";
 import { navigation } from "@/app/components/home/data";
 import { Button } from "@/app/components/home/ui";
-import logo from "@/public/img/ipaylogo.webp";
 
 export function Navbar() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 h-20 border-b border-[var(--border-light)] bg-[var(--nav-bg)] backdrop-blur">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
-        <Link href="#home" className="brand-logo-shell flex items-center gap-3">
-          <Image
-            src={logo}
-            alt="iPay logo"
-            className="brand-logo-image h-11 w-auto"
-            priority
-          />
+        <Link href="#home" className="flex items-center">
+          <BrandLogo priority />
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex">

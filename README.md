@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# iPay Landing Page
+
+Marketing site for iPay, built with Next.js 16, React 19, TypeScript, and Tailwind CSS v4.
+
+## Stack
+
+- Next.js `16.2.1`
+- React `19.2.4`
+- TypeScript
+- Tailwind CSS v4
+- ESLint 9
+
+## Current Features
+
+- Single landing page in `app/page.tsx`
+- Fixed navigation with dark/light theme toggle
+- Spotlight hover effect for the "Who We Serve" cards
+- Partner carousel with grouped logos
+- Remote image support for approved external asset domains
+
+## Project Structure
+
+```text
+app/
+  components/
+    partners-carousel.tsx
+    theme-toggle.tsx
+  globals.css
+  layout.tsx
+  page.tsx
+  spotlight-card-tracker.tsx
+public/
+  img/
+next.config.ts
+package.json
+```
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Run linting:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run lint
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The site runs locally at `http://localhost:3000`.
 
-## Learn More
+## Key Files
 
-To learn more about Next.js, take a look at the following resources:
+- `app/page.tsx`: Main landing page content and section layout
+- `app/layout.tsx`: Root layout and theme initialization script
+- `app/globals.css`: Design tokens, theme variables, and global styling
+- `app/components/theme-toggle.tsx`: Client-side theme switcher
+- `app/components/partners-carousel.tsx`: Partner showcase carousel
+- `app/spotlight-card-tracker.tsx`: Pointer-based card glow behavior
+- `next.config.ts`: External image allowlist
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Theme preference is stored in `localStorage` under `ipay-theme`.
+- External partner logos are currently loaded from `ipay99.wordpress.com`.
+- If remote image sources change, update `images.remotePatterns` in `next.config.ts`.

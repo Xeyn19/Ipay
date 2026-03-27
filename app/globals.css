@@ -349,6 +349,102 @@ body {
   opacity: var(--glow-alpha);
 }
 
+.hero-spotlight-card,
+.services-spotlight-card {
+  --x: 50%;
+  --y: 50%;
+  --glow-alpha: 0;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  background:
+    radial-gradient(
+      320px circle at var(--x) var(--y),
+      rgba(241, 122, 30, calc(var(--glow-alpha) * 0.14)),
+      rgba(249, 149, 71, calc(var(--glow-alpha) * 0.08)) 24%,
+      transparent 56%
+    ),
+    linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-warm) 100%);
+  box-shadow: var(--shadow-card);
+  transform: translateY(0);
+  transition:
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    background 220ms ease;
+}
+
+.hero-spotlight-card > *,
+.services-spotlight-card > * {
+  position: relative;
+  z-index: 2;
+}
+
+.hero-spotlight-card::before,
+.hero-spotlight-card::after,
+.services-spotlight-card::before,
+.services-spotlight-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+
+.hero-spotlight-card::before,
+.services-spotlight-card::before {
+  background:
+    radial-gradient(
+      260px circle at var(--x) var(--y),
+      rgba(255, 210, 150, calc(var(--glow-alpha) * 0.42)),
+      rgba(255, 163, 64, calc(var(--glow-alpha) * 0.34)) 24%,
+      rgba(241, 122, 30, calc(var(--glow-alpha) * 0.18)) 42%,
+      transparent 70%
+    );
+  z-index: 1;
+}
+
+.hero-spotlight-card::after,
+.services-spotlight-card::after {
+  inset: 0;
+  padding: 3px;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      150px circle at var(--x) var(--y),
+      rgba(255, 170, 56, calc(var(--glow-alpha) * 1)) 0%,
+      rgba(255, 156, 36, calc(var(--glow-alpha) * 1)) 24%,
+      rgba(255, 146, 24, calc(var(--glow-alpha) * 1)) 52%,
+      rgba(241, 122, 30, calc(var(--glow-alpha) * 1)) 72%,
+      rgba(241, 122, 30, calc(var(--glow-alpha) * 0.92)) 82%,
+      transparent 92%
+    );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  z-index: 1;
+}
+
+.hero-spotlight-grid:hover .hero-spotlight-card,
+.services-spotlight-grid:hover .services-spotlight-card {
+  box-shadow: var(--shadow-card);
+}
+
+.hero-spotlight-grid:hover .hero-spotlight-card::before,
+.hero-spotlight-grid:hover .hero-spotlight-card::after,
+.services-spotlight-grid:hover .services-spotlight-card::before,
+.services-spotlight-grid:hover .services-spotlight-card::after {
+  opacity: var(--glow-alpha);
+}
+
 a,
 button {
   transition:

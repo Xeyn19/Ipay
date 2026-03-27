@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { BrandLogo } from "@/app/components/home/brand-logo";
 import { footerServices, navigation } from "@/app/components/home/data";
 import logoDark from "@/public/img/ipaylogo-white.png";
@@ -25,6 +26,61 @@ const credentials = [
   },
 ];
 
+const qrAnimationStyles: Record<string, CSSProperties> = {
+  glow: {
+    inset: "8px",
+    background:
+      "radial-gradient(circle, rgba(149,70,12,0.18) 0%, rgba(108,48,8,0.1) 38%, transparent 72%)",
+  },
+  corners: {
+    inset: "6px",
+    zIndex: 3,
+  },
+  corner: {
+    borderColor: "rgba(168,76,14,0.72)",
+    filter: "drop-shadow(0 0 4px rgba(116,52,10,0.18))",
+  },
+  tint: {
+    zIndex: 1,
+    background: `linear-gradient(
+      180deg,
+      transparent,
+      rgba(103,45,8,0.03) 20%,
+      rgba(149,70,12,0.14) 50%,
+      rgba(103,45,8,0.03) 80%,
+      transparent
+    )`,
+  },
+  beam: {
+    zIndex: 1,
+    background: `linear-gradient(
+      180deg,
+      transparent,
+      rgba(98,42,7,0.03) 18%,
+      rgba(153,71,12,0.16) 50%,
+      rgba(98,42,7,0.03) 82%,
+      transparent
+    )`,
+  },
+  line: {
+    zIndex: 2,
+    background:
+      "linear-gradient(90deg, transparent, rgba(176,82,16,0.68), transparent)",
+    boxShadow:
+      "0 0 10px rgba(123,56,10,0.18), 0 0 16px rgba(92,41,7,0.12)",
+  },
+  shimmer: {
+    zIndex: 1,
+    background: `linear-gradient(
+      105deg,
+      transparent,
+      rgba(184,94,18,0.08),
+      rgba(255,189,102,0.16),
+      transparent
+    )`,
+  },
+};
+
 export function Footer() {
   return (
     <footer className="relative overflow-hidden border-t border-white/10 bg-[var(--bg-footer)] text-[var(--text-inverse)]">
@@ -33,7 +89,7 @@ export function Footer() {
         className="pointer-events-none absolute -right-10 top-[-7.5rem] h-[18.75rem] w-[31.25rem] rounded-full bg-[radial-gradient(ellipse,rgba(245,166,35,0.08)_0%,transparent_70%)]"
       />
 
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 pb-12 pt-16 sm:px-6 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-[280px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_320px] xl:gap-12 lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 pb-12 pt-16 sm:px-6 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-[280px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_340px] xl:gap-12 lg:px-8">
         <div className="flex max-w-[17.5rem] flex-col gap-5">
           <div className="flex items-center">
             <BrandLogo variant="dark" className="w-[9.5rem]" />
@@ -106,58 +162,108 @@ export function Footer() {
 
         <div className="relative md:col-span-2 lg:col-span-4 xl:col-span-1 xl:justify-self-end">
           <div
-            className="relative overflow-hidden rounded-[20px] border border-white/8 bg-[linear-gradient(180deg,rgba(20,28,46,0.98)_0%,rgba(11,15,26,1)_100%)] p-6 shadow-[var(--shadow-large-strong)]"
+            className="relative mx-auto w-full max-w-[340px] overflow-hidden rounded-[32px] border border-white/8 bg-[linear-gradient(180deg,#121820_0%,#10161f_100%)] px-6 pb-6 pt-7 shadow-[0_24px_56px_rgba(2,6,23,0.34)]"
           >
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(245,166,35,0.5),transparent)]" />
-            <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[rgba(245,166,35,0.14)] blur-3xl" />
+            <div className="pointer-events-none absolute inset-x-[10%] top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(245,166,35,0.55),transparent)]" />
+            <div className="pointer-events-none absolute -right-20 -top-20 h-[260px] w-[260px] rounded-full bg-[radial-gradient(circle,rgba(245,166,35,0.07)_0%,transparent_65%)]" />
 
-            <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(245,166,35,0.3)] bg-[rgba(245,166,35,0.12)] px-3 py-1.5 shadow-[var(--shadow-badge)]">
-              <span
-                aria-hidden="true"
-                className="h-1.5 w-1.5 rounded-full bg-[var(--tone-gold)] shadow-[0_0_6px_rgba(245,166,35,1)]"
-              />
-              <span className="font-heading text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[var(--tone-gold)]">
-                Mobile App
-              </span>
+            <div className="relative z-[1] flex items-center justify-between gap-4">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(245,166,35,0.24)] bg-[rgba(245,166,35,0.1)] px-3.5 py-1.5">
+                <span
+                  aria-hidden="true"
+                  className="h-1.5 w-1.5 rounded-full bg-[var(--tone-gold)] shadow-[0_0_6px_rgba(245,166,35,1)]"
+                />
+                <span className="font-heading text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[var(--tone-gold)]">
+                  Get The App
+                </span>
+              </div>
             </div>
 
-            <div className="mt-5 font-heading">
-              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-[var(--text-inverse-muted)]">
-                Download iPay
+            <div className="relative z-[1] mt-5">
+              <p className="text-[0.62rem] font-medium uppercase tracking-[0.16em] text-[#5a6a84]">
+                Quick Download
               </p>
-              <h3 className="mt-1 text-[1.38rem] font-extrabold leading-[1.2] text-white">
-                Scan to get the
+              <h3 className="mt-1 font-heading text-[1.56rem] font-extrabold leading-[1.16] text-[var(--text-inverse)]">
+                Scan to download
                 <br />
-                <span className="text-[var(--tone-gold)]">iPay app</span>
+                <span className="text-[var(--tone-gold)]">the iPay app</span>
               </h3>
             </div>
 
-            <div className="mt-5 flex justify-center">
-              <div className="qr-orbit-card qr-scan-card relative w-[220px] max-w-full rounded-[14px] bg-[#0b0f1a] p-3 shadow-[0_18px_36px_rgba(2,6,23,0.18)]">
-                <div aria-hidden="true" className="qr-scan-glow" />
-                <div aria-hidden="true" className="qr-scan-frame" />
-                <div className="qr-code-panel relative z-[1] flex items-center justify-center overflow-hidden rounded-[6px]">
-                  <div aria-hidden="true" className="qr-scan-corners">
-                    <span className="qr-scan-corner qr-scan-corner-tl" />
-                    <span className="qr-scan-corner qr-scan-corner-tr" />
-                    <span className="qr-scan-corner qr-scan-corner-bl" />
-                    <span className="qr-scan-corner qr-scan-corner-br" />
-                  </div>
-                  <div aria-hidden="true" className="qr-scan-tint" />
-                  <div aria-hidden="true" className="qr-scan-beam" />
-                  <div aria-hidden="true" className="qr-scan-line" />
-                  <div aria-hidden="true" className="qr-code-shimmer" />
+            <div className="relative z-[1] mx-auto mb-5 mt-6 w-full max-w-[292px]">
+              <div className=" qr-scan-card relative w-full overflow-hidden rounded-[22px]  p-[14px] shadow-[0_18px_36px_rgba(2,6,23,0.16)]">
+                <div
+                  aria-hidden="true"
+                  className="qr-scan-glow"
+                  style={qrAnimationStyles.glow}
+                />
+                <div
+                  aria-hidden="true"
+                  className="qr-scan-frame"
+                  style={qrAnimationStyles.frame}
+                />
+                <div
+                  aria-hidden="true"
+                  className="qr-scan-corners"
+                  style={qrAnimationStyles.corners}
+                >
+                  <span
+                    className="qr-scan-corner qr-scan-corner-tl"
+                    style={qrAnimationStyles.corner}
+                  />
+                  <span
+                    className="qr-scan-corner qr-scan-corner-tr"
+                    style={qrAnimationStyles.corner}
+                  />
+                  <span
+                    className="qr-scan-corner qr-scan-corner-bl"
+                    style={qrAnimationStyles.corner}
+                  />
+                  <span
+                    className="qr-scan-corner qr-scan-corner-br"
+                    style={qrAnimationStyles.corner}
+                  />
+                </div>
+                <div
+                  aria-hidden="true"
+                  className="qr-scan-tint"
+                  style={qrAnimationStyles.tint}
+                />
+                <div
+                  aria-hidden="true"
+                  className="qr-scan-beam"
+                  style={qrAnimationStyles.beam}
+                />
+                <div
+                  aria-hidden="true"
+                  className="qr-scan-line"
+                  style={qrAnimationStyles.line}
+                />
+                <div
+                  aria-hidden="true"
+                  className="qr-code-shimmer"
+                  style={qrAnimationStyles.shimmer}
+                />
+                <div className="qr-code-panel relative z-[4] flex items-center justify-center overflow-hidden rounded-[18px]">
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 z-[1] rounded-[18px] bg-white"
+                  />
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 z-[2] rounded-[18px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.92)]"
+                  />
                   <div
                     aria-label="QR code for the iPay Google Play app page"
-                    className="aspect-square w-full rounded-[6px] bg-white bg-cover bg-center bg-no-repeat"
+                    className="relative z-[3] aspect-square w-full rounded-[16px] bg-white bg-cover bg-center bg-no-repeat"
                     style={{ backgroundImage: qrBackgroundImage }}
                   />
                   <div className="pointer-events-none absolute inset-0 z-[4] flex items-center justify-center">
-                    <div className="flex h-[42px] w-[96px] items-center justify-center rounded-[12px] bg-[#0b0f1a]/96 px-3 py-2 shadow-[0_14px_28px_rgba(2,6,23,0.28)] ring-1 ring-[rgba(255,255,255,0.08)] backdrop-blur-[2px]">
+                    <div className="flex h-[36px] min-w-[110px] items-center justify-center rounded-[8px] bg-black px-3 shadow-[0_12px_20px_rgba(2,6,23,0.18)] ring-1 ring-[rgba(255,255,255,0.06)]">
                       <Image
                         src={logoDark}
                         alt="iPay logo"
-                        className="h-auto w-full object-contain"
+                        className="block h-[20px] w-20 object-contain"
                       />
                     </div>
                   </div>
@@ -165,45 +271,83 @@ export function Footer() {
               </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="relative z-[1] mb-4 h-px bg-white/7" />
+
+            <div className="relative z-[1] grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               <Link
                 href={googlePlayUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[10px] bg-[var(--tone-gold)] px-4 text-[0.8rem] font-semibold text-[#0b0f1a] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--brand-light)] hover:shadow-[0_6px_20px_rgba(245,166,35,0.35)]"
+                className="group relative flex min-h-[58px] items-center gap-3 overflow-hidden rounded-[16px] border border-white/6 bg-[#151b24] px-4 py-3 text-left text-white transition duration-200 ease-out hover:-translate-y-0.5 hover:border-[rgba(245,166,35,0.24)] hover:bg-[#18202a]"
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path d="M3 20.5v-17c0-.83 1.01-1.3 1.68-.77l14 8.5c.6.36.6 1.18 0 1.54l-14 8.5C4.01 21.8 3 21.33 3 20.5z" />
-                </svg>
-                Google Play
+                <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(245,166,35,0.06),transparent)] opacity-0 transition duration-200 group-hover:opacity-100" />
+                <span className="relative flex w-5 shrink-0 items-center justify-center">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    className="shrink-0"
+                  >
+                    <path
+                      fill="#4285F4"
+                      d="M4.93 2.89C4.38 3.09 4 3.62 4 4.28v15.44c0 .66.38 1.19.93 1.39L13.5 12 4.93 2.89Z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M16.53 15.02 13.5 12 4.93 21.11c.35.13.75.09 1.14-.13l10.46-5.96Z"
+                    />
+                    <path
+                      fill="#FBBC04"
+                      d="M16.53 8.98 6.07 3.02c-.39-.22-.79-.26-1.14-.13L13.5 12l3.03-3.02Z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="m16.53 8.98-3.03 3.02 3.03 3.02 3.63-2.07c1.12-.64 1.12-1.67 0-2.31l-3.63-2.07Z"
+                    />
+                  </svg>
+                </span>
+                <span className="relative flex flex-col leading-tight">
+                  <span className="text-[0.56rem] font-medium uppercase tracking-[0.08em] text-[#5a6a84]">
+                    Get it on
+                  </span>
+                  <span className="font-heading text-[0.82rem] font-bold text-[var(--text-inverse)]">
+                    Google Play
+                  </span>
+                </span>
               </Link>
               <Link
                 href={appStoreUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[10px] border border-white/8 bg-transparent px-4 text-[0.8rem] font-semibold text-white transition duration-200 ease-out hover:border-[rgba(245,166,35,0.3)] hover:bg-[rgba(245,166,35,0.12)]"
+                className="group relative flex min-h-[58px] items-center gap-3 overflow-hidden rounded-[16px] border border-white/6 bg-[#090a0c] px-4 py-3 text-left text-white transition duration-200 ease-out hover:-translate-y-0.5 hover:border-white/12 hover:bg-[#101216]"
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-                </svg>
-                App Store
+                <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.04),transparent)] opacity-0 transition duration-200 group-hover:opacity-100" />
+                <span className="relative flex w-5 shrink-0 items-center justify-center">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                    className="shrink-0 text-white"
+                  >
+                    <path d="M16.365 1.43c0 1.14-.425 2.223-1.18 3.063-.757.84-1.98 1.484-3.046 1.4-.132-1.072.433-2.22 1.165-3.06.804-.924 2.13-1.587 3.061-1.403ZM20.58 17.11c-.54 1.187-.798 1.715-1.49 2.794-.964 1.5-2.322 3.37-4.005 3.386-1.497.014-1.883-.97-3.916-.958-2.034.012-2.457.976-3.954.962-1.688-.016-2.973-1.698-3.937-3.197-2.695-4.167-2.98-9.05-1.318-11.576 1.178-1.788 3.04-2.848 4.795-2.848 1.79 0 2.918.976 4.401.976 1.437 0 2.313-.976 4.39-.976 1.47 0 3.028.798 4.206 2.173-3.699 2.027-3.093 7.31.828 9.264Z" />
+                  </svg>
+                </span>
+                <span className="relative flex flex-col leading-tight">
+                  <span className="text-[0.56rem] font-medium tracking-[0.04em] text-white/45">
+                    Download on
+                  </span>
+                  <span className="font-heading text-[0.82rem] font-bold text-[var(--text-inverse)]">
+                    App Store
+                  </span>
+                </span>
               </Link>
             </div>
 
-            <p className="mt-4 text-center text-[0.68rem] leading-6 text-slate-500">
-              Scan the QR or open the app directly from your store.
+            <p className="relative z-[1] mt-4 text-center text-[0.72rem] leading-6 text-[#5a6a84]">
+              Scan the QR code or tap your app store to install iPay.
             </p>
           </div>
         </div>

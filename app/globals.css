@@ -478,10 +478,10 @@ button {
 
 .qr-orbit-card {
   border: 1px solid rgba(245, 166, 35, 0.16);
-  background: #0b0f1a;
+  background: #fff;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 18px 36px rgba(2, 6, 23, 0.3);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.92),
+    0 18px 36px rgba(2, 6, 23, 0.18);
 }
 
 .qr-scan-card {
@@ -495,8 +495,8 @@ button {
   border-radius: 999px;
   background: radial-gradient(
     circle,
-    rgba(11, 15, 26, 0.22) 0%,
-    rgba(11, 15, 26, 0.08) 38%,
+    rgba(245, 166, 35, 0.34) 0%,
+    rgba(245, 166, 35, 0.16) 38%,
     transparent 72%
   );
   z-index: 0;
@@ -507,11 +507,11 @@ button {
 .qr-scan-frame {
   position: absolute;
   inset: 12px;
-  border: 2px solid rgba(11, 15, 26, 0.56);
+  border: 2px solid rgba(245, 166, 35, 0.56);
   border-radius: 12px;
   box-shadow:
-    0 0 0 1px rgba(11, 15, 26, 0.14),
-    0 0 12px rgba(11, 15, 26, 0.16);
+    0 0 0 1px rgba(245, 166, 35, 0.14),
+    0 0 12px rgba(245, 166, 35, 0.16);
   opacity: 0.8;
   pointer-events: none;
   z-index: 2;
@@ -529,11 +529,11 @@ button {
   position: absolute;
   width: 26px;
   height: 26px;
-  border-color: rgba(11, 15, 26, 0.95);
+  border-color: rgba(245, 166, 35, 0.95);
   border-style: solid;
   border-width: 0;
   opacity: 0.9;
-  filter: drop-shadow(0 0 6px rgba(11, 15, 26, 0.22));
+  filter: drop-shadow(0 0 6px rgba(245, 166, 35, 0.32));
   animation: qr-corner-pulse 1.8s ease-in-out infinite;
 }
 
@@ -581,9 +581,9 @@ button {
   background: linear-gradient(
     180deg,
     transparent,
-    rgba(11, 15, 26, 0.04) 20%,
-    rgba(11, 15, 26, 0.2) 50%,
-    rgba(11, 15, 26, 0.04) 80%,
+    rgba(245, 166, 35, 0.05) 20%,
+    rgba(245, 166, 35, 0.2) 50%,
+    rgba(245, 166, 35, 0.05) 80%,
     transparent
   );
   z-index: 1;
@@ -601,9 +601,9 @@ button {
   background: linear-gradient(
     180deg,
     transparent,
-    rgba(11, 15, 26, 0.05) 18%,
-    rgba(11, 15, 26, 0.24) 50%,
-    rgba(11, 15, 26, 0.05) 82%,
+    rgba(245, 166, 35, 0.05) 18%,
+    rgba(245, 166, 35, 0.24) 50%,
+    rgba(245, 166, 35, 0.05) 82%,
     transparent
   );
   filter: blur(10px);
@@ -620,12 +620,12 @@ button {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(11, 15, 26, 0.92),
+    rgba(245, 166, 35, 0.92),
     transparent
   );
   box-shadow:
-    0 0 10px rgba(11, 15, 26, 0.18),
-    0 0 18px rgba(11, 15, 26, 0.12);
+    0 0 12px rgba(245, 166, 35, 0.3),
+    0 0 20px rgba(245, 166, 35, 0.18);
   z-index: 4;
   animation: qr-scan-run 2.2s ease-in-out infinite;
 }
@@ -633,8 +633,8 @@ button {
 .qr-code-panel {
   background: #fff;
   box-shadow:
-    inset 0 0 0 1px rgba(11, 15, 26, 0.14),
-    inset 0 0 26px rgba(11, 15, 26, 0.06);
+    inset 0 0 0 1px rgba(245, 166, 35, 0.14),
+    inset 0 0 26px rgba(245, 166, 35, 0.06);
 }
 
 .qr-code-shimmer {
@@ -686,15 +686,15 @@ button {
   100% {
     opacity: 0.5;
     box-shadow:
-      0 0 0 1px rgba(11, 15, 26, 0.1),
-      0 0 10px rgba(11, 15, 26, 0.12);
+      0 0 0 1px rgba(245, 166, 35, 0.1),
+      0 0 10px rgba(245, 166, 35, 0.12);
   }
 
   50% {
     opacity: 1;
     box-shadow:
-      0 0 0 1px rgba(11, 15, 26, 0.22),
-      0 0 18px rgba(11, 15, 26, 0.18);
+      0 0 0 1px rgba(245, 166, 35, 0.22),
+      0 0 18px rgba(245, 166, 35, 0.18);
   }
 }
 

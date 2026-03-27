@@ -9,13 +9,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div>
           <div className="flex items-center gap-3">
-            <div className="brand-logo-shell">
-              <Image
-                src={logo}
-                alt="iPay logo"
-                className="brand-logo-image h-11 w-auto"
-              />
-            </div>
+            <Image src={logo} alt="iPay logo" className="h-11 w-auto" />
             <div>
               <p className="text-xs text-slate-400">
                 Powering Seamless Business Payments Across the Philippines

@@ -2,28 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-
-type PartnerLogo = {
-  name: string;
-  src?: string;
-  width?: number;
-  height?: number;
-  label?: string;
-  className?: string;
-  wrapperClassName?: string;
-  labelClassName?: string;
-};
-
-type PartnerCategory = {
-  title: string;
-  panelTitle: string;
-  tabLabel: string;
-  tabIcon: string;
-  counterLabel: string;
-  description: string;
-  layout: "pill" | "card";
-  logos: PartnerLogo[];
-};
+import type { PartnerCategory } from "@/app/components/home/types";
 
 export default function PartnersCarousel({
   groups,

@@ -56,12 +56,12 @@ export function TrustBar() {
     <section className="border-y border-[var(--border-light)] bg-[var(--bg-soft)]">
       <div
         id="hero_2"
-        className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 md:grid-cols-3 lg:px-8"
+        className="hero-spotlight-grid who-we-serve-grid mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 md:grid-cols-3 lg:px-8"
       >
         {trustItems.map((item, index) => (
           <article
             key={item.title}
-            className="flex flex-col items-center rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-elevated)] px-6 py-8 text-center shadow-[var(--shadow-soft)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-soft-hover)]"
+            className="hero-spotlight-card who-we-serve-card flex flex-col items-center rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-elevated)] px-6 py-8 text-center shadow-[var(--shadow-soft)] transition-all duration-200 ease-out hover:shadow-[var(--shadow-soft-hover)]"
           >
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--bg-soft-strong)] text-[var(--text-secondary)]">
               {icons[index]}

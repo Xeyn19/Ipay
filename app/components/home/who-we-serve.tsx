@@ -1,4 +1,3 @@
-import SpotlightCardTracker from "@/app/spotlight-card-tracker";
 import { segments } from "@/app/components/home/data";
 import { SectionHeader } from "@/app/components/home/ui";
 
@@ -8,10 +7,6 @@ export function WhoWeServe() {
       id="who-we-serve"
       className="bg-[var(--section-default)] py-28 backdrop-blur-[2px] sm:py-24"
     >
-      <SpotlightCardTracker
-        containerSelector=".who-we-serve-grid"
-        cardSelector=".who-we-serve-card"
-      />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
           label="Who We Serve"
@@ -26,11 +21,14 @@ export function WhoWeServe() {
           align="center"
         />
 
-        <div className="who-we-serve-grid mx-auto mt-16 grid max-w-6xl gap-6 lg:grid-cols-3">
+        <div
+          id="who-we-serve-cards"
+          className="who-we-serve-grid mx-auto mt-16 grid max-w-6xl gap-6 lg:grid-cols-3"
+        >
           {segments.map((segment) => (
             <article
               key={segment.title}
-              className="who-we-serve-card flex h-full flex-col rounded-[28px] border border-[var(--border-light)] bg-[var(--bg-elevated)] p-7 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
+              className="who-we-serve-card flex h-full flex-col rounded-[28px] border border-[var(--border-light)] bg-[var(--bg-elevated)] p-7 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:shadow-[var(--shadow-card-hover)]"
             >
               <p className="w-fit rounded-full border border-[var(--border-orange)] bg-[var(--brand-pale)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">
                 {segment.eyebrow}

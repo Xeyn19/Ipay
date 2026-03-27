@@ -1,6 +1,12 @@
+import Image from "next/image";
 import Link from "next/link";
+import { AppDownloadQr } from "@/app/components/home/app-download-qr";
 import PartnersCarousel from "@/app/components/partners-carousel";
 import { partnerCategories } from "@/app/components/home/data";
+
+const googlePlayUrl =
+  "https://play.google.com/store/apps/details?id=ph.ipay.android";
+const appStoreUrl = "https://apps.apple.com/ph/app/ipays/id6479975365";
 
 export function Partners() {
   return (
@@ -32,36 +38,60 @@ export function Partners() {
 
         <div className="px-6 pb-2 pt-10 sm:px-8">
           <div
-            className="flex flex-col items-start justify-between gap-6 rounded-[24px] border border-white/10 px-6 py-8 shadow-[var(--shadow-large-strong)] sm:px-10 md:flex-row md:items-center md:px-12"
-            style={{ background: "var(--partners-cta-bg)" }}
+            className="flex flex-col gap-10 rounded-[24px] px-6 py-8 sm:px-10 md:px-12 lg:flex-row lg:items-center lg:justify-between"
           >
-            <div>
-              <h3 className="font-heading max-w-[420px] text-[clamp(1.2rem,2.5vw,1.7rem)] font-bold leading-[1.3] text-[var(--text-inverse)]">
-                Ready to grow with <span className="text-[var(--tone-gold)]">IPAY PH?</span>
-              </h3>
-              <p className="mt-1.5 text-[0.85rem] leading-6 text-[var(--text-inverse-muted)]">
-                Join hundreds of businesses already thriving in our ecosystem.
-              </p>
+            <div className="relative mx-auto w-full max-w-[100px] shrink-0 sm:max-w-[480px] lg:mx-0">
+              <Image
+                src="/img/phone-model.png"
+                alt="iPay PH mobile app preview"
+                width={2067}
+                height={1801}
+                sizes="(min-width: 1024px) 100px, (min-width: 640px) 480px, 100vw"
+                className="h-auto w-full object-contain"
+                priority
+              />
             </div>
 
-            <Link
-              href="#proposal"
-              className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[var(--tone-gold)] px-[30px] py-[15px] font-heading text-[0.9rem] font-bold text-[var(--text-cta)] shadow-[var(--shadow-gold)] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--brand-light)] hover:shadow-[var(--shadow-gold-hover)]"
-            >
-              Become a Partner
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </Link>
+            <div className="flex w-full flex-col gap-6 lg:max-w-[520px]">
+              <div className="text-center lg:text-left">
+                <p className="font-heading text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[var(--tone-gold)]">
+                  Download The App
+                </p>
+                <h3 className="font-heading mt-3 max-w-[440px] text-[clamp(1.4rem,2.6vw,2rem)] font-bold leading-[1.2] text-[var(--text-inverse)] lg:max-w-none">
+                  Download <span className="text-[var(--tone-gold)]">iPay PH</span> now and manage payments on the go.
+                </h3>
+                <p className="mt-3 max-w-[460px] text-[0.92rem] leading-7 text-[var(--text-inverse-muted)] lg:max-w-none">
+                  Scan the QR code to install the app and give your team faster access to collections, transfers, and day-to-day payment operations.
+                </p>
+              </div>
+
+              <div className="flex flex-col items-center gap-4 lg:items-start">
+                <div className="flex w-full max-w-[460px] flex-col items-center gap-4 sm:flex-row sm:items-center sm:justify-center lg:justify-start">
+                  <div className="w-full max-w-[210px] shrink-0">
+                    <AppDownloadQr />
+                  </div>
+
+                  <div className="flex w-full max-w-[220px] flex-col items-center gap-3 lg:items-start">
+                    <Link
+                      href={googlePlayUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--tone-gold)] px-[26px] py-[15px] text-center font-heading text-[0.9rem] font-bold text-[var(--text-cta)] shadow-[var(--shadow-gold)] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--brand-light)] hover:shadow-[var(--shadow-gold-hover)]"
+                    >
+                      Get it on Google Play
+                    </Link>
+                    <Link
+                      href={appStoreUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-white/12 bg-white/6 px-[26px] py-[15px] text-center font-heading text-[0.9rem] font-bold text-[var(--text-inverse)] transition duration-200 ease-out hover:-translate-y-0.5 hover:border-[rgba(245,166,35,0.32)] hover:bg-white/10"
+                    >
+                      Download on App Store
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

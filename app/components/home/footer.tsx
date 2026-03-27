@@ -1,16 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import { BrandLogo } from "@/app/components/home/brand-logo";
 import { footerServices, navigation } from "@/app/components/home/data";
-import logoDark from "@/public/img/ipaylogo-white.png";
 
 const googlePlayUrl =
   "https://play.google.com/store/apps/details?id=ph.ipay.android";
 const appStoreUrl = "https://apps.apple.com/ph/app/ipays/id6479975365";
-const qrBackgroundImage = `url("https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=0&format=png&ecc=H&data=${encodeURIComponent(
-  googlePlayUrl,
-)}")`;
 const credentials = [
   {
     label: "Regulatory Compliant",
@@ -25,61 +19,6 @@ const credentials = [
     value: "Infrastructure",
   },
 ];
-
-const qrAnimationStyles: Record<string, CSSProperties> = {
-  glow: {
-    inset: "8px",
-    background:
-      "radial-gradient(circle, rgba(149,70,12,0.18) 0%, rgba(108,48,8,0.1) 38%, transparent 72%)",
-  },
-  corners: {
-    inset: "6px",
-    zIndex: 3,
-  },
-  corner: {
-    borderColor: "rgba(168,76,14,0.72)",
-    filter: "drop-shadow(0 0 4px rgba(116,52,10,0.18))",
-  },
-  tint: {
-    zIndex: 1,
-    background: `linear-gradient(
-      180deg,
-      transparent,
-      rgba(103,45,8,0.03) 20%,
-      rgba(149,70,12,0.14) 50%,
-      rgba(103,45,8,0.03) 80%,
-      transparent
-    )`,
-  },
-  beam: {
-    zIndex: 1,
-    background: `linear-gradient(
-      180deg,
-      transparent,
-      rgba(98,42,7,0.03) 18%,
-      rgba(153,71,12,0.16) 50%,
-      rgba(98,42,7,0.03) 82%,
-      transparent
-    )`,
-  },
-  line: {
-    zIndex: 2,
-    background:
-      "linear-gradient(90deg, transparent, rgba(176,82,16,0.68), transparent)",
-    boxShadow:
-      "0 0 10px rgba(123,56,10,0.18), 0 0 16px rgba(92,41,7,0.12)",
-  },
-  shimmer: {
-    zIndex: 1,
-    background: `linear-gradient(
-      105deg,
-      transparent,
-      rgba(184,94,18,0.08),
-      rgba(255,189,102,0.16),
-      transparent
-    )`,
-  },
-};
 
 export function Footer() {
   return (
@@ -181,94 +120,13 @@ export function Footer() {
 
             <div className="relative z-[1] mt-5">
               <p className="text-[0.62rem] font-medium uppercase tracking-[0.16em] text-[#5a6a84]">
-                Quick Download
+                Mobile Access
               </p>
               <h3 className="mt-1 font-heading text-[1.56rem] font-extrabold leading-[1.16] text-[var(--text-inverse)]">
-                Scan to download
+                Download from your
                 <br />
-                <span className="text-[var(--tone-gold)]">the iPay app</span>
+                <span className="text-[var(--tone-gold)]">preferred app store</span>
               </h3>
-            </div>
-
-            <div className="relative z-[1] mx-auto mb-5 mt-6 w-full max-w-[292px]">
-              <div className=" qr-scan-card relative w-full overflow-hidden rounded-[22px]  p-[14px] shadow-[0_18px_36px_rgba(2,6,23,0.16)]">
-                <div
-                  aria-hidden="true"
-                  className="qr-scan-glow"
-                  style={qrAnimationStyles.glow}
-                />
-                <div
-                  aria-hidden="true"
-                  className="qr-scan-frame"
-                  style={qrAnimationStyles.frame}
-                />
-                <div
-                  aria-hidden="true"
-                  className="qr-scan-corners"
-                  style={qrAnimationStyles.corners}
-                >
-                  <span
-                    className="qr-scan-corner qr-scan-corner-tl"
-                    style={qrAnimationStyles.corner}
-                  />
-                  <span
-                    className="qr-scan-corner qr-scan-corner-tr"
-                    style={qrAnimationStyles.corner}
-                  />
-                  <span
-                    className="qr-scan-corner qr-scan-corner-bl"
-                    style={qrAnimationStyles.corner}
-                  />
-                  <span
-                    className="qr-scan-corner qr-scan-corner-br"
-                    style={qrAnimationStyles.corner}
-                  />
-                </div>
-                <div
-                  aria-hidden="true"
-                  className="qr-scan-tint"
-                  style={qrAnimationStyles.tint}
-                />
-                <div
-                  aria-hidden="true"
-                  className="qr-scan-beam"
-                  style={qrAnimationStyles.beam}
-                />
-                <div
-                  aria-hidden="true"
-                  className="qr-scan-line"
-                  style={qrAnimationStyles.line}
-                />
-                <div
-                  aria-hidden="true"
-                  className="qr-code-shimmer"
-                  style={qrAnimationStyles.shimmer}
-                />
-                <div className="qr-code-panel relative z-[4] flex items-center justify-center overflow-hidden rounded-[18px]">
-                  <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 z-[1] rounded-[18px] bg-white"
-                  />
-                  <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 z-[2] rounded-[18px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.92)]"
-                  />
-                  <div
-                    aria-label="QR code for the iPay Google Play app page"
-                    className="relative z-[3] aspect-square w-full rounded-[16px] bg-white bg-cover bg-center bg-no-repeat"
-                    style={{ backgroundImage: qrBackgroundImage }}
-                  />
-                  <div className="pointer-events-none absolute inset-0 z-[4] flex items-center justify-center">
-                    <div className="flex h-[36px] min-w-[110px] items-center justify-center rounded-[8px] bg-black px-3 shadow-[0_12px_20px_rgba(2,6,23,0.18)] ring-1 ring-[rgba(255,255,255,0.06)]">
-                      <Image
-                        src={logoDark}
-                        alt="iPay logo"
-                        className="block h-[20px] w-20 object-contain"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
 
             <div className="relative z-[1] mb-4 h-px bg-white/7" />
@@ -347,7 +205,7 @@ export function Footer() {
             </div>
 
             <p className="relative z-[1] mt-4 text-center text-[0.72rem] leading-6 text-[#5a6a84]">
-              Scan the QR code or tap your app store to install iPay.
+              Visit Google Play or the App Store to install iPay.
             </p>
           </div>
         </div>

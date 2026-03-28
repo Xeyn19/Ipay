@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { ImageResponse } from "next/og";
 
+export const alt = "iPay business payments preview";
+
 export const size = {
   width: 1200,
   height: 630,
@@ -24,7 +26,7 @@ export default async function OpenGraphImage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#101a48",
+          background: "#0d0d1a",
           position: "relative",
           fontFamily: "sans-serif",
         }}
@@ -32,11 +34,11 @@ export default async function OpenGraphImage() {
         <div
           style={{
             position: "absolute",
-            width: 420,
-            height: 420,
+            width: 520,
+            height: 520,
             borderRadius: 9999,
             background:
-              "radial-gradient(circle, rgba(245, 158, 11, 0.18) 0%, rgba(245, 158, 11, 0) 68%)",
+              "radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, rgba(245, 158, 11, 0) 68%)",
           }}
         />
 
@@ -47,7 +49,7 @@ export default async function OpenGraphImage() {
             justifyContent: "center",
             width: "100%",
             height: "100%",
-            padding: "80px",
+            padding: "64px",
             zIndex: 1,
           }}
         >
@@ -55,8 +57,8 @@ export default async function OpenGraphImage() {
           <img
             src={logoSrc}
             alt="iPay logo"
-            width="640"
-            height="195"
+            width="760"
+            height="232"
             style={{
               display: "flex",
               objectFit: "contain",

@@ -33,7 +33,7 @@ export function HowItWorks() {
               <h3 className="font-heading mt-6 text-2xl font-semibold tracking-[-0.03em] text-[var(--text-primary)]">
                 {step.title}
               </h3>
-              <p className="mt-4 text-base leading-7 text-[var(--text-muted)]">
+              <p className="mt-4 text-base leading-7 text-[var(--text-muted)] [text-align:justify]">
                 {step.description}
               </p>
             </article>

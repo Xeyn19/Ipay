@@ -5,6 +5,8 @@ export type Segment = {
   title: string;
   description: string;
   points: string[];
+  imageSrc: string;
+  imageAlt: string;
 };
 
 export type Service = { title: string; description: string };

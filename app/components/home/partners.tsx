@@ -50,10 +50,10 @@ export function Partners() {
                 <p className="font-heading text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[var(--tone-gold)]">
                   Download The App
                 </p>
-                <h3 className="font-heading mt-3 max-w-[440px] text-[clamp(1.4rem,2.6vw,2rem)] font-bold leading-[1.2] text-[var(--text-strong)] lg:max-w-none">
+                <h3 className="font-heading mt-3 max-w-[440px] text-[clamp(1.4rem,2.6vw,2rem)] font-bold leading-[1.2] text-[var(--text-strong)] [text-align:justify] lg:max-w-none">
                   Download <span className="text-[var(--tone-gold)]">iPay International</span> now and manage payments on the go.
                 </h3>
-                <p className="mt-3 max-w-[460px] text-[0.92rem] leading-7 text-[var(--text-soft)] lg:max-w-none">
+                <p className="mt-3 max-w-[460px] text-[0.92rem] leading-7 text-[var(--text-soft)] [text-align:justify] lg:max-w-none">
                   Scan the QR code to install the app and give your team faster access to collections, transfers, and day-to-day payment operations.
                 </p>
               </div>

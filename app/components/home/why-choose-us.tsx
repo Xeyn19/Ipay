@@ -100,7 +100,7 @@ export function WhyChooseUs() {
               <p className="mt-2 text-[0.68rem] font-bold uppercase tracking-[0.1em] text-[var(--text-subtle)]">
                 {feature.subtitle}
               </p>
-              <p className="mt-3 text-[0.88rem] leading-7 text-[var(--text-soft)]">
+              <p className="mt-3 text-[0.88rem] leading-7 text-[var(--text-soft)] [text-align:justify]">
                 {feature.body}
               </p>
             </article>
@@ -134,7 +134,7 @@ export function WhyChooseUs() {
                   {detail.title}
                 </h3>
               </div>
-              <p className="text-[0.83rem] leading-7 text-[var(--text-soft)]">
+              <p className="text-[0.83rem] leading-7 text-[var(--text-soft)] [text-align:justify]">
                 {detail.body}
               </p>
             </article>

@@ -64,12 +64,21 @@ export const metadata: Metadata = {
       "iPay delivers dependable payment infrastructure for SMEs, institutions, and enterprise platforms across the Philippines.",
     type: "website",
     siteName: "iPay",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "iPay logo",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "iPay | Business Payments Across the Philippines",
     description:
       "iPay delivers dependable payment infrastructure for SMEs, institutions, and enterprise platforms across the Philippines.",
+    images: ["/twitter-image"],
   },
 };
 

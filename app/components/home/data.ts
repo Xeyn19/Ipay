@@ -23,6 +23,8 @@ export const segments: Segment[] = [
       "Retail, restaurants, salons, service providers, and multi-branch businesses that need dependable payment acceptance and fast operational visibility.",
     eyebrow: "Who We Serve",
     points: ["QR Ph and card acceptance", "Next-day settlements"],
+    imageSrc: "/img/smes.jpg",
+    imageAlt: "SME operations and fulfillment workflow",
   },
   {
     title: "Institutions",
@@ -30,6 +32,8 @@ export const segments: Segment[] = [
       "Schools, clinics, cooperatives, associations, and utility providers that require structured collections with clear controls and reporting.",
     eyebrow: "Who We Serve",
     points: ["Bulk collection tools", "Real-time reporting"],
+    imageSrc: "/img/insti.jpg",
+    imageAlt: "Institution payment collection desk",
   },
   {
     title: "Platforms & Systems",
@@ -37,6 +41,8 @@ export const segments: Segment[] = [
       "SaaS products, marketplaces, booking systems, and enterprise platforms looking to embed payments without building the rails themselves.",
     eyebrow: "Who We Serve",
     points: ["Robust API", "White-label options"],
+    imageSrc: "/img/saas.jpg",
+    imageAlt: "Platform and SaaS workflow operations",
   },
 ];
 

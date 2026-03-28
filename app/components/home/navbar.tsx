@@ -2,12 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import type { Theme } from "@/app/lib/theme";
 import ThemeToggle from "@/app/components/theme-toggle";
 import { BrandLogo } from "@/app/components/home/brand-logo";
 import { navigation } from "@/app/components/home/data";
 import { Button } from "@/app/components/home/ui";
 
-export function Navbar() {
+export function Navbar({
+  initialTheme,
+}: {
+  initialTheme: Theme;
+}) {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -27,10 +32,10 @@ export function Navbar() {
   }, [isOpen]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 h-20 border-b border-[var(--border-light)] bg-[var(--nav-bg)] backdrop-blur relative">
+    <header className="fixed inset-x-0 top-0 z-50 h-20 border-b border-[var(--border-light)] bg-[var(--nav-bg)] backdrop-blur">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
         <Link href="#home" className="flex items-center" onClick={() => setIsOpen(false)}>
-          <BrandLogo priority />
+          <BrandLogo initialTheme={initialTheme} priority />
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex">
@@ -46,7 +51,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <ThemeToggle />
+          <ThemeToggle initialTheme={initialTheme} />
           <Button href="#proposal" className="hidden md:inline-flex">
             Request Proposal
           </Button>
@@ -86,7 +91,11 @@ export function Navbar() {
             type="button"
             aria-label="Close mobile navigation"
             onClick={() => setIsOpen(false)}
-            className="fixed inset-x-0 top-20 z-40 h-[calc(100vh-5rem)] bg-[color:var(--bg-base)]/45 backdrop-blur-[2px] md:hidden"
+            className="fixed inset-x-0 z-40 bg-[color:var(--bg-base)]/45 backdrop-blur-[2px] md:hidden"
+            style={{
+              top: "var(--nav-height)",
+              height: "calc(100vh - var(--nav-height))",
+            }}
           />
           <div
             id="mobile-nav-panel"

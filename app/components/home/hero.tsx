@@ -8,9 +8,9 @@ export function Hero() {
     >
       <div
         id="main"
-        className="relative z-10 mx-auto grid min-h-[calc(100svh-var(--nav-height))] max-w-7xl gap-14 px-4 py-16 sm:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:px-8"
+        className="relative z-10 mx-auto grid min-h-[calc(100svh-var(--nav-height))] max-w-7xl gap-14 px-4 pb-16 pt-6 sm:px-6 sm:pb-16 sm:pt-10 lg:grid-cols-[1.08fr_0.92fr] lg:px-8 lg:py-16"
       >
-        <div className="flex flex-col justify-center">
+        <div className="flex flex-col justify-start lg:justify-center">
           <h1 className="font-heading max-w-4xl text-[clamp(3rem,6vw,5.25rem)] font-bold leading-[0.96] tracking-[-0.05em] text-[var(--text-primary)]">
             <span className="block lg:whitespace-nowrap">Powering Seamless</span>
             <span className="block text-[var(--brand)] lg:whitespace-nowrap">

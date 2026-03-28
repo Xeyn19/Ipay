@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import logoLight from "@/public/img/ipaylogo.webp";
 import logoDark from "@/public/img/ipaylogo-white.png";
+import type { Theme } from "@/app/lib/theme";
 
 type BrandLogoProps = {
   className?: string;
+  initialTheme?: Theme;
   priority?: boolean;
   variant?: "auto" | "light" | "dark";
 };
-
-type Theme = "light" | "dark";
 
 function readTheme(): Theme {
   return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
@@ -19,10 +19,11 @@ function readTheme(): Theme {
 
 export function BrandLogo({
   className = "",
+  initialTheme = "dark",
   priority = false,
   variant = "auto",
 }: BrandLogoProps) {
-  const [theme, setTheme] = useState<Theme>("light");
+  const [theme, setTheme] = useState<Theme>(initialTheme);
 
   useEffect(() => {
     const syncTheme = () => {

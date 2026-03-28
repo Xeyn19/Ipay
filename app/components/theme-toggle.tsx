@@ -1,18 +1,24 @@
 'use client';
 
 import { useEffect, useState } from "react";
-
-type Theme = "light" | "dark";
-
-const STORAGE_KEY = "ipay-theme-v2";
+import {
+  THEME_COOKIE_KEY,
+  THEME_STORAGE_KEY,
+  type Theme,
+} from "@/app/lib/theme";
 
 function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
+  document.cookie = `${THEME_COOKIE_KEY}=${theme}; path=/; max-age=31536000; samesite=lax`;
 }
 
-export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("dark");
+export default function ThemeToggle({
+  initialTheme,
+}: {
+  initialTheme: Theme;
+}) {
+  const [theme, setTheme] = useState<Theme>(initialTheme);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -38,7 +44,7 @@ export default function ThemeToggle() {
         setTheme(nextTheme);
 
         try {
-          window.localStorage.setItem(STORAGE_KEY, nextTheme);
+          window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
         } catch {
           // Ignore storage failures and keep the in-memory toggle working.
         }

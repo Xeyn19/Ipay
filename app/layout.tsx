@@ -1,14 +1,31 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import Script from "next/script";
+import {
+  DEFAULT_THEME,
+  THEME_COOKIE_KEY,
+  THEME_STORAGE_KEY,
+  isTheme,
+} from "@/app/lib/theme";
 import "./globals.css";
 
-const themeInitScript = `
+function getThemeInitScript(initialTheme: "light" | "dark") {
+  return `
 (() => {
-  const storageKey = "ipay-theme-v2";
+  const storageKey = "${THEME_STORAGE_KEY}";
+  const cookieKey = "${THEME_COOKIE_KEY}";
   const root = document.documentElement;
-  let theme = "dark";
+  let theme = "${initialTheme}";
 
   try {
+    const cookieMatch = document.cookie.match(
+      new RegExp("(^|; )" + cookieKey + "=([^;]+)")
+    );
+    const cookieTheme = cookieMatch ? decodeURIComponent(cookieMatch[2]) : null;
+    if (cookieTheme === "light" || cookieTheme === "dark") {
+      theme = cookieTheme;
+    }
+
     const storedTheme = window.localStorage.getItem(storageKey);
     if (storedTheme === "light" || storedTheme === "dark") {
       theme = storedTheme;
@@ -17,8 +34,10 @@ const themeInitScript = `
 
   root.dataset.theme = theme;
   root.style.colorScheme = theme;
+  document.cookie = cookieKey + "=" + theme + "; path=/; max-age=31536000; samesite=lax";
 })();
 `;
+}
 
 export const metadata: Metadata = {
   title: "iPay | Business Payments Across the Philippines",
@@ -26,21 +45,25 @@ export const metadata: Metadata = {
     "iPay delivers dependable payment infrastructure for SMEs, institutions, and enterprise platforms across the Philippines.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const cookieTheme = cookieStore.get(THEME_COOKIE_KEY)?.value;
+  const initialTheme = isTheme(cookieTheme) ? cookieTheme : DEFAULT_THEME;
+
   return (
     <html
       lang="en"
       className="h-full scroll-smooth"
-      data-theme="dark"
+      data-theme={initialTheme}
       suppressHydrationWarning
     >
       <body className="min-h-full bg-[var(--bg-base)] font-sans antialiased transition-colors duration-300">
         <Script id="theme-init" strategy="beforeInteractive">
-          {themeInitScript}
+          {getThemeInitScript(initialTheme)}
         </Script>
         {children}
       </body>

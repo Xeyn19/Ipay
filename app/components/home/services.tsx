@@ -17,16 +17,17 @@ export function Services() {
             </>
           }
           description="Core Capabilities"
+          align="center"
         />
 
         <div
           id="services-grid"
-          className="services-spotlight-grid who-we-serve-grid mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-3"
+          className="services-spotlight-grid who-we-serve-grid mx-auto mt-14 flex max-w-6xl flex-wrap justify-center gap-6"
         >
           {services.map((service, index) => (
             <article
               key={service.title}
-              className="services-spotlight-card who-we-serve-card rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-elevated)] p-6 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:shadow-[var(--shadow-card-hover)]"
+              className="services-spotlight-card who-we-serve-card w-full max-w-[380px] rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-elevated)] p-6 shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:shadow-[var(--shadow-card-hover)] md:w-[calc(50%-0.75rem)] xl:w-[calc(33.333%-1rem)]"
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-pale)] text-lg font-semibold text-[var(--brand)]">
                 {String(index + 1).padStart(2, "0")}

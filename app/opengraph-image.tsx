@@ -11,7 +11,7 @@ export const contentType = "image/png";
 
 export default async function OpenGraphImage() {
   const logoBuffer = await readFile(
-    path.join(process.cwd(), "public", "img", "ipaylogo-white.png")
+    path.join(process.cwd(), "public", "ipaylogo-white.png")
   );
   const logoSrc = `data:image/png;base64,${logoBuffer.toString("base64")}`;
 
@@ -78,16 +78,17 @@ export default async function OpenGraphImage() {
                 justifyContent: "center",
                 padding: "18px 28px",
                 borderRadius: 24,
-                background: "#1e3a8a",
+                background: "#1b2559",
                 boxShadow: "0 20px 44px rgba(30, 58, 138, 0.22)",
+                border: "1px solid rgba(255,255,255,0.08)",
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={logoSrc}
                 alt="iPay logo"
-                width="256"
-                height="78"
+                width="284"
+                height="86"
                 style={{
                   display: "flex",
                   objectFit: "contain",

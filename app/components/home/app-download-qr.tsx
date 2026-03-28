@@ -1,7 +1,7 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
 import { appStoreUrl } from "@/app/lib/app-download";
-import logoDark from "@/public/img/ipaylogo-white.png";
+import logoDark from "@/public/ipaylogo-white.png";
 
 const qrAnimationStyles: Record<string, CSSProperties> = {
   glow: {

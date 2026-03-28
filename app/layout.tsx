@@ -53,6 +53,11 @@ export const metadata: Metadata = {
   description:
     "iPay delivers dependable payment infrastructure for SMEs, institutions, and enterprise platforms across the Philippines.",
   applicationName: "iPay",
+  icons: {
+    icon: "/icon",
+    shortcut: "/icon",
+    apple: "/apple-icon",
+  },
   openGraph: {
     title: "iPay | Business Payments Across the Philippines",
     description:

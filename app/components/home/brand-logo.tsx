@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import logoLight from "@/public/img/ipaylogo.webp";
-import logoDark from "@/public/img/ipaylogo-white.png";
+import logoDark from "@/public/ipaylogo-white.png";
 import type { Theme } from "@/app/lib/theme";
 
 type BrandLogoProps = {

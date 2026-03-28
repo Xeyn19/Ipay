@@ -214,7 +214,7 @@ export function Footer() {
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 text-sm text-slate-400 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
           <p className="text-xs text-slate-500">
-            2026 <span className="text-[var(--tone-gold)]">iPay</span>. All
+            2026 <span className="text-[var(--tone-gold)]">iPay International</span>. All
             rights reserved.
           </p>
           <p className="max-w-[32rem] text-xs leading-6 text-slate-500 md:text-right">

@@ -21,7 +21,7 @@ export function Partners() {
             Trusted Ecosystem
           </div>
           <h2 className="font-heading mt-5 text-[clamp(2.2rem,5vw,3.2rem)] font-extrabold leading-[1.08] tracking-[-0.04em] text-[var(--text-strong)]">
-            Partner With <span className="text-[var(--tone-gold)]">IPAY PH</span>
+            Partner With <span className="text-[var(--tone-gold)]">IPAY INTERNATIONAL</span>
           </h2>
           <p className="mx-auto mt-4 max-w-[480px] text-base leading-8 text-[var(--text-soft)]">
             Join our growing network of top-tier financial technology partners
@@ -51,7 +51,7 @@ export function Partners() {
                   Download The App
                 </p>
                 <h3 className="font-heading mt-3 max-w-[440px] text-[clamp(1.4rem,2.6vw,2rem)] font-bold leading-[1.2] text-[var(--text-strong)] lg:max-w-none">
-                  Download <span className="text-[var(--tone-gold)]">iPay PH</span> now and manage payments on the go.
+                  Download <span className="text-[var(--tone-gold)]">iPay International</span> now and manage payments on the go.
                 </h3>
                 <p className="mt-3 max-w-[460px] text-[0.92rem] leading-7 text-[var(--text-soft)] lg:max-w-none">
                   Scan the QR code to install the app and give your team faster access to collections, transfers, and day-to-day payment operations.

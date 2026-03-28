@@ -43,6 +43,20 @@ export const metadata: Metadata = {
   title: "iPay | Business Payments Across the Philippines",
   description:
     "iPay delivers dependable payment infrastructure for SMEs, institutions, and enterprise platforms across the Philippines.",
+  applicationName: "iPay",
+  openGraph: {
+    title: "iPay | Business Payments Across the Philippines",
+    description:
+      "iPay delivers dependable payment infrastructure for SMEs, institutions, and enterprise platforms across the Philippines.",
+    type: "website",
+    siteName: "iPay",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "iPay | Business Payments Across the Philippines",
+    description:
+      "iPay delivers dependable payment infrastructure for SMEs, institutions, and enterprise platforms across the Philippines.",
+  },
 };
 
 export default async function RootLayout({

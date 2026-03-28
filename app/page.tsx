@@ -1,3 +1,4 @@
+import { BackToTop } from "@/app/components/home/back-to-top";
 import { Footer } from "@/app/components/home/footer";
 import { Hero } from "@/app/components/home/hero";
 import { HowItWorks } from "@/app/components/home/how-it-works";
@@ -20,6 +21,7 @@ export default function Home() {
       <WhyChooseUs />
       <Partners />
       <Footer />
+      <BackToTop />
     </main>
   );
 }

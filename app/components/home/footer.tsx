@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { BrandLogo } from "@/app/components/home/brand-logo";
 import { footerServices, navigation } from "@/app/components/home/data";
@@ -5,6 +6,7 @@ import { footerServices, navigation } from "@/app/components/home/data";
 const googlePlayUrl =
   "https://play.google.com/store/apps/details?id=ph.ipay.android";
 const appStoreUrl = "https://apps.apple.com/ph/app/ipays/id6479975365";
+const corSealImageUrl = "/img/CORSeal (2)_page-0001.png";
 const credentials = [
   {
     label: "Regulatory Compliant",
@@ -99,7 +101,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="relative md:col-span-2 lg:col-span-4 xl:col-span-1 xl:justify-self-end">
+        <div className="relative flex flex-col gap-5 md:col-span-2 lg:col-span-4 xl:col-span-1 xl:justify-self-end">
           <div
             className="relative mx-auto w-full max-w-[340px] overflow-hidden rounded-[32px] border border-white/8 bg-[linear-gradient(180deg,#121820_0%,#10161f_100%)] px-6 pb-6 pt-7 shadow-[0_24px_56px_rgba(2,6,23,0.34)]"
           >
@@ -207,6 +209,25 @@ export function Footer() {
             <p className="relative z-[1] mt-4 text-center text-[0.72rem] leading-6 text-[#5a6a84]">
               Visit Google Play or the App Store to install iPay.
             </p>
+          </div>
+
+          <div className="relative mx-auto flex flex-col items-center justify-center gap-2">
+            <a
+              href={corSealImageUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open certificate of registration image in a new tab"
+              className="transition duration-200 ease-out hover:opacity-90"
+            >
+              <Image
+                src={corSealImageUrl}
+                alt="COR Seal"
+                width={2481}
+                height={3508}
+                unoptimized
+                className="h-auto w-[200px] object-contain"
+              />
+            </a>
           </div>
         </div>
       </div>

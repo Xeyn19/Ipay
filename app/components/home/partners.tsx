@@ -14,8 +14,8 @@ export function Partners() {
         className="pointer-events-none absolute inset-x-0 top-0 h-40"
         style={{ background: "var(--partners-overlay)" }}
       />
-      <div className="relative mx-auto max-w-[1200px]">
-        <div className="px-6 text-center sm:px-8">
+      <div className="relative">
+        <div className="mx-auto max-w-[1200px] px-6 text-center sm:px-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-badge)] bg-[var(--partners-badge-bg)] px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.1em] text-[var(--tone-gold-muted)] shadow-[var(--shadow-badge)] backdrop-blur-sm">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--tone-gold)]" aria-hidden="true" />
             Trusted Ecosystem
@@ -31,7 +31,7 @@ export function Partners() {
 
         <PartnersCarousel groups={partnerCategories} />
 
-        <div className="px-6 pb-2 pt-10 sm:px-8">
+        <div className="mx-auto max-w-[1200px] px-6 pb-2 pt-10 sm:px-8">
           <div className="flex flex-col gap-10 px-6 py-8 sm:px-10 md:px-12 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative mx-auto w-full max-w-[100px] shrink-0 sm:max-w-[480px] lg:mx-0">
               <Image

@@ -7,6 +7,8 @@ export type Segment = {
   points: string[];
   imageSrc: string;
   imageAlt: string;
+  imagePosition?: string;
+  imageScale?: number;
 };
 
 export type Service = { title: string; description: string };

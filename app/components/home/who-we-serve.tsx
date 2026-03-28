@@ -29,49 +29,52 @@ export function WhoWeServe() {
           {segments.map((segment) => (
             <article
               key={segment.title}
-              className="who-we-serve-card flex h-full flex-col overflow-hidden rounded-[28px] border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:shadow-[var(--shadow-card-hover)]"
+              className="who-we-serve-card flex min-h-0 h-full flex-col overflow-hidden rounded-[28px] border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] transition-all duration-200 ease-out hover:shadow-[var(--shadow-card-hover)]"
             >
-              <div className="relative h-64 overflow-hidden sm:h-72">
+              <div className="relative aspect-[16/10] overflow-hidden">
                 <Image
                   src={segment.imageSrc}
                   alt={segment.imageAlt}
                   fill
                   sizes="(min-width: 1024px) 33vw, 100vw"
                   className="object-cover"
+                  style={{
+                    objectPosition: segment.imagePosition ?? "center",
+                    transform: `scale(${segment.imageScale ?? 1})`,
+                  }}
                 />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.04)_0%,rgba(15,23,42,0.2)_100%)]" />
               </div>
 
-              <div className="flex h-90 flex-col p-7 pb-0">
-                <h3 className="font-heading text-3xl font-semibold tracking-[-0.04em] text-[var(--text-primary)]">
-                  {segment.title}
-                </h3>
-                <p className="mt-4 text-base leading-7 text-[var(--text-muted)] [text-align:justify]">
-                  {segment.description}
-                </p>
+              <div className="flex flex-1 flex-col p-7 pb-6">
+                <div>
+                  <h3 className="font-heading text-3xl font-semibold tracking-[-0.04em] text-[var(--text-primary)]">
+                    {segment.title}
+                  </h3>
+                  <p className="mt-4 text-base leading-7 text-[var(--text-muted)] [text-align:justify]">
+                    {segment.description}
+                  </p>
+                </div>
 
-                <div className="pt-6">
-                  <div className="space-y-4 border-t border-[var(--border-light)] pt-6">
-                    {segment.points.map((point) => (
-                      <div key={point} className="flex items-start gap-3">
-                        <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--brand-pale)] text-[var(--brand)] ring-1 ring-[var(--border-orange)]/70">
-                          <svg
-                            viewBox="0 0 20 20"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            className="h-3.5 w-3.5"
-                            aria-hidden="true"
-                          >
-                            <path d="m5.75 10.25 2.5 2.5 6-6.5" />
-                          </svg>
-                        </span>
-                        <p className="text-sm leading-6 text-[var(--text-secondary)]">
-                          {point}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                <div className="mt-6 space-y-4 border-t border-[var(--border-light)] pt-6">
+                  {segment.points.map((point) => (
+                    <div key={point} className="flex items-start gap-3">
+                      <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--brand-pale)] text-[var(--brand)] ring-1 ring-[var(--border-orange)]/70">
+                        <svg
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          className="h-3.5 w-3.5"
+                          aria-hidden="true"
+                        >
+                          <path d="m5.75 10.25 2.5 2.5 6-6.5" />
+                        </svg>
+                      </span>
+                      <p className="text-sm leading-6 text-[var(--text-secondary)]">
+                        {point}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </article>

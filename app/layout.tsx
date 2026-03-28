@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     "iPay delivers dependable payment infrastructure for SMEs, institutions, and enterprise platforms across the Philippines.",
   applicationName: "iPay",
   icons: {
-    icon: "/icon",
+    icon: "/ipaylogo (1).ico",
     shortcut: "/icon",
     apple: "/apple-icon",
   },

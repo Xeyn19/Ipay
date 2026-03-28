@@ -25,6 +25,8 @@ export const segments: Segment[] = [
     points: ["QR Ph and card acceptance", "Next-day settlements"],
     imageSrc: "/img/smes.jpg",
     imageAlt: "SME operations and fulfillment workflow",
+    imagePosition: "58% 60%",
+    imageScale: 1.14,
   },
   {
     title: "Institutions",
@@ -34,6 +36,8 @@ export const segments: Segment[] = [
     points: ["Bulk collection tools", "Real-time reporting"],
     imageSrc: "/img/insti.jpg",
     imageAlt: "Institution payment collection desk",
+    imagePosition: "61% 58%",
+    imageScale: 1.12,
   },
   {
     title: "Platforms & Systems",
@@ -43,6 +47,8 @@ export const segments: Segment[] = [
     points: ["Robust API", "White-label options"],
     imageSrc: "/img/saas.jpg",
     imageAlt: "Platform and SaaS workflow operations",
+    imagePosition: "center center",
+    imageScale: 1,
   },
 ];
 

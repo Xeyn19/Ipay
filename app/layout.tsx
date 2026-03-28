@@ -9,6 +9,14 @@ import {
 } from "@/app/lib/theme";
 import "./globals.css";
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : undefined);
+
 function getThemeInitScript(initialTheme: "light" | "dark") {
   return `
 (() => {
@@ -40,6 +48,7 @@ function getThemeInitScript(initialTheme: "light" | "dark") {
 }
 
 export const metadata: Metadata = {
+  metadataBase: siteUrl ? new URL(siteUrl) : undefined,
   title: "iPay | Business Payments Across the Philippines",
   description:
     "iPay delivers dependable payment infrastructure for SMEs, institutions, and enterprise platforms across the Philippines.",

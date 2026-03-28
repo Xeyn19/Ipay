@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { ImageResponse } from "next/og";
 
 export const size = {
@@ -7,7 +9,12 @@ export const size = {
 
 export const contentType = "image/png";
 
-export default function OpenGraphImage() {
+export default async function OpenGraphImage() {
+  const logoBuffer = await readFile(
+    path.join(process.cwd(), "public", "img", "ipaylogo-white.png")
+  );
+  const logoSrc = `data:image/png;base64,${logoBuffer.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
@@ -15,7 +22,7 @@ export default function OpenGraphImage() {
           width: "100%",
           height: "100%",
           display: "flex",
-          alignItems: "center",
+          alignItems: "stretch",
           justifyContent: "center",
           background:
             "linear-gradient(135deg, #f8fafc 0%, #eef2ff 42%, #dbeafe 100%)",
@@ -60,14 +67,37 @@ export default function OpenGraphImage() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 18,
-              marginBottom: 30,
+              gap: 22,
+              marginBottom: 42,
             }}
           >
             <div
               style={{
-                width: 22,
-                height: 22,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "18px 28px",
+                borderRadius: 24,
+                background: "#1e3a8a",
+                boxShadow: "0 20px 44px rgba(30, 58, 138, 0.22)",
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={logoSrc}
+                alt="iPay logo"
+                width="256"
+                height="78"
+                style={{
+                  display: "flex",
+                  objectFit: "contain",
+                }}
+              />
+            </div>
+            <div
+              style={{
+                width: 16,
+                height: 16,
                 borderRadius: 9999,
                 background: "#f59e0b",
                 display: "flex",
@@ -75,8 +105,8 @@ export default function OpenGraphImage() {
             />
             <div
               style={{
-                fontSize: 28,
-                letterSpacing: "0.24em",
+                fontSize: 24,
+                letterSpacing: "0.2em",
                 textTransform: "uppercase",
                 color: "#334155",
               }}
@@ -95,36 +125,67 @@ export default function OpenGraphImage() {
           >
             <div
               style={{
-                fontSize: 108,
-                fontWeight: 800,
-                lineHeight: 0.95,
-                color: "#1e3a8a",
-                letterSpacing: "-0.06em",
-              }}
-            >
-              iPay
-            </div>
-            <div
-              style={{
-                fontSize: 46,
+                fontSize: 44,
                 fontWeight: 700,
-                lineHeight: 1.12,
-                color: "#0f172a",
+                lineHeight: 1,
+                color: "#1e3a8a",
+                letterSpacing: "-0.03em",
               }}
             >
               Business Payments Across the Philippines
             </div>
             <div
               style={{
-                marginTop: 18,
                 fontSize: 28,
-                lineHeight: 1.35,
-                color: "#475569",
-                maxWidth: 820,
+                fontWeight: 600,
+                lineHeight: 1.22,
+                color: "#0f172a",
+                maxWidth: 840,
               }}
             >
               Dependable payment infrastructure for SMEs, institutions, and
               enterprise platforms.
+            </div>
+            <div
+              style={{
+                marginTop: 22,
+                display: "flex",
+                gap: 14,
+                alignItems: "center",
+                color: "#475569",
+                fontSize: 22,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  width: 12,
+                  height: 12,
+                  borderRadius: 9999,
+                  background: "#f59e0b",
+                }}
+              />
+              SMEs
+              <div
+                style={{
+                  display: "flex",
+                  width: 12,
+                  height: 12,
+                  borderRadius: 9999,
+                  background: "#f59e0b",
+                }}
+              />
+              Institutions
+              <div
+                style={{
+                  display: "flex",
+                  width: 12,
+                  height: 12,
+                  borderRadius: 9999,
+                  background: "#f59e0b",
+                }}
+              />
+              Enterprise Platforms
             </div>
           </div>
         </div>

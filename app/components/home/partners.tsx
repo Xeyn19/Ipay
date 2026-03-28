@@ -1,12 +1,7 @@
 import Image from "next/image";
-import Link from "next/link";
-import { AppDownloadQr } from "@/app/components/home/app-download-qr";
+import { AppDownloadSwitcher } from "@/app/components/home/app-download-switcher";
 import PartnersCarousel from "@/app/components/partners-carousel";
 import { partnerCategories } from "@/app/components/home/data";
-
-const googlePlayUrl =
-  "https://play.google.com/store/apps/details?id=ph.ipay.android";
-const appStoreUrl = "https://apps.apple.com/ph/app/ipays/id6479975365";
 
 export function Partners() {
   return (
@@ -37,9 +32,7 @@ export function Partners() {
         <PartnersCarousel groups={partnerCategories} />
 
         <div className="px-6 pb-2 pt-10 sm:px-8">
-          <div
-            className="flex flex-col gap-10 rounded-[24px] px-6 py-8 sm:px-10 md:px-12 lg:flex-row lg:items-center lg:justify-between"
-          >
+          <div className="flex flex-col gap-10 px-6 py-8 sm:px-10 md:px-12 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative mx-auto w-full max-w-[100px] shrink-0 sm:max-w-[480px] lg:mx-0">
               <Image
                 src="/img/phone-model.png"
@@ -57,39 +50,16 @@ export function Partners() {
                 <p className="font-heading text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[var(--tone-gold)]">
                   Download The App
                 </p>
-                <h3 className="font-heading mt-3 max-w-[440px] text-[clamp(1.4rem,2.6vw,2rem)] font-bold leading-[1.2] text-[var(--text-inverse)] lg:max-w-none">
+                <h3 className="font-heading mt-3 max-w-[440px] text-[clamp(1.4rem,2.6vw,2rem)] font-bold leading-[1.2] text-[var(--text-strong)] lg:max-w-none">
                   Download <span className="text-[var(--tone-gold)]">iPay PH</span> now and manage payments on the go.
                 </h3>
-                <p className="mt-3 max-w-[460px] text-[0.92rem] leading-7 text-[var(--text-inverse-muted)] lg:max-w-none">
+                <p className="mt-3 max-w-[460px] text-[0.92rem] leading-7 text-[var(--text-soft)] lg:max-w-none">
                   Scan the QR code to install the app and give your team faster access to collections, transfers, and day-to-day payment operations.
                 </p>
               </div>
 
               <div className="flex flex-col items-center gap-4 lg:items-start">
-                <div className="flex w-full max-w-[460px] flex-col items-center gap-4 sm:flex-row sm:items-center sm:justify-center lg:justify-start">
-                  <div className="w-full max-w-[210px] shrink-0">
-                    <AppDownloadQr />
-                  </div>
-
-                  <div className="flex w-full max-w-[220px] flex-col items-center gap-3 lg:items-start">
-                    <Link
-                      href={googlePlayUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--tone-gold)] px-[26px] py-[15px] text-center font-heading text-[0.9rem] font-bold text-[var(--text-cta)] shadow-[var(--shadow-gold)] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--brand-light)] hover:shadow-[var(--shadow-gold-hover)]"
-                    >
-                      Get it on Google Play
-                    </Link>
-                    <Link
-                      href={appStoreUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-white/12 bg-white/6 px-[26px] py-[15px] text-center font-heading text-[0.9rem] font-bold text-[var(--text-inverse)] transition duration-200 ease-out hover:-translate-y-0.5 hover:border-[rgba(245,166,35,0.32)] hover:bg-white/10"
-                    >
-                      Download on App Store
-                    </Link>
-                  </div>
-                </div>
+                <AppDownloadSwitcher />
               </div>
             </div>
           </div>

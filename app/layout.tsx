@@ -4,9 +4,9 @@ import "./globals.css";
 
 const themeInitScript = `
 (() => {
-  const storageKey = "ipay-theme";
+  const storageKey = "ipay-theme-v2";
   const root = document.documentElement;
-  let theme = "light";
+  let theme = "dark";
 
   try {
     const storedTheme = window.localStorage.getItem(storageKey);
@@ -35,7 +35,7 @@ export default function RootLayout({
     <html
       lang="en"
       className="h-full scroll-smooth"
-      data-theme="light"
+      data-theme="dark"
       suppressHydrationWarning
     >
       <body className="min-h-full bg-[var(--bg-base)] font-sans antialiased transition-colors duration-300">

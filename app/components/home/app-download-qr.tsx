@@ -1,13 +1,7 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
+import { appStoreUrl } from "@/app/lib/app-download";
 import logoDark from "@/public/img/ipaylogo-white.png";
-
-const googlePlayUrl =
-  "https://play.google.com/store/apps/details?id=ph.ipay.android";
-
-const qrBackgroundImage = `url("https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=0&format=png&ecc=H&data=${encodeURIComponent(
-  googlePlayUrl,
-)}")`;
 
 const qrAnimationStyles: Record<string, CSSProperties> = {
   glow: {
@@ -72,9 +66,19 @@ const qrAnimationStyles: Record<string, CSSProperties> = {
 
 type AppDownloadQrProps = {
   className?: string;
+  platformName?: string;
+  targetUrl?: string;
 };
 
-export function AppDownloadQr({ className = "" }: AppDownloadQrProps) {
+export function AppDownloadQr({
+  className = "",
+  platformName = "App Store",
+  targetUrl = appStoreUrl,
+}: AppDownloadQrProps) {
+  const qrBackgroundImage = `url("https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=0&format=png&ecc=H&data=${encodeURIComponent(
+    targetUrl,
+  )}")`;
+
   return (
     <div className={`qr-scan-card relative w-full overflow-hidden rounded-[22px] p-[14px] shadow-[0_18px_36px_rgba(2,6,23,0.16)] ${className}`.trim()}>
       <div
@@ -139,7 +143,7 @@ export function AppDownloadQr({ className = "" }: AppDownloadQrProps) {
           className="pointer-events-none absolute inset-0 z-[2] rounded-[18px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.92)]"
         />
         <div
-          aria-label="QR code for the iPay Google Play app page"
+          aria-label={`QR code for the iPay ${platformName} page`}
           className="relative z-[3] aspect-square w-full rounded-[16px] bg-white bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: qrBackgroundImage }}
         />

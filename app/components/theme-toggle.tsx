@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
 
-const STORAGE_KEY = "ipay-theme";
+const STORAGE_KEY = "ipay-theme-v2";
 
 function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
@@ -12,7 +12,7 @@ function applyTheme(theme: Theme) {
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("light");
+  const [theme, setTheme] = useState<Theme>("dark");
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {

@@ -34,9 +34,8 @@ export default async function OpenGraphImage() {
           height: "100%",
           position: "relative",
           overflow: "hidden",
-          background:
-            "linear-gradient(135deg, #fff7ef 0%, #ffffff 48%, #f3f4f6 100%)",
-          color: "#111827",
+          background: "#08111d",
+          color: "#eef2ff",
           fontFamily: '"Segoe UI", Arial, sans-serif',
         }}
       >
@@ -49,7 +48,7 @@ export default async function OpenGraphImage() {
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            objectPosition: "center",
+            objectPosition: "center right",
           }}
         />
         <div
@@ -57,31 +56,39 @@ export default async function OpenGraphImage() {
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(90deg, rgba(7, 12, 21, 0.82) 0%, rgba(7, 12, 21, 0.64) 42%, rgba(7, 12, 21, 0.18) 72%, rgba(7, 12, 21, 0.06) 100%)",
+              "linear-gradient(90deg, rgba(6, 11, 19, 0.9) 0%, rgba(6, 11, 19, 0.82) 34%, rgba(6, 11, 19, 0.58) 58%, rgba(6, 11, 19, 0.22) 78%, rgba(6, 11, 19, 0.12) 100%)",
           }}
         />
         <div
           style={{
             position: "absolute",
-            top: -140,
-            left: -90,
-            width: 420,
-            height: 420,
-            borderRadius: "50%",
-            background: "rgba(241, 122, 30, 0.24)",
-            filter: "blur(24px)",
+            inset: 0,
+            background:
+              "radial-gradient(circle at 20% 18%, rgba(255, 151, 72, 0.2), transparent 28%)",
           }}
         />
         <div
           style={{
             position: "absolute",
-            right: -60,
-            bottom: -110,
-            width: 340,
-            height: 340,
+            top: -150,
+            left: -70,
+            width: 460,
+            height: 460,
             borderRadius: "50%",
-            background: "rgba(241, 122, 30, 0.18)",
-            filter: "blur(18px)",
+            background: "rgba(255, 151, 72, 0.18)",
+            filter: "blur(42px)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            right: 170,
+            bottom: -120,
+            width: 320,
+            height: 320,
+            borderRadius: "50%",
+            background: "rgba(245, 166, 35, 0.14)",
+            filter: "blur(26px)",
           }}
         />
         <div
@@ -90,7 +97,7 @@ export default async function OpenGraphImage() {
             flexDirection: "column",
             justifyContent: "space-between",
             width: "100%",
-            padding: "52px 58px",
+            padding: "44px 56px 52px",
             position: "relative",
           }}
         >
@@ -98,7 +105,8 @@ export default async function OpenGraphImage() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 18,
+              justifyContent: "space-between",
+              width: "100%",
             }}
           >
             <div
@@ -106,19 +114,18 @@ export default async function OpenGraphImage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background: "rgba(17, 24, 39, 0.52)",
-                border: "1px solid rgba(255, 255, 255, 0.16)",
-                borderRadius: 20,
-                padding: "18px 22px",
-                backdropFilter: "blur(8px)",
+                background: "rgba(15, 26, 43, 0.72)",
+                border: "1px solid rgba(148, 163, 184, 0.18)",
+                borderRadius: 18,
+                padding: "16px 20px",
               }}
             >
               <img
                 src={logoSrc}
                 alt="iPay"
                 style={{
-                  width: 150,
-                  height: 46,
+                  width: 144,
+                  height: 42,
                   objectFit: "contain",
                 }}
               />
@@ -128,16 +135,17 @@ export default async function OpenGraphImage() {
                 display: "flex",
                 alignItems: "center",
                 borderRadius: 999,
-                background: "rgba(255, 255, 255, 0.18)",
-                color: "#fff7ed",
-                border: "1px solid rgba(255, 255, 255, 0.18)",
+                background: "rgba(19, 31, 50, 0.88)",
+                color: "#d5deef",
+                border: "1px solid rgba(255, 193, 101, 0.35)",
                 padding: "10px 18px",
-                fontSize: 24,
+                fontSize: 20,
                 fontWeight: 600,
-                letterSpacing: "0.02em",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
               }}
             >
-              Business payments platform
+              Dark Theme Preview
             </div>
           </div>
 
@@ -146,32 +154,33 @@ export default async function OpenGraphImage() {
               display: "flex",
               flexDirection: "column",
               maxWidth: 760,
-              gap: 20,
+              gap: 24,
+              paddingBottom: 18,
             }}
           >
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
-                color: "#ffffff",
-                fontWeight: 800,
-                fontSize: 72,
-                lineHeight: 1,
+                color: "#eef2ff",
+                fontWeight: 700,
+                fontSize: 82,
+                lineHeight: 0.96,
                 letterSpacing: "-0.05em",
               }}
             >
               <span>Powering Seamless</span>
-              <span style={{ color: "#f99547" }}>Business Payments</span>
+              <span style={{ color: "#ff9748" }}>Business Payments</span>
               <span>Across the Philippines</span>
             </div>
 
             <div
               style={{
                 display: "flex",
-                color: "rgba(255, 255, 255, 0.82)",
-                fontSize: 30,
+                color: "#d5deef",
+                fontSize: 28,
                 lineHeight: 1.35,
-                maxWidth: 700,
+                maxWidth: 690,
               }}
             >
               Dependable, efficient, and secure payment solutions for growing
@@ -191,7 +200,7 @@ export default async function OpenGraphImage() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 16,
+                gap: 18,
               }}
             >
               <div
@@ -199,11 +208,12 @@ export default async function OpenGraphImage() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: "#f17a1e",
+                  background:
+                    "linear-gradient(135deg, #ff9748 0%, #ffb170 100%)",
                   color: "#ffffff",
-                  borderRadius: 999,
+                  borderRadius: 12,
                   padding: "16px 28px",
-                  fontSize: 24,
+                  fontSize: 22,
                   fontWeight: 700,
                 }}
               >
@@ -214,12 +224,12 @@ export default async function OpenGraphImage() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: "rgba(255, 255, 255, 0.12)",
-                  color: "#ffffff",
-                  borderRadius: 999,
-                  border: "1px solid rgba(255, 255, 255, 0.18)",
-                  padding: "16px 28px",
-                  fontSize: 24,
+                  background: "transparent",
+                  color: "#ff9748",
+                  borderRadius: 12,
+                  border: "2px solid #ff9748",
+                  padding: "14px 26px",
+                  fontSize: 22,
                   fontWeight: 600,
                 }}
               >
@@ -229,12 +239,18 @@ export default async function OpenGraphImage() {
             <div
               style={{
                 display: "flex",
-                color: "rgba(255, 255, 255, 0.72)",
-                fontSize: 22,
+                flexDirection: "column",
+                alignItems: "flex-end",
+                color: "#a8b5ca",
+                fontSize: 20,
                 fontWeight: 500,
+                lineHeight: 1.2,
               }}
             >
-              ipay.ph
+              <span>ipay.ph</span>
+              <span style={{ color: "#7d8ca6", fontSize: 18 }}>
+                Secure business payments
+              </span>
             </div>
           </div>
         </div>

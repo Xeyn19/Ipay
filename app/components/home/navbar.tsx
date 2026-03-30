@@ -14,6 +14,7 @@ export function Navbar({
   initialTheme: Theme;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeHref, setActiveHref] = useState("#home");
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -31,10 +32,32 @@ export function Navbar({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    const syncActiveHref = () => {
+      setActiveHref(window.location.hash || "#home");
+    };
+
+    syncActiveHref();
+    window.addEventListener("hashchange", syncActiveHref);
+
+    return () => {
+      window.removeEventListener("hashchange", syncActiveHref);
+    };
+  }, []);
+
+  const handleNavClick = (href: string) => {
+    setActiveHref(href);
+    setIsOpen(false);
+  };
+
   return (
     <header className="fixed inset-x-0 top-0 z-50 h-20 border-b border-[var(--border-light)] bg-[var(--nav-bg)] backdrop-blur">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
-        <Link href="#home" className="flex items-center" onClick={() => setIsOpen(false)}>
+        <Link
+          href="#home"
+          className="flex items-center"
+          onClick={() => handleNavClick("#home")}
+        >
           <BrandLogo initialTheme={initialTheme} priority />
         </Link>
 
@@ -43,9 +66,23 @@ export function Navbar({
             <Link
               key={item.label}
               href={item.href}
-              className="text-sm font-medium text-[var(--text-secondary)] transition-colors duration-200 ease-out hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)]/40"
+              onClick={() => handleNavClick(item.href)}
+              aria-current={activeHref === item.href ? "page" : undefined}
+              className={`inline-flex h-20 items-center text-sm font-medium transition-colors duration-200 ease-out focus:outline-none ${
+                activeHref === item.href
+                  ? "text-[var(--text-primary)]"
+                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              }`}
             >
-              {item.label}
+              <span className="relative inline-flex items-center pb-1">
+                {item.label}
+                <span
+                  aria-hidden="true"
+                  className={`absolute -bottom-0.5 left-0 h-[3px] w-full origin-center rounded-full bg-[var(--brand)] transition-transform duration-300 ease-out ${
+                    activeHref === item.href ? "scale-x-100" : "scale-x-0"
+                  }`}
+                />
+              </span>
             </Link>
           ))}
         </nav>
@@ -106,8 +143,13 @@ export function Navbar({
                 <Link
                   key={item.label}
                   href={item.href}
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-between rounded-[16px] border border-transparent bg-[var(--bg-base)]/72 px-4 py-3 text-sm font-semibold text-[var(--text-primary)] transition-all duration-200 ease-out hover:border-[var(--border-orange)] hover:bg-[var(--bg-elevated-muted)]"
+                  onClick={() => handleNavClick(item.href)}
+                  aria-current={activeHref === item.href ? "page" : undefined}
+                  className={`flex items-center justify-between rounded-[16px] border px-4 py-3 text-sm font-semibold transition-all duration-200 ease-out ${
+                    activeHref === item.href
+                      ? "border-[var(--border-orange)] bg-[var(--bg-elevated-muted)] text-[var(--brand)]"
+                      : "border-transparent bg-[var(--bg-base)]/72 text-[var(--text-primary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-elevated-muted)]"
+                  }`}
                 >
                   <span>{item.label}</span>
                   <span className="text-[var(--tone-gold)]" aria-hidden="true">

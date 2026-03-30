@@ -67,9 +67,9 @@ export const metadata: Metadata = {
     images: [
       {
         url: "/opengraph-image",
-        width: 128,
-        height: 39,
-        alt: "iPay logo",
+        width: 1200,
+        height: 630,
+        alt: "iPay homepage preview",
       },
     ],
   },
@@ -81,7 +81,7 @@ export const metadata: Metadata = {
     images: [
       {
         url: "/twitter-image",
-        alt: "iPay logo",
+        alt: "iPay homepage preview",
       },
     ],
   },

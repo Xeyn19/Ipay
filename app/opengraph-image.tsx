@@ -17,13 +17,13 @@ function toDataUrl(buffer: Buffer, contentTypeValue: string) {
 }
 
 export default async function OpenGraphImage() {
-  const [logoBuffer, heroBuffer] = await Promise.all([
+  const [logoBuffer, backgroundBuffer] = await Promise.all([
     readFile(path.join(process.cwd(), "public", "ipaylogo-white.png")),
-    readFile(path.join(process.cwd(), "public", "img", "main-hero.jpg")),
+    readFile(path.join(process.cwd(), "public", "img", "ipay-bg.jpg")),
   ]);
 
   const logoSrc = toDataUrl(logoBuffer, "image/png");
-  const heroSrc = toDataUrl(heroBuffer, "image/jpeg");
+  const backgroundSrc = toDataUrl(backgroundBuffer, "image/jpeg");
 
   return new ImageResponse(
     (
@@ -41,7 +41,7 @@ export default async function OpenGraphImage() {
         }}
       >
         <img
-          src={heroSrc}
+          src={backgroundSrc}
           alt=""
           style={{
             position: "absolute",

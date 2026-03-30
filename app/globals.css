@@ -3,6 +3,7 @@
 :root {
   --nav-height: 5rem;
   --brand: #f17a1e;
+  --brand-cta: #f17a1e;
   --brand-dark: #d4651a;
   --brand-light: #f99547;
   --brand-pale: rgba(241, 122, 30, 0.08);
@@ -117,6 +118,7 @@
 
 [data-theme="dark"] {
   --brand: #ff9748;
+  --brand-cta: #f17a1e;
   --brand-dark: #e17f35;
   --brand-light: #ffb170;
   --brand-pale: rgba(255, 151, 72, 0.16);
@@ -263,6 +265,7 @@ body {
     background-color 220ms ease,
     color 220ms ease;
 }
+
 
 .who-we-serve-card {
   --x: 50%;

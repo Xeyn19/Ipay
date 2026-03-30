@@ -13,7 +13,7 @@ export function Button({
 }) {
   const variants = {
     primary:
-      "bg-[linear-gradient(135deg,var(--brand),var(--brand-light))] text-white shadow-[var(--shadow-button)] hover:bg-[var(--brand-dark)] hover:shadow-[var(--shadow-button-hover)]",
+      "bg-[var(--brand-cta)] text-white shadow-none hover:bg-[var(--brand-cta)] hover:shadow-none",
     secondary:
       "border-2 border-[var(--brand)] text-[var(--brand)] hover:bg-[var(--brand)] hover:text-white",
     inverse:

@@ -15,6 +15,7 @@ export function Navbar({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeHref, setActiveHref] = useState("#home");
+  const [showProposalButton, setShowProposalButton] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -42,6 +43,29 @@ export function Navbar({
 
     return () => {
       window.removeEventListener("hashchange", syncActiveHref);
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncProposalButton = () => {
+      const heroTwo = document.getElementById("hero_2");
+
+      if (!heroTwo) {
+        setShowProposalButton(false);
+        return;
+      }
+
+      const { top } = heroTwo.getBoundingClientRect();
+      setShowProposalButton(top <= Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nav-height")));
+    };
+
+    syncProposalButton();
+    window.addEventListener("scroll", syncProposalButton, { passive: true });
+    window.addEventListener("resize", syncProposalButton);
+
+    return () => {
+      window.removeEventListener("scroll", syncProposalButton);
+      window.removeEventListener("resize", syncProposalButton);
     };
   }, []);
 
@@ -88,10 +112,17 @@ export function Navbar({
         </nav>
 
         <div className="flex items-center gap-3">
-          <ThemeToggle initialTheme={initialTheme} />
-          <div className="hidden md:block">
+          <div
+            className={`hidden transition-all duration-300 ease-out md:block ${
+              showProposalButton
+                ? "translate-y-0 opacity-100"
+                : "pointer-events-none -translate-y-2 opacity-0"
+            }`}
+            aria-hidden={!showProposalButton}
+          >
             <Button href="#proposal">Request Proposal</Button>
           </div>
+          <ThemeToggle initialTheme={initialTheme} />
 
           <button
             type="button"
@@ -159,14 +190,23 @@ export function Navbar({
               ))}
             </nav>
 
-            <div className="mt-4 border-t border-[var(--border-light)] pt-4">
-              <Link
-                href="#proposal"
-                onClick={() => setIsOpen(false)}
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-[linear-gradient(135deg,var(--brand),var(--brand-light))] px-6 py-3 text-sm font-semibold text-white shadow-[var(--shadow-button)] transition-all duration-200 ease-out hover:bg-[var(--brand-dark)] hover:shadow-[var(--shadow-button-hover)] focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)]/40"
-              >
-                Request Proposal
-              </Link>
+            <div
+              className={`overflow-hidden border-[var(--border-light)] transition-all duration-300 ease-out ${
+                showProposalButton
+                  ? "mt-4 max-h-24 border-t pt-4 opacity-100"
+                  : "mt-0 max-h-0 border-t-0 pt-0 opacity-0"
+              }`}
+              aria-hidden={!showProposalButton}
+            >
+              <div>
+                <Link
+                  href="#proposal"
+                  onClick={() => setIsOpen(false)}
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-[var(--brand-cta)] px-6 py-3 text-sm font-semibold text-white shadow-none transition-all duration-200 ease-out hover:bg-[var(--brand-cta)] hover:shadow-none focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-cta)]/40"
+                >
+                  Request Proposal
+                </Link>
+              </div>
             </div>
 
           </div>

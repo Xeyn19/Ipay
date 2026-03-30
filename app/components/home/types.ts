@@ -30,6 +30,10 @@ export type PartnerLogo = {
   src?: string;
   width?: number;
   height?: number;
+  marqueeScale?: number;
+  marqueeZoom?: number;
+  marqueePosition?: string;
+  marqueeImageClassName?: string;
   label?: string;
   className?: string;
   wrapperClassName?: string;

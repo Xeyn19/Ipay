@@ -809,16 +809,31 @@ button {
   z-index: 3;
 }
 
+.partner-marquee-image-frame,
 .partner-marquee-image,
 .partner-marquee-placeholder {
   height: 100%;
   width: 100%;
 }
 
+.partner-marquee-image-frame {
+  display: flex;
+  height: var(--partner-logo-height, 72px);
+  width: var(--partner-logo-width, 180px);
+  max-height: 104px;
+  max-width: 220px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
 .partner-marquee-image {
   display: block;
+  height: 100%;
+  width: 100%;
   object-fit: contain;
-  padding: 20px 28px;
+  transform: scale(var(--partner-logo-zoom, 1));
+  transform-origin: center center;
 }
 
 .partner-marquee-placeholder {

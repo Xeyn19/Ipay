@@ -52,9 +52,9 @@ export function Navbar({
 
         <div className="flex items-center gap-3">
           <ThemeToggle initialTheme={initialTheme} />
-          <Button href="#proposal" className="hidden md:inline-flex">
-            Request Proposal
-          </Button>
+          <div className="hidden md:block">
+            <Button href="#proposal">Request Proposal</Button>
+          </div>
 
           <button
             type="button"
@@ -126,6 +126,7 @@ export function Navbar({
                 Request Proposal
               </Link>
             </div>
+
           </div>
         </>
       ) : null}

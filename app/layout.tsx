@@ -15,7 +15,7 @@ const siteUrl =
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
-      : undefined);
+      : "http://localhost:3000");
 
 function getThemeInitScript(initialTheme: "light" | "dark") {
   return `
@@ -48,7 +48,7 @@ function getThemeInitScript(initialTheme: "light" | "dark") {
 }
 
 export const metadata: Metadata = {
-  metadataBase: siteUrl ? new URL(siteUrl) : undefined,
+  metadataBase: new URL(siteUrl),
   title: "iPay | Business Payments Across the Philippines",
   description:
     "iPay delivers dependable payment infrastructure for SMEs, institutions, and enterprise platforms across the Philippines.",

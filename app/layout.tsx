@@ -67,9 +67,9 @@ export const metadata: Metadata = {
     images: [
       {
         url: "/opengraph-image",
-        width: 1200,
-        height: 630,
-        alt: "iPay business payments preview",
+        width: 128,
+        height: 39,
+        alt: "iPay logo",
       },
     ],
   },
@@ -78,7 +78,12 @@ export const metadata: Metadata = {
     title: "iPay | Business Payments Across the Philippines",
     description:
       "iPay delivers dependable payment infrastructure for SMEs, institutions, and enterprise platforms across the Philippines.",
-    images: ["/twitter-image"],
+    images: [
+      {
+        url: "/twitter-image",
+        alt: "iPay logo",
+      },
+    ],
   },
 };
 

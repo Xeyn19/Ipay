@@ -8,7 +8,7 @@ export function Hero() {
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[url('/img/girl-bg.jpg')] bg-cover bg-[position:50%_center] bg-no-repeat lg:bg-[position:40%_center] lg:bg-[length:auto_100%]"
+        className="pointer-events-none absolute inset-0 bg-[url('/img/girl-bg.jpg')] bg-cover bg-[position:50%_center] bg-no-repeat lg:bg-[position:4q0%_center] lg:bg-[length:auto_100%]"
       />
       <div
         aria-hidden="true"

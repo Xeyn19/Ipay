@@ -37,11 +37,14 @@ export function HowItWorks() {
               {steps.map((step) => (
                 <Card
                   key={step.number}
-                  customClass="w-full overflow-hidden border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]"
+                  customClass="how-it-works-card w-full overflow-hidden"
                 >
                   <article className="flex h-full flex-col">
-                    <div className="flex items-center gap-3 border-b border-[var(--border-light)] px-5 py-4">
+                    <div className="how-it-works-card-header flex items-center gap-3 border-b border-[var(--how-it-works-card-border)] px-5 py-4">
                       <span className="h-3 w-3 rounded-full bg-[var(--brand)]/75" />
+                      <span className="how-it-works-card-number inline-flex min-w-11 items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold tracking-[0.16em]">
+                        {step.number}
+                      </span>
                       <h3 className="font-heading text-lg font-semibold tracking-[-0.03em] text-[var(--text-primary)]">
                         {step.title}
                       </h3>

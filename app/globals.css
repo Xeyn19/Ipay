@@ -56,6 +56,18 @@
     rgba(245, 166, 35, 0.08) 0%,
     rgba(255, 255, 255, 0) 100%
   );
+  --how-it-works-card-bg: linear-gradient(
+    180deg,
+    #fff3e6 0%,
+    #fff9f2 48%,
+    #ffffff 100%
+  );
+  --how-it-works-card-header-bg: rgba(255, 247, 238, 0.92);
+  --how-it-works-card-border: var(--brand-cta);
+  --how-it-works-card-shadow: 0 16px 36px rgba(241, 122, 30, 0.12),
+    0 6px 18px rgba(15, 23, 42, 0.06);
+  --how-it-works-card-number-bg: rgba(241, 122, 30, 0.12);
+  --how-it-works-card-number-text: #c95f16;
   --home-overlay: linear-gradient(
     rgba(255, 255, 255, 0.01),
     rgba(255, 255, 255, 0.06)
@@ -171,6 +183,17 @@
     rgba(255, 151, 72, 0.18) 0%,
     rgba(8, 17, 29, 0) 100%
   );
+  --how-it-works-card-bg: linear-gradient(
+    180deg,
+    rgba(17, 28, 45, 0.98) 0%,
+    rgba(12, 21, 35, 0.98) 100%
+  );
+  --how-it-works-card-header-bg: rgba(255, 151, 72, 0.08);
+  --how-it-works-card-border: var(--brand-cta);
+  --how-it-works-card-shadow: 0 18px 40px rgba(2, 6, 23, 0.3),
+    0 10px 24px rgba(255, 151, 72, 0.08);
+  --how-it-works-card-number-bg: rgba(255, 151, 72, 0.14);
+  --how-it-works-card-number-text: #ffd0aa;
   --home-overlay: linear-gradient(
       rgba(6, 11, 19, 0.7),
       rgba(6, 11, 19, 0.84)
@@ -448,6 +471,21 @@ body {
 .services-spotlight-grid:hover .services-spotlight-card::before,
 .services-spotlight-grid:hover .services-spotlight-card::after {
   opacity: var(--glow-alpha);
+}
+
+.how-it-works-card {
+  border-color: var(--how-it-works-card-border);
+  background: var(--how-it-works-card-bg);
+  box-shadow: var(--how-it-works-card-shadow);
+}
+
+.how-it-works-card-header {
+  background: var(--how-it-works-card-header-bg);
+}
+
+.how-it-works-card-number {
+  background: var(--how-it-works-card-number-bg);
+  color: var(--how-it-works-card-number-text);
 }
 
 a,

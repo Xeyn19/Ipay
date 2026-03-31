@@ -755,10 +755,7 @@ button {
 }
 
 #home {
-  background-image: var(--home-overlay), url("/img/ipay-bg.jpg");
-  background-position: center center;
-  background-repeat: no-repeat;
-  background-size: cover;
+  background: transparent;
 }
 
 #main {

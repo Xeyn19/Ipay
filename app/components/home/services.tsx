@@ -30,7 +30,7 @@ export function Services() {
   return (
     <section
       id="services"
-      className="bg-[linear-gradient(180deg,#0f172a_0%,#020617_100%)] py-24 sm:py-20"
+      className="bg-[image:var(--services-section-bg)] py-24 sm:py-20"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
@@ -61,7 +61,7 @@ export function Services() {
             return (
               <article
                 key={service.title}
-                className={`flex h-full min-h-[20rem] flex-col overflow-hidden rounded-[24px] border border-[rgba(148,163,184,0.16)] bg-[#0f172a] ${desktopPositionClass}`}
+                className={`flex h-full min-h-[20rem] flex-col overflow-hidden rounded-[24px] border border-[var(--border-light)] bg-[image:var(--services-card-bg)] shadow-[var(--services-card-shadow)] ${desktopPositionClass}`}
               >
                 <div className="relative flex min-h-[20rem] flex-1 overflow-hidden">
                   <Image
@@ -71,16 +71,16 @@ export function Services() {
                     sizes="(min-width: 1280px) 32vw, (min-width: 768px) 50vw, 100vw"
                     className="object-cover"
                   />
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[rgba(2,6,23,0.1)] via-[rgba(2,6,23,0.18)] to-[rgba(2,6,23,0.92)]" />
-                  <div className="absolute left-5 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-[#f97316] text-sm font-bold text-white shadow-[0_12px_24px_rgba(249,115,22,0.38)]">
+                  <div className="pointer-events-none absolute inset-0 bg-[image:var(--services-image-overlay)]" />
+                  <div className="absolute left-5 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand)] text-sm font-bold text-white shadow-[var(--services-index-shadow)]">
                     {String(index + 1).padStart(2, "0")}
                   </div>
 
                   <div className="absolute inset-x-0 bottom-0 z-10 p-6">
-                    <h3 className="font-heading text-2xl font-bold tracking-[-0.03em] text-white">
+                    <h3 className="font-heading text-2xl font-bold tracking-[-0.03em] text-[var(--services-title)]">
                       {service.title}
                     </h3>
-                    <p className="mt-4 text-base leading-relaxed text-slate-300">
+                    <p className="mt-4 text-base leading-relaxed text-[var(--services-description)]">
                       {service.description}
                     </p>
                   </div>

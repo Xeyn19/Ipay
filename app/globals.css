@@ -68,6 +68,18 @@
     0 6px 18px rgba(15, 23, 42, 0.06);
   --how-it-works-card-number-bg: rgba(241, 122, 30, 0.12);
   --how-it-works-card-number-text: #c95f16;
+  --services-section-bg: linear-gradient(180deg, #fffaf6 0%, #f8f9fa 100%);
+  --services-card-bg: linear-gradient(180deg, #ffffff 0%, #fff8f2 100%);
+  --services-card-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+  --services-image-overlay: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(15, 23, 42, 0.08) 42%,
+    rgba(15, 23, 42, 0.88) 100%
+  );
+  --services-title: #ffffff;
+  --services-description: rgba(241, 245, 249, 0.9);
+  --services-index-shadow: 0 12px 24px rgba(241, 122, 30, 0.24);
   --home-overlay: linear-gradient(
     rgba(255, 255, 255, 0.01),
     rgba(255, 255, 255, 0.06)
@@ -194,6 +206,22 @@
     0 10px 24px rgba(255, 151, 72, 0.08);
   --how-it-works-card-number-bg: rgba(255, 151, 72, 0.14);
   --how-it-works-card-number-text: #ffd0aa;
+  --services-section-bg: linear-gradient(180deg, #101b2d 0%, #08111d 100%);
+  --services-card-bg: linear-gradient(
+    180deg,
+    rgba(15, 26, 43, 0.98) 0%,
+    rgba(10, 18, 31, 0.98) 100%
+  );
+  --services-card-shadow: 0 24px 52px rgba(2, 6, 23, 0.24);
+  --services-image-overlay: linear-gradient(
+    180deg,
+    rgba(8, 17, 29, 0.04) 0%,
+    rgba(8, 17, 29, 0.2) 42%,
+    rgba(8, 17, 29, 0.92) 100%
+  );
+  --services-title: #ffffff;
+  --services-description: #d5deef;
+  --services-index-shadow: 0 12px 24px rgba(255, 151, 72, 0.3);
   --home-overlay: linear-gradient(
       rgba(6, 11, 19, 0.7),
       rgba(6, 11, 19, 0.84)

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
   --nav-height: 5rem;
   --brand: #f17a1e;
@@ -76,6 +78,15 @@
     rgba(255, 255, 255, 0.02) 0%,
     rgba(15, 23, 42, 0.08) 42%,
     rgba(15, 23, 42, 0.88) 100%
+  );
+  --hero-image-overlay-mobile: none;
+  --hero-image-overlay-desktop: none;
+  --solution-image-overlay: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.18) 36%,
+    rgba(255, 255, 255, 0.05) 72%,
+    rgba(255, 255, 255, 0) 100%
   );
   --services-title: #ffffff;
   --services-description: rgba(241, 245, 249, 0.9);
@@ -218,6 +229,26 @@
     rgba(8, 17, 29, 0.04) 0%,
     rgba(8, 17, 29, 0.2) 42%,
     rgba(8, 17, 29, 0.92) 100%
+  );
+  --hero-image-overlay-mobile: linear-gradient(
+    180deg,
+    rgba(6, 11, 19, 0.78) 0%,
+    rgba(6, 11, 19, 0.72) 36%,
+    rgba(6, 11, 19, 0.62) 100%
+  );
+  --hero-image-overlay-desktop: linear-gradient(
+    90deg,
+    rgba(6, 11, 19, 0.96) 0%,
+    rgba(6, 11, 19, 0.9) 34%,
+    rgba(6, 11, 19, 0.5) 60%,
+    rgba(6, 11, 19, 0.14) 82%,
+    rgba(6, 11, 19, 0) 100%
+  );
+  --solution-image-overlay: linear-gradient(
+    90deg,
+    rgba(6, 11, 19, 0.95) 0%,
+    rgba(6, 11, 19, 0.7) 55%,
+    rgba(6, 11, 19, 0) 100%
   );
   --services-title: #ffffff;
   --services-description: #d5deef;

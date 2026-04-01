@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 import { services } from "@/app/components/home/data";
@@ -26,9 +29,72 @@ const serviceCards = [
   },
 ];
 
+// Calculate initial scattered position based on grid position
+const getScatteredTransform = (index: number) => {
+  // Grid layout: 3 cols on xl, 2 cols on md, 1 col on mobile
+  // For xl (3 columns):
+  // Row 0: [0, 1, 2]
+  // Row 1: [3, 4]
+  
+  const xlCol = index % 3;
+  const xlRow = Math.floor(index / 3);
+  
+  // Determine direction based on position
+  let x = 0;
+  let y = 0;
+  
+  // Horizontal direction
+  if (xlCol === 0) {
+    x = -120; // Left
+  } else if (xlCol === 2) {
+    x = 120; // Right
+  } else {
+    x = 0; // Center
+  }
+  
+  // Vertical direction
+  if (xlRow === 0) {
+    y = -80; // Top row
+  } else {
+    y = 80; // Bottom row
+  }
+  
+  return { x, y };
+};
+
 export function Services() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !isVisible) {
+            setIsVisible(true);
+          }
+        });
+      },
+      {
+        threshold: 0.1, // Trigger when 10% of section is visible
+        rootMargin: "0px",
+      }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, [isVisible]);
+
   return (
     <section
+      ref={sectionRef}
       id="services"
       className="bg-[image:var(--services-section-bg)] py-24 sm:py-20"
     >
@@ -58,10 +124,20 @@ export function Services() {
                   ? "md:col-span-2 md:mx-auto md:w-[calc(50%-0.75rem)] xl:col-span-1 xl:col-start-2 xl:mx-0 xl:w-auto xl:translate-x-1/2"
                   : "";
 
+            const scatteredPos = getScatteredTransform(index);
+            const animationDelay = index * 150; // 150ms stagger between each item
+
             return (
               <article
                 key={service.title}
-                className={`flex h-full min-h-[20rem] flex-col overflow-hidden rounded-[24px] border border-[var(--border-light)] bg-[image:var(--services-card-bg)] shadow-[var(--services-card-shadow)] ${desktopPositionClass}`}
+                className={`flex h-full min-h-[20rem] flex-col overflow-hidden rounded-[24px] border border-[var(--border-light)] bg-[image:var(--services-card-bg)] shadow-[var(--services-card-shadow)] transition-all duration-700 ease-out ${desktopPositionClass}`}
+                style={{
+                  opacity: isVisible ? 1 : 0,
+                  transform: isVisible
+                    ? "translate(0, 0)"
+                    : `translate(${scatteredPos.x}vw, ${scatteredPos.y}vh)`,
+                  transitionDelay: `${animationDelay}ms`,
+                }}
               >
                 <div className="relative flex min-h-[20rem] flex-1 overflow-hidden">
                   <Image
@@ -71,10 +147,7 @@ export function Services() {
                     sizes="(min-width: 1280px) 32vw, (min-width: 768px) 50vw, 100vw"
                     className="object-cover"
                   />
-                  <div className="pointer-events-none absolute inset-0 bg-[image:var(--services-image-overlay)]" />
-                  <div className="absolute left-5 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand)] text-sm font-bold text-white shadow-[var(--services-index-shadow)]">
-                    {String(index + 1).padStart(2, "0")}
-                  </div>
+                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0)_0%,rgba(0,0,0,0.3)_60%,rgba(0,0,0,0.75)_100%)]" />
 
                   <div className="absolute inset-x-0 bottom-0 z-10 p-6">
                     <h3 className="font-heading text-2xl font-bold tracking-[-0.03em] text-[var(--services-title)]">

@@ -6,7 +6,7 @@ export function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="bg-[var(--section-default)] py-24 backdrop-blur-[2px] sm:py-20"
+      className="flex min-h-[600px] items-center bg-[var(--section-default)] py-24 backdrop-blur-[2px] sm:py-32"
     >
       <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(520px,1.1fr)] lg:items-center lg:gap-16 lg:px-8">
         <div className="max-w-2xl">
@@ -42,15 +42,12 @@ export function HowItWorks() {
                   <article className="flex h-full flex-col">
                     <div className="how-it-works-card-header flex items-center gap-3 border-b border-[var(--how-it-works-card-border)] px-5 py-4">
                       <span className="h-3 w-3 rounded-full bg-[var(--brand)]/75" />
-                      <span className="how-it-works-card-number inline-flex min-w-11 items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold tracking-[0.16em]">
-                        {step.number}
-                      </span>
                       <h3 className="font-heading text-lg font-semibold tracking-[-0.03em] text-[var(--text-primary)]">
                         {step.title}
                       </h3>
                     </div>
                     <div className="flex flex-1 flex-col p-7">
-                      <p className="mt-5 text-base leading-7 text-[var(--text-muted)] [text-align:justify]">
+                      <p className="mt-5 text-base leading-7 text-[var(--text-primary)] [text-align:justify] light:text-[#1a1a1a]">
                         {step.description}
                       </p>
                     </div>

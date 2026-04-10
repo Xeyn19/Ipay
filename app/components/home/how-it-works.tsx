@@ -23,7 +23,7 @@ export function HowItWorks() {
         </div>
 
         <div className="relative h-[380px] overflow-visible sm:h-[460px] lg:h-[500px]">
-          <div className="relative ml-auto h-full max-w-[1120px] translate-y-10 sm:translate-y-20 lg:translate-y-35">
+          <div className="relative mx-auto -translate-x-10 h-full max-w-[1120px] translate-y-10 sm:translate-y-20 lg:ml-auto lg:mr-0 lg:translate-x-0 lg:translate-y-35">
             <CardSwap
               width={380}
               height={290}

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
-import { AppDownloadSwitcher } from "@/app/components/home/app-download-switcher";
+// import Image from "next/image";
+// import { AppDownloadSwitcher } from "@/app/components/home/app-download-switcher";
 import { partnerCategories } from "@/app/components/home/data";
 import type { PartnerCategory, PartnerLogo } from "@/app/components/home/types";
 
@@ -177,7 +177,7 @@ export function Partners() {
           </div>
         )}
 
-        {/* App Download Section */}
+        {/* App Download Section
         <div className="mt-16 pt-10">
           <div className="flex flex-col gap-10 px-6 py-8 sm:px-10 md:px-12 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative mx-auto w-full max-w-[100px] shrink-0 sm:max-w-[480px] lg:mx-0">
@@ -211,6 +211,7 @@ export function Partners() {
             </div>
           </div>
         </div>
+         */}
       </div>
     </section>
   );

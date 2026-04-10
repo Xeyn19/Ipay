@@ -8,23 +8,23 @@ import { SectionHeader } from "@/app/components/home/ui";
 
 const serviceCards = [
   {
-    imageSrc: "/img/pay-acceptance.jpg",
+    imageSrc: "/img/services/payment-acceptance.jpg",
     imageAlt: "Payment acceptance on mobile and point-of-sale devices",
   },
   {
-    imageSrc: "/img/bill-invoice.jpg",
+    imageSrc: "/img/services/billing-invoicing.jpg",
     imageAlt: "Billing and invoicing workflow on a digital dashboard",
   },
   {
-    imageSrc: "/img/disburse.jpg",
+    imageSrc: "/img/services/disbursement.jpg",
     imageAlt: "Digital disbursement and payout processing",
   },
   {
-    imageSrc: "/img/report-recon.jpg",
+    imageSrc: "/img/services/reporting.jpg",
     imageAlt: "Reporting and reconciliation analytics interface",
   },
   {
-    imageSrc: "/img/dev-api.jpg",
+    imageSrc: "/img/services/developer.jpg",
     imageAlt: "Developer API integration environment",
   },
 ];

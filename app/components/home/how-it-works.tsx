@@ -29,8 +29,6 @@ export function HowItWorks() {
               height={290}
               cardDistance={40}
               verticalDistance={53}
-              delay={4500}
-              pauseOnHover
               skewAmount={2}
               easing="linear"
             >

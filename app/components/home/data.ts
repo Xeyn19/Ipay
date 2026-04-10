@@ -358,8 +358,8 @@ export const trustItems = [
     description: "OPSCOR-2025-0002",
   },
   {
-    title: "BSP-Registered",
-    description: "Operator of Payment System",
+    title: "BSP-Registered Operator",
+    description: "of Payment System",
   },
   {
     title: "Enterprise Grade",

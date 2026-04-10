@@ -24,6 +24,10 @@ export function WhyChooseUs() {
               aria-hidden="true"
             />
             The IPAY Solution
+            <span
+              className="block h-0.5 w-6 rounded-full bg-[var(--tone-gold)]"
+              aria-hidden="true"
+            />
           </div>
           <h2 className="font-heading mt-4 text-[clamp(1.75rem,4.5vw,3rem)] font-extrabold leading-[1.15] tracking-[-0.03em] text-[var(--text-strong)]">
             <span className="font-bold text-[var(--text-strong)]">Unified controls for</span>
@@ -42,15 +46,6 @@ export function WhyChooseUs() {
               key={feature.title}
               className="group relative overflow-hidden rounded-[20px] border border-[#efd9c7] bg-[#fff6ee] px-5 py-5 backdrop-blur-0 sm:px-6 sm:py-[26px] dark:border-[var(--border-contrast)] dark:bg-[var(--bg-elevated)]/40 dark:backdrop-blur-md"
             >
-              <div
-                className={`absolute inset-x-0 bottom-0 h-[3px] rounded-b-[20px] ${feature.tone === "green"
-                  ? "bg-[var(--tone-green)]"
-                  : feature.tone === "blue"
-                    ? "bg-[var(--tone-blue)]"
-                    : "bg-[var(--tone-gold)]"
-                  }`}
-              />
-
               <div className="flex items-center gap-3 justify-between">
                 <h3 className="font-heading text-[1.4rem] font-extrabold leading-none text-[var(--tone-gold)] sm:text-[1.7rem]">
                   {feature.title}

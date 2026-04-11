@@ -85,9 +85,31 @@ export function Navbar({
     };
   }, [isHomePage]);
 
-  const handleNavClick = (sectionId: string) => {
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
     setActiveHref(sectionId === "home" ? "#home" : `#${sectionId}`);
     setIsOpen(false);
+
+    if (isHomePage) {
+      e.preventDefault();
+      
+      // Update the URL without jumping instantly
+      const url = sectionId === "home" ? "/" : `/#${sectionId}`;
+      window.history.pushState({}, "", url);
+
+      if (sectionId === "home") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          const navHeight = 80; // 5rem nav height offset
+          const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+          window.scrollTo({
+            top: elementPosition - navHeight,
+            behavior: "smooth"
+          });
+        }
+      }
+    }
   };
 
   const getNavHref = (sectionId: string) => {
@@ -104,7 +126,7 @@ export function Navbar({
         <Link
           href="/"
           className="flex items-center"
-          onClick={() => handleNavClick("home")}
+          onClick={(e) => handleNavClick(e, "home")}
         >
           <BrandLogo initialTheme={initialTheme} priority />
         </Link>
@@ -114,7 +136,7 @@ export function Navbar({
             <Link
               key={item.label}
               href={getNavHref(item.sectionId)}
-              onClick={() => handleNavClick(item.sectionId)}
+              onClick={(e) => handleNavClick(e, item.sectionId)}
               aria-current={activeHref === `#${item.sectionId}` ? "page" : undefined}
               className={`inline-flex h-20 items-center text-sm font-medium transition-colors duration-200 ease-out focus:outline-none ${
                 activeHref === `#${item.sectionId}`
@@ -198,7 +220,7 @@ export function Navbar({
                 <Link
                   key={item.label}
                   href={getNavHref(item.sectionId)}
-                  onClick={() => handleNavClick(item.sectionId)}
+                  onClick={(e) => handleNavClick(e, item.sectionId)}
                   aria-current={activeHref === `#${item.sectionId}` ? "page" : undefined}
                   className={`flex items-center justify-between rounded-[16px] border px-4 py-3 text-sm font-semibold transition-all duration-200 ease-out ${
                     activeHref === `#${item.sectionId}`

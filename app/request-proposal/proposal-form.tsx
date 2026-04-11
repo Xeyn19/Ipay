@@ -1,11 +1,36 @@
 "use client";
 
+import { supabase } from "@/app/lib/supabase";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export function ProposalForm() {
+  const [name, setName] = useState("");
+  const [company, setCompany] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
   const [hasReadPrivacy, setHasReadPrivacy] = useState(false);
   const [isMounted, setIsMounted] = useState(false); // To prevent hydration mismatch for the checkbox text
+
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const { data, error } = await supabase.from("leads").insert({
+      name,
+      company,
+      email,
+      message,
+    });
+    if (error) {
+      console.error("Error submitting proposal request:", error);
+    } else {
+      setName("");
+      setCompany("");
+      setEmail("");
+      setMessage("");
+      console.log("Proposal request submitted successfully:", data);
+    }
+  }
 
   useEffect(() => {
     setIsMounted(true);
@@ -28,7 +53,7 @@ export function ProposalForm() {
   }, []);
 
   return (
-    <form id="proposal-request-form" className="space-y-5" action="#" method="POST">
+    <form id="proposal-request-form" onSubmit={handleSubmit} className="space-y-5" action="#" method="POST">
       {/* Name */}
       <div>
         <label
@@ -41,6 +66,8 @@ export function ProposalForm() {
           id="proposal-name"
           type="text"
           name="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           required
           placeholder="Juan dela Cruz"
           className="w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-faint)] outline-none transition-all focus:border-[var(--brand)] focus:ring-3 focus:ring-[rgba(241,122,30,0.12)]"
@@ -59,6 +86,8 @@ export function ProposalForm() {
           id="proposal-company"
           type="text"
           name="company"
+          value={company}
+          onChange={(e) => setCompany(e.target.value)}
           required
           placeholder="Acme Corp"
           className="w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-faint)] outline-none transition-all focus:border-[var(--brand)] focus:ring-3 focus:ring-[rgba(241,122,30,0.12)]"
@@ -77,6 +106,8 @@ export function ProposalForm() {
           id="proposal-email"
           type="email"
           name="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
           placeholder="you@company.com"
           className="w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-faint)] outline-none transition-all focus:border-[var(--brand)] focus:ring-3 focus:ring-[rgba(241,122,30,0.12)]"
@@ -94,6 +125,8 @@ export function ProposalForm() {
         <textarea
           id="proposal-message"
           name="message"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
           rows={4}
           placeholder="How can we help your business? Share a few details..."
           className="w-full resize-none rounded-xl border border-[var(--border-light)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-faint)] outline-none transition-all focus:border-[var(--brand)] focus:ring-3 focus:ring-[rgba(241,122,30,0.12)]"
@@ -120,7 +153,7 @@ export function ProposalForm() {
           >
             By checking this box, you confirm that you have read and agree to our <strong>Terms of Use</strong> and that you consent to our processing of your Personal Data in accordance with our <Link href="/privacy-policy" className="text-[var(--text-primary)] underline hover:text-[var(--brand)]"><strong>Privacy Policy</strong></Link>.
           </label>
-          
+
           {/* Helper text shown only on client side if not read yet */}
           {isMounted && !hasReadPrivacy && (
             <p className="text-[0.65rem] font-medium text-orange-500/80">

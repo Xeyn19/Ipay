@@ -70,13 +70,6 @@ export function LeadsTable({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
-      {/* Counter */}
-      <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-3">
-        <p className="text-xs font-semibold text-[var(--text-muted)]">
-          <span className="text-[var(--brand)]">{leads.length}</span>{" "}
-          {leads.length === 1 ? "lead" : "leads"}
-        </p>
-      </div>
 
       {/* Table */}
       <div className="overflow-x-auto">

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Theme } from "@/app/lib/theme";
 import ThemeToggle from "@/app/components/theme-toggle";
@@ -13,6 +14,8 @@ export function Navbar({
 }: {
   initialTheme: Theme;
 }) {
+  const pathname = usePathname();
+  const isHomePage = pathname === "/";
   const [isOpen, setIsOpen] = useState(false);
   const [activeHref, setActiveHref] = useState("#home");
   const [showProposalButton, setShowProposalButton] = useState(false);
@@ -35,18 +38,31 @@ export function Navbar({
 
   useEffect(() => {
     const syncActiveHref = () => {
+      if (!isHomePage) {
+        setActiveHref(pathname);
+        return;
+      }
+
       setActiveHref(window.location.hash || "#home");
     };
 
     syncActiveHref();
+    if (!isHomePage) {
+      return;
+    }
+
     window.addEventListener("hashchange", syncActiveHref);
 
     return () => {
       window.removeEventListener("hashchange", syncActiveHref);
     };
-  }, []);
+  }, [isHomePage, pathname]);
 
   useEffect(() => {
+    if (!isHomePage) {
+      return;
+    }
+
     const syncProposalButton = () => {
       const heroTwo = document.getElementById("hero_2");
 
@@ -67,20 +83,28 @@ export function Navbar({
       window.removeEventListener("scroll", syncProposalButton);
       window.removeEventListener("resize", syncProposalButton);
     };
-  }, []);
+  }, [isHomePage]);
 
-  const handleNavClick = (href: string) => {
-    setActiveHref(href);
+  const handleNavClick = (sectionId: string) => {
+    setActiveHref(sectionId === "home" ? "#home" : `#${sectionId}`);
     setIsOpen(false);
+  };
+
+  const getNavHref = (sectionId: string) => {
+    if (sectionId === "home") {
+      return "/";
+    }
+
+    return isHomePage ? `#${sectionId}` : `/#${sectionId}`;
   };
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 h-20 border-b border-[var(--border-light)] bg-[var(--nav-bg)] backdrop-blur">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
         <Link
-          href="#home"
+          href="/"
           className="flex items-center"
-          onClick={() => handleNavClick("#home")}
+          onClick={() => handleNavClick("home")}
         >
           <BrandLogo initialTheme={initialTheme} priority />
         </Link>
@@ -89,11 +113,11 @@ export function Navbar({
           {navigation.map((item) => (
             <Link
               key={item.label}
-              href={item.href}
-              onClick={() => handleNavClick(item.href)}
-              aria-current={activeHref === item.href ? "page" : undefined}
+              href={getNavHref(item.sectionId)}
+              onClick={() => handleNavClick(item.sectionId)}
+              aria-current={activeHref === `#${item.sectionId}` ? "page" : undefined}
               className={`inline-flex h-20 items-center text-sm font-medium transition-colors duration-200 ease-out focus:outline-none ${
-                activeHref === item.href
+                activeHref === `#${item.sectionId}`
                   ? "text-[var(--text-primary)]"
                   : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               }`}
@@ -103,7 +127,7 @@ export function Navbar({
                 <span
                   aria-hidden="true"
                   className={`absolute -bottom-0.5 left-0 h-[3px] w-full origin-center rounded-full bg-[var(--brand)] transition-transform duration-300 ease-out ${
-                    activeHref === item.href ? "scale-x-100" : "scale-x-0"
+                    activeHref === `#${item.sectionId}` ? "scale-x-100" : "scale-x-0"
                   }`}
                 />
               </span>
@@ -120,7 +144,7 @@ export function Navbar({
             }`}
             aria-hidden={!showProposalButton}
           >
-            <Button href="#proposal">Request Proposal</Button>
+            <Button href="/request-proposal">Request Proposal</Button>
           </div>
           <ThemeToggle initialTheme={initialTheme} />
 
@@ -173,11 +197,11 @@ export function Navbar({
               {navigation.map((item) => (
                 <Link
                   key={item.label}
-                  href={item.href}
-                  onClick={() => handleNavClick(item.href)}
-                  aria-current={activeHref === item.href ? "page" : undefined}
+                  href={getNavHref(item.sectionId)}
+                  onClick={() => handleNavClick(item.sectionId)}
+                  aria-current={activeHref === `#${item.sectionId}` ? "page" : undefined}
                   className={`flex items-center justify-between rounded-[16px] border px-4 py-3 text-sm font-semibold transition-all duration-200 ease-out ${
-                    activeHref === item.href
+                    activeHref === `#${item.sectionId}`
                       ? "border-[var(--border-orange)] bg-[var(--bg-elevated-muted)] text-[var(--brand)]"
                       : "border-transparent bg-[var(--bg-base)]/72 text-[var(--text-primary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-elevated-muted)]"
                   }`}
@@ -200,7 +224,7 @@ export function Navbar({
             >
               <div>
                 <Link
-                  href="#proposal"
+                  href="/request-proposal"
                   onClick={() => setIsOpen(false)}
                   className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-[var(--brand-cta)] px-6 py-3 text-sm font-semibold text-white shadow-none transition-all duration-200 ease-out hover:bg-[var(--brand-cta)] hover:shadow-none focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-cta)]/40"
                 >

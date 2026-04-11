@@ -1,4 +1,4 @@
-export type NavItem = { label: string; href: string };
+export type NavItem = { label: string; sectionId: string };
 
 export type Segment = {
   eyebrow: string;

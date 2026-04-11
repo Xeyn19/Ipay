@@ -4,6 +4,10 @@ import { DM_Sans, Sora } from "next/font/google";
 import { BrandLogo } from "@/app/components/home/brand-logo";
 import { footerServices, navigation, trustItems } from "@/app/components/home/data";
 
+function getSectionHref(sectionId: string) {
+  return sectionId === "home" ? "/" : `/#${sectionId}`;
+}
+
 const googlePlayUrl =
   "https://play.google.com/store/apps/details?id=ph.ipay.android";
 const appStoreUrl = "https://apps.apple.com/ph/app/ipays/id6479975365";
@@ -102,7 +106,7 @@ export function Footer() {
               {navigation.map((item) => (
                 <Link
                   key={item.label}
-                  href={item.href}
+                  href={getSectionHref(item.sectionId)}
                   className="inline-block text-[0.92rem] leading-none text-white/64 transition duration-200 ease-out hover:translate-x-[3px] hover:text-white"
                 >
                   {item.label}

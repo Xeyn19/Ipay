@@ -99,7 +99,7 @@ export function Hero() {
           </p>
 
           <div className="mt-7 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:gap-4">
-            <Button href="#proposal" className="text-[0.9rem] sm:text-base">
+            <Button href="/request-proposal" className="text-[0.9rem] sm:text-base">
               Request Proposal
             </Button>
             <Button href="#services" variant="secondary" className="text-[0.9rem] sm:text-base">

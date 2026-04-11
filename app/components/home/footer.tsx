@@ -34,7 +34,7 @@ const credentialIcons = {
       <path d="m9.5 12 1.7 1.7 3.8-4.2" />
     </svg>
   ),
-  "BSP-Registered Operator": (
+  "BSP-Registered": (
     <svg
       viewBox="0 0 24 24"
       fill="none"

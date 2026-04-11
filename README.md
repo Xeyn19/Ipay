@@ -46,10 +46,7 @@ Run via Bun for superior speed:
 bun install
 ```
 
-### 2. Set Up Supabase Environment
-Ensure your `.env.local` contains your active Supabase URL and keys to process inbound leads properly.
-
-### 3. Run Development Server
+### 2. Run Development Server
 ```bash
 bun run dev
 ```

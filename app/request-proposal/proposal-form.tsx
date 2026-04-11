@@ -10,6 +10,7 @@ export function ProposalForm() {
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
+  const [contactNumber, setContactNumber] = useState("");
   const [message, setMessage] = useState("");
   const [hasReadPrivacy, setHasReadPrivacy] = useState(false);
   const [isMounted, setIsMounted] = useState(false); // To prevent hydration mismatch for the checkbox text
@@ -26,6 +27,7 @@ export function ProposalForm() {
       name,
       company,
       email,
+      contact_number: contactNumber,
       message,
     });
     if (error) {
@@ -36,10 +38,12 @@ export function ProposalForm() {
       setName("");
       setCompany("");
       setEmail("");
+      setContactNumber("");
       setMessage("");
       sessionStorage.removeItem("ipp_form_name");
       sessionStorage.removeItem("ipp_form_company");
       sessionStorage.removeItem("ipp_form_email");
+      sessionStorage.removeItem("ipp_form_contact_number");
       sessionStorage.removeItem("ipp_form_message");
       console.log("Proposal request submitted successfully:", data);
       toast.success("Request submitted successfully! We'll be in touch soon.", { id: loadingToast });
@@ -62,6 +66,8 @@ export function ProposalForm() {
     if (savedCompany) setCompany(savedCompany);
     const savedEmail = sessionStorage.getItem("ipp_form_email");
     if (savedEmail) setEmail(savedEmail);
+    const savedContactNumber = sessionStorage.getItem("ipp_form_contact_number");
+    if (savedContactNumber) setContactNumber(savedContactNumber);
     const savedMessage = sessionStorage.getItem("ipp_form_message");
     if (savedMessage) setMessage(savedMessage);
 
@@ -141,6 +147,26 @@ export function ProposalForm() {
           onChange={(e) => updateField(setEmail, "ipp_form_email", e.target.value)}
           required
           placeholder="you@company.com"
+          className="w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-faint)] outline-none transition-all focus:border-[var(--brand)] focus:ring-3 focus:ring-[rgba(241,122,30,0.12)]"
+        />
+      </div>
+
+      {/* Contact Number */}
+      <div>
+        <label
+          htmlFor="proposal-contact"
+          className="mb-1.5 block text-xs font-semibold tracking-[0.06em] text-[var(--text-secondary)]"
+        >
+          Contact Number <span className="text-[var(--brand)]">*</span>
+        </label>
+        <input
+          id="proposal-contact"
+          type="tel"
+          name="contactNumber"
+          value={contactNumber}
+          onChange={(e) => updateField(setContactNumber, "ipp_form_contact_number", e.target.value)}
+          required
+          placeholder="+63 900 000 0000"
           className="w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-faint)] outline-none transition-all focus:border-[var(--brand)] focus:ring-3 focus:ring-[rgba(241,122,30,0.12)]"
         />
       </div>

@@ -5,6 +5,7 @@ type Lead = {
   name?: string;
   company?: string;
   email?: string;
+  contact_number?: string;
   message?: string;
   created_at?: string;
 };
@@ -92,6 +93,9 @@ export function LeadsTable({
                 Email
               </th>
               <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                Contact Number
+              </th>
+              <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
                 Message
               </th>
               <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
@@ -122,6 +126,9 @@ export function LeadsTable({
                   ) : (
                     "—"
                   )}
+                </td>
+                <td className="whitespace-nowrap px-5 py-3.5 text-[var(--text-secondary)]">
+                  {lead.contact_number || "—"}
                 </td>
                 <td className="max-w-xs truncate px-5 py-3.5 text-[var(--text-muted)]">
                   {lead.message || "—"}

@@ -35,7 +35,7 @@ function LogoCard({ logo }: { logo: PartnerLogo }) {
   if (isSquareLogo) {
     return (
       <div
-        className="flex h-[120px] w-[120px] items-center justify-center rounded-[20px] p-4 shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)] sm:h-[140px] sm:w-[140px]"
+        className="flex shrink-0 h-[100px] w-[100px] items-center justify-center rounded-[20px] p-4 shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)] sm:h-[120px] sm:w-[120px] lg:h-[130px] lg:w-[130px]"
         style={{ backgroundColor: bgColor }}
       >
         {logo.src && !hasError ? (
@@ -56,7 +56,7 @@ function LogoCard({ logo }: { logo: PartnerLogo }) {
   }
 
   return (
-    <div className="flex h-[100px] w-[200px] items-center justify-center rounded-[16px] bg-white p-4 shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)] sm:h-[110px] sm:w-[220px]">
+    <div className="flex shrink-0 h-[80px] w-[140px] items-center justify-center rounded-[16px] bg-white p-3 shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)] sm:h-[90px] sm:w-[170px] lg:h-[100px] lg:w-[190px] lg:p-4">
       {logo.src && !hasError ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -141,7 +141,7 @@ export function Partners() {
                 key={tabKey}
                 onClick={() => handleTabClick(tabKey)}
                 className={`
-                  rounded-full px-4 py-2 text-[0.8rem] font-semibold transition-all duration-150
+                  rounded-full px-4 py-2 text-[0.8rem] font-semibold transition-all duration-150 shrink-0 whitespace-nowrap
                   sm:px-5 sm:py-2.5 sm:text-sm
                   ${
                     isActive
@@ -157,7 +157,7 @@ export function Partners() {
         </div>
 
         {/* Logo Panel */}
-        <div className="mt-10 sm:mt-12">
+        <div className="mt-10 flex min-h-[320px] items-start justify-center sm:mt-12 sm:min-h-[240px] md:min-h-[160px]">
           <div
             key={activeTab}
             className="flex flex-wrap items-center justify-center gap-4 animate-[fadeIn_120ms_ease-out] sm:gap-5"

@@ -18,10 +18,10 @@ export function ProposalForm() {
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     // Show a loading toast that will be replaced
     const loadingToast = toast.loading("Sending your proposal request...");
-    
+
     const { data, error } = await supabase.from("leads").insert({
       name,
       company,
@@ -54,7 +54,7 @@ export function ProposalForm() {
 
   useEffect(() => {
     setIsMounted(true);
-    
+
     // Load saved form data so inputs are not lost after checking privacy policy
     const savedName = sessionStorage.getItem("ipp_form_name");
     if (savedName) setName(savedName);
@@ -120,7 +120,7 @@ export function ProposalForm() {
           value={company}
           onChange={(e) => updateField(setCompany, "ipp_form_company", e.target.value)}
           required
-          placeholder="Acme Corp"
+          placeholder="Company Name"
           className="w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-faint)] outline-none transition-all focus:border-[var(--brand)] focus:ring-3 focus:ring-[rgba(241,122,30,0.12)]"
         />
       </div>

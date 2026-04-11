@@ -35,7 +35,7 @@ function LogoCard({ logo }: { logo: PartnerLogo }) {
   if (isSquareLogo) {
     return (
       <div
-        className="flex shrink-0 h-[100px] w-[100px] items-center justify-center rounded-[20px] p-4 shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)] sm:h-[120px] sm:w-[120px] lg:h-[130px] lg:w-[130px]"
+        className="flex shrink-0 h-[100px] w-[100px] items-center justify-center rounded-[20px] overflow-hidden shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)] sm:h-[120px] sm:w-[120px] lg:h-[130px] lg:w-[130px]"
         style={{ backgroundColor: bgColor }}
       >
         {logo.src && !hasError ? (
@@ -143,10 +143,9 @@ export function Partners() {
                 className={`
                   rounded-full px-4 py-2 text-[0.8rem] font-semibold transition-all duration-150 shrink-0 whitespace-nowrap
                   sm:px-5 sm:py-2.5 sm:text-sm
-                  ${
-                    isActive
-                      ? "bg-[rgba(245,166,35,0.15)] text-[var(--tone-gold)] ring-1 ring-[rgba(245,166,35,0.4)]"
-                      : "border border-[var(--border-soft)] bg-transparent text-[var(--text-muted)] hover:border-[var(--border-medium)] hover:text-[var(--text-secondary)]"
+                  ${isActive
+                    ? "bg-[rgba(245,166,35,0.15)] text-[var(--tone-gold)] ring-1 ring-[rgba(245,166,35,0.4)]"
+                    : "border border-[var(--border-soft)] bg-transparent text-[var(--text-muted)] hover:border-[var(--border-medium)] hover:text-[var(--text-secondary)]"
                   }
                 `}
               >
@@ -169,13 +168,13 @@ export function Partners() {
         </div>
 
         {/* Category Counter */}
-        {activeData && (
+        {/* {activeData && (
           <div className="mt-8 text-center">
             <p className="text-sm font-medium text-[var(--text-muted)]">
               {activeData.counterLabel}
             </p>
           </div>
-        )}
+        )} */}
 
         {/* App Download Section
         <div className="mt-16 pt-10">

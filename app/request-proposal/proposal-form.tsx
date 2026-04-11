@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
+import { toast } from "react-hot-toast";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -12,9 +13,15 @@ export function ProposalForm() {
   const [message, setMessage] = useState("");
   const [hasReadPrivacy, setHasReadPrivacy] = useState(false);
   const [isMounted, setIsMounted] = useState(false); // To prevent hydration mismatch for the checkbox text
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Show a loading toast that will be replaced
+    const loadingToast = toast.loading("Sending your proposal request...");
+    
     const { data, error } = await supabase.from("leads").insert({
       name,
       company,
@@ -23,17 +30,41 @@ export function ProposalForm() {
     });
     if (error) {
       console.error("Error submitting proposal request:", error);
+      toast.error("An error occurred. Please try again later.", { id: loadingToast });
+      setIsSubmitting(false);
     } else {
       setName("");
       setCompany("");
       setEmail("");
       setMessage("");
+      sessionStorage.removeItem("ipp_form_name");
+      sessionStorage.removeItem("ipp_form_company");
+      sessionStorage.removeItem("ipp_form_email");
+      sessionStorage.removeItem("ipp_form_message");
       console.log("Proposal request submitted successfully:", data);
+      toast.success("Request submitted successfully! We'll be in touch soon.", { id: loadingToast });
+      setIsSubmitting(false);
     }
   }
 
+  const updateField = (setter: React.Dispatch<React.SetStateAction<string>>, key: string, value: string) => {
+    setter(value);
+    sessionStorage.setItem(key, value);
+  };
+
   useEffect(() => {
     setIsMounted(true);
+    
+    // Load saved form data so inputs are not lost after checking privacy policy
+    const savedName = sessionStorage.getItem("ipp_form_name");
+    if (savedName) setName(savedName);
+    const savedCompany = sessionStorage.getItem("ipp_form_company");
+    if (savedCompany) setCompany(savedCompany);
+    const savedEmail = sessionStorage.getItem("ipp_form_email");
+    if (savedEmail) setEmail(savedEmail);
+    const savedMessage = sessionStorage.getItem("ipp_form_message");
+    if (savedMessage) setMessage(savedMessage);
+
     // Check if the user has read the privacy policy
     const checkPrivacyStatus = () => {
       const status = sessionStorage.getItem("ipp_privacy_read") === "true";
@@ -67,7 +98,7 @@ export function ProposalForm() {
           type="text"
           name="name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => updateField(setName, "ipp_form_name", e.target.value)}
           required
           placeholder="Juan dela Cruz"
           className="w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-faint)] outline-none transition-all focus:border-[var(--brand)] focus:ring-3 focus:ring-[rgba(241,122,30,0.12)]"
@@ -87,7 +118,7 @@ export function ProposalForm() {
           type="text"
           name="company"
           value={company}
-          onChange={(e) => setCompany(e.target.value)}
+          onChange={(e) => updateField(setCompany, "ipp_form_company", e.target.value)}
           required
           placeholder="Acme Corp"
           className="w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-faint)] outline-none transition-all focus:border-[var(--brand)] focus:ring-3 focus:ring-[rgba(241,122,30,0.12)]"
@@ -107,7 +138,7 @@ export function ProposalForm() {
           type="email"
           name="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => updateField(setEmail, "ipp_form_email", e.target.value)}
           required
           placeholder="you@company.com"
           className="w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-faint)] outline-none transition-all focus:border-[var(--brand)] focus:ring-3 focus:ring-[rgba(241,122,30,0.12)]"
@@ -126,7 +157,7 @@ export function ProposalForm() {
           id="proposal-message"
           name="message"
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(e) => updateField(setMessage, "ipp_form_message", e.target.value)}
           rows={4}
           placeholder="How can we help your business? Share a few details..."
           className="w-full resize-none rounded-xl border border-[var(--border-light)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-faint)] outline-none transition-all focus:border-[var(--brand)] focus:ring-3 focus:ring-[rgba(241,122,30,0.12)]"
@@ -168,13 +199,15 @@ export function ProposalForm() {
         <button
           type="submit"
           id="proposal-submit-btn"
-          disabled={!hasReadPrivacy}
+          disabled={!hasReadPrivacy || isSubmitting}
           className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand-cta)] px-6 py-3.5 text-sm font-semibold uppercase tracking-[0.08em] text-white shadow-[var(--shadow-button)] transition-all duration-200 hover:brightness-110 hover:shadow-[var(--shadow-button-hover)] focus:outline-none focus:ring-3 focus:ring-[rgba(241,122,30,0.3)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100 disabled:hover:shadow-none"
         >
-          Submit
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
-            <path d="M4 10h12M11 6l4 4-4 4" />
-          </svg>
+          {isSubmitting ? "Submitting..." : "Submit"}
+          {!isSubmitting && (
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+              <path d="M4 10h12M11 6l4 4-4 4" />
+            </svg>
+          )}
         </button>
         <p className="mt-3 text-center text-xs text-[var(--text-faint)]">
           No commitment required. We&apos;ll respond within one business day.

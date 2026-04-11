@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Inter, Outfit } from "next/font/google";
 import { cookies } from "next/headers";
 import Script from "next/script";
+import { Toaster } from "react-hot-toast";
 import {
   DEFAULT_THEME,
   THEME_COOKIE_KEY,
@@ -109,6 +111,39 @@ export default async function RootLayout({
           {getThemeInitScript(initialTheme)}
         </Script>
         {children}
+        <Toaster 
+          position="bottom-right" 
+          toastOptions={{
+            style: {
+              borderRadius: '16px',
+              background: 'rgba(255, 255, 255, 0.95)',
+              color: 'var(--text-primary)',
+              padding: '16px 20px',
+              boxShadow: '0 16px 40px -12px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.04)',
+              backdropFilter: 'blur(12px)',
+              fontSize: '14px',
+              fontWeight: '500',
+              letterSpacing: '0.01em',
+            },
+            success: {
+              duration: 3800,
+              style: {
+                background: '#10b981',
+                color: '#ffffff',
+              },
+              iconTheme: {
+                primary: '#ffffff',
+                secondary: '#10b981',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#ffffff',
+              },
+            },
+          }}
+        />
       </body>
     </html>
   );

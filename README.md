@@ -1,86 +1,62 @@
-# iPay Landing Page
+# iPay Landing Page & Dashboard Platform
 
-Marketing site for iPay, built with Next.js 16, React 19, TypeScript, and Tailwind CSS v4.
+A premium marketing and lead-generation portal for iPay. Built with Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, and backed by Supabase.
 
-## Stack
+## Tech Stack
 
-- Next.js `16.2.1`
-- React `19.2.4`
-- TypeScript
-- Tailwind CSS v4
-- ESLint 9
+- **Framework**: Next.js `16.2.1`
+- **UI & State**: React `19.2.4`
+- **Styling**: Tailwind CSS v4
+- **Database / Backend**: `@supabase/supabase-js` & SSR
+- **Notifications**: `react-hot-toast` (Premium Glass-morphic overrides)
+- **Language**: TypeScript
 
-## Current Features
+## Cutting-Edge Features
 
-- Single landing page in `app/page.tsx`
-- Fixed navigation with dark/light theme toggle
-- Animated card stack in the "How It Works" section using a reusable card swap component
-- Spotlight hover effect for the "Who We Serve" cards
-- Partner carousel with grouped logos
-- Remote image support for approved external asset domains
+- **Split-Screen Proposal Workflow**: Advanced `/request-proposal` page featuring resilient draft persistence via `sessionStorage` so users never lose their typed data while navigating.
+- **Strict Privacy Compliance**: Integrated `IntersectionObserver` that forcefully enforces users to scroll to the very bottom of the `/privacy-policy` page before unlocking the "Submit" action for their proposal.
+- **Admin Leads Dashboard**: Included secure `/dashboard/leads` portal with datatables mapped directly from the Supabase `leads` table to actively monitor inbound submissions (Name, Company, Email, Contact Number, and Messages).
+- **Flawless Smooth Scrolling**: Custom DOM `window.scrollTo` router interception in Next.js perfectly offsets against sticky-nav heights and guarantees silky smooth anchor-link transitions without URL-hash snapping.
+- **CLS Eradication**: Responsive `min-height` architectural constraints applied across automatic Carousel & Partner Tab cycle components completely neutralize Cumulative Layout Shifts (CLS), preventing any layout jitters.
+- **Animated 3D Cards**: Implemented custom `GSAP` 3D stacked card mechanics for "How It Works" workflow highlights.
 
 ## Project Structure
 
 ```text
 app/
   components/
-    cardswap.tsx
-    partners-carousel.tsx
-    theme-toggle.tsx
-    home/
-      how-it-works.tsx
-  globals.css
-  layout.tsx
-  page.tsx
-  spotlight-card-tracker.tsx
-public/
-  img/
-next.config.ts
-package.json
+    dashboard/          # Dashboard layout & sidebar interfaces
+    home/               # Modular landing page components (navbar, footer, partners)
+  dashboard/            # Protected admin portal
+    leads/              # Leads data-table viewer
+  lib/                  # Supabase clients & theme logic
+  login/                # Authentication page
+  privacy-policy/       # Scroll-tracked legal document
+  request-proposal/     # Main lead-capture form & layout
+  globals.css           # Design tokens & glass-morphism overrides
+  layout.tsx            # Root layout including Toaster implementation
+  page.tsx              # Main entry landing page
 ```
 
 ## Getting Started
 
-Install dependencies:
-
+### 1. Install Dependencies
+Run via Bun for superior speed:
 ```bash
-npm install
+bun install
 ```
 
-Start the development server:
+### 2. Set Up Supabase Environment
+Ensure your `.env.local` contains your active Supabase URL and keys to process inbound leads properly.
 
+### 3. Run Development Server
 ```bash
-npm run dev
+bun run dev
 ```
-
-Run linting:
-
-```bash
-npm run lint
-```
-
 The site runs locally at `http://localhost:3000`.
 
-## Key Files
+## Key Architectural Highlights
 
-- `app/page.tsx`: Main landing page content and section layout
-- `app/layout.tsx`: Root layout and theme initialization script
-- `app/globals.css`: Design tokens, theme variables, and global styling
-- `app/components/cardswap.tsx`: Reusable `CardSwap` and `Card` components that drive the stacked card animation
-- `app/components/home/how-it-works.tsx`: Section that uses `CardSwap` and `Card` for the rotating workflow cards
-- `app/components/theme-toggle.tsx`: Client-side theme switcher
-- `app/components/partners-carousel.tsx`: Partner showcase carousel
-- `app/spotlight-card-tracker.tsx`: Pointer-based card glow behavior
-- `next.config.ts`: External image allowlist
-
-## Card Swap Components
-
-- `CardSwap`: Client component that positions cards in 3D space and rotates them with GSAP timelines.
-- `Card`: Lightweight wrapper rendered inside `CardSwap` for each stacked panel.
-- `HowItWorks`: Home section that supplies the card content and configures spacing, timing, and hover pause behavior.
-
-## Notes
-
-- Theme preference is stored in `localStorage` under `ipay-theme`.
-- External partner logos are currently loaded from `ipay99.wordpress.com`.
-- If remote image sources change, update `images.remotePatterns` in `next.config.ts`.
+- **`proposal-form.tsx`**: Uses multi-state observation to bridge Draft restoration, UI Submission blocking, Supabase `leads` insertion, and Emerald Green `toast.success` notifications synced to a 3.8-second duration.
+- **`partners.tsx`**: Uses flexible, non-wrapping native layouts paired with pre-calculated container boundaries guaranteeing flawless cross-device visual parity without breaking DOM height allocations.
+- **`layout.tsx`**: Centralizes both the `next/script` theme loader and the `react-hot-toast` `<Toaster>` provider engineered with beautiful transluscent gradients.

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
 import { cookies } from "next/headers";
 import Script from "next/script";
+import { Suspense } from "react";
 import { Toaster } from "react-hot-toast";
+import { AuthToastListener } from "@/app/components/auth-toast-listener";
 import {
   DEFAULT_THEME,
   THEME_COOKIE_KEY,
@@ -111,6 +112,9 @@ export default async function RootLayout({
           {getThemeInitScript(initialTheme)}
         </Script>
         {children}
+        <Suspense fallback={null}>
+          <AuthToastListener />
+        </Suspense>
         <Toaster 
           position="bottom-right" 
           toastOptions={{

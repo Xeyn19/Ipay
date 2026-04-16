@@ -25,5 +25,5 @@ export async function login(
     return { error: error.message }
   }
 
-  redirect('/dashboard/leads?authToast=login')
+  redirect('/dashboard?authToast=login')
 }

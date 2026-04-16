@@ -39,7 +39,7 @@ export async function proxy(request: NextRequest) {
 
   // Redirect authenticated users away from login
   if (pathname === '/login' && user) {
-    const dashboardUrl = new URL('/dashboard/leads', request.url)
+    const dashboardUrl = new URL('/dashboard', request.url)
     return NextResponse.redirect(dashboardUrl)
   }
 

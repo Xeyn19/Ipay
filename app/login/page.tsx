@@ -9,7 +9,7 @@ import { LoginForm } from "./login-form";
 export const metadata: Metadata = {
   title: "Sign In | iPay",
   description:
-    "Sign in to your iPay account to access leads and manage your business payments dashboard.",
+    "Sign in to your iPay account to access request proposals and manage your business payments dashboard.",
 };
 
 export default async function LoginPage() {

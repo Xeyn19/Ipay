@@ -65,7 +65,7 @@ export function LeadsTable({
           />
         </svg>
         <p className="text-sm font-medium text-red-700 dark:text-red-300">
-          Failed to load leads
+          Failed to load request proposals
         </p>
         <p className="mt-1 text-xs text-red-500/80 dark:text-red-400/60">
           {error}
@@ -85,10 +85,10 @@ export function LeadsTable({
           </svg>
         </div>
         <p className="text-sm font-medium text-[var(--text-primary)]">
-          No leads yet
+          No request proposals yet
         </p>
         <p className="mt-1 text-xs text-[var(--text-muted)]">
-          Leads will appear here when visitors submit proposal requests.
+          Request proposals will appear here when visitors submit the form.
         </p>
       </div>
     );
@@ -158,7 +158,7 @@ export function LeadsTable({
                       type="button"
                       onClick={() => setSelectedLead(lead)}
                       className="block max-w-xs truncate rounded-md text-left text-[var(--brand)] underline decoration-[var(--brand)]/25 underline-offset-2 transition-colors hover:decoration-[var(--brand)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
-                      aria-label={`Read full message from ${lead.name || lead.email || "lead"}`}
+                      aria-label={`Read full message from ${lead.name || lead.email || "request proposal"}`}
                     >
                       {lead.message}
                     </button>
@@ -193,13 +193,13 @@ export function LeadsTable({
           <div className="flex items-start justify-between gap-4 border-b border-[var(--border-light)] bg-[var(--bg-subtle)] px-5 py-4">
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                Lead message
+                Request proposal message
               </p>
               <h2
                 id={modalTitleId}
                 className="mt-1 truncate font-heading text-lg font-semibold tracking-[-0.02em] text-[var(--text-primary)]"
               >
-                {selectedLead.name || "Unnamed lead"}
+                {selectedLead.name || "Unnamed request proposal"}
               </h2>
               <p
                 id={modalDescriptionId}

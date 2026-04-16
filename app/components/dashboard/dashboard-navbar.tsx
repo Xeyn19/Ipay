@@ -29,7 +29,7 @@ export function DashboardNavbar({
             </svg>
           </button>
 
-          <Link href="/dashboard/leads" className="flex items-center">
+          <Link href="/dashboard" className="flex items-center">
             <BrandLogo initialTheme={initialTheme} priority />
           </Link>
         </div>

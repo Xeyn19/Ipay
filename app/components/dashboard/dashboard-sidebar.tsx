@@ -5,7 +5,18 @@ import { usePathname } from "next/navigation";
 
 const sidebarItems = [
   {
-    label: "Leads",
+    label: "Overview",
+    href: "/dashboard",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+        <path d="M3 10.5l7-7 7 7" />
+        <path d="M5 9v7h10V9" />
+        <path d="M8.5 16v-4h3v4" />
+      </svg>
+    ),
+  },
+  {
+    label: "Request Proposal",
     href: "/dashboard/leads",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
@@ -51,7 +62,10 @@ export function DashboardSidebar({
           </p>
 
           {sidebarItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            const isActive =
+              item.href === "/dashboard"
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(item.href + "/");
 
             return (
               <Link

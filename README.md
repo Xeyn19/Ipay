@@ -16,6 +16,7 @@ A premium marketing and lead-generation portal for iPay. Built with Next.js 16 (
 - **Split-Screen Proposal Workflow**: Advanced `/request-proposal` page featuring resilient draft persistence via `sessionStorage` so users never lose their typed data while navigating.
 - **Strict Privacy Compliance**: Integrated `IntersectionObserver` that forcefully enforces users to scroll to the very bottom of the `/privacy-policy` page before unlocking the "Submit" action for their proposal.
 - **Request Proposal Dashboard**: Secure `/dashboard` overview and `/dashboard/leads` detail page mapped directly from the Supabase `leads` table to monitor request proposal submissions.
+- **Proposal Anti-Spam Protection**: `/request-proposal` submissions are handled by a server action with Cloudflare Turnstile verification, a hidden honeypot, and Supabase-backed rate limiting before any lead is inserted.
 - **Modern Request Analytics**: Dashboard overview includes responsive request proposal metrics and a Chart.js-powered request trend chart with Daily, Weekly, Monthly, and Custom date views.
 - **Full Message Review Modal**: Dashboard users can open long request proposal messages in a scrollable modal, keep the table context visible, and reply through Gmail compose with the recipient email prefilled.
 - **Polished Auth Feedback**: Login and logout actions display top-center success toasts, with logout returning users to `/login` and using a distinct red confirmation style.
@@ -33,7 +34,7 @@ app/
     home/               # Modular landing page components (navbar, footer, partners)
   dashboard/            # Protected analytics overview and request proposal portal
     leads/              # Request proposal table, full-message modal, and Gmail reply flow
-  lib/                  # Supabase clients & theme logic
+  lib/                  # Supabase, theme, Turnstile, and rate-limit helpers
   login/                # Authentication page with password visibility toggle
   privacy-policy/       # Scroll-tracked legal document
   request-proposal/     # Main lead-capture form & layout
@@ -56,9 +57,46 @@ bun run dev
 ```
 The site runs locally at `http://localhost:3000`.
 
+### 3. Configure Proposal Anti-Spam
+
+Run the Supabase SQL setup in `supabase/proposal-anti-spam.sql` from the Supabase SQL Editor. This creates the submission-attempt table, indexes the rate-limit lookups, enables RLS, and revokes direct browser inserts into `leads` so proposal creation must go through the Next.js server action.
+
+Create a Cloudflare Turnstile widget and add the hostnames you will use:
+
+- Local development: `localhost`
+- Production: your real hostname, for example `example.com`
+
+Do not include `http://`, `https://`, ports, or paths in Cloudflare hostnames.
+
+Add these environment variables:
+
+```env
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+RATE_LIMIT_HASH_SECRET=
+TURNSTILE_EXPECTED_HOSTNAME=
+```
+
+For local development, use:
+
+```env
+TURNSTILE_EXPECTED_HOSTNAME=localhost
+```
+
+For production, use only the production hostname:
+
+```env
+TURNSTILE_EXPECTED_HOSTNAME=example.com
+```
+
+Keep `TURNSTILE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `RATE_LIMIT_HASH_SECRET` server-only. Never prefix them with `NEXT_PUBLIC_`.
+
 ## Key Architectural Highlights
 
-- **`proposal-form.tsx`**: Uses multi-state observation to bridge Draft restoration, UI Submission blocking, Supabase `leads` insertion, and Emerald Green `toast.success` notifications synced to a 3.8-second duration.
+- **`proposal-form.tsx`**: Restores draft values from `sessionStorage`, gates submission on privacy consent and Turnstile completion, and displays server-action success/error feedback through toasts.
+- **`request-proposal/actions.ts`**: Validates proposal fields server-side, records honeypot and rate-limit attempts, verifies Turnstile tokens, and inserts accepted leads through a server-only Supabase admin client.
+- **`proposal-rate-limit.ts`**: Hashes IP and email values with `RATE_LIMIT_HASH_SECRET` and enforces Supabase-backed submission limits without storing raw visitor identifiers.
 - **`auth-toast-listener.tsx`**: Reads auth result flags from the URL, displays login/logout success toasts at the top center, and cleans the query string after the toast is triggered.
 - **`login-form.tsx`**: Handles sign-in errors, pending state, and password visibility toggling with accessible eye icons.
 - **`dashboard-charts.tsx`**: Loads Chart.js from a pinned CDN URL and renders the request trend chart with Daily, Weekly, Monthly, and Custom date range controls.

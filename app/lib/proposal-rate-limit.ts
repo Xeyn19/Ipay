@@ -119,7 +119,7 @@ export async function checkProposalRateLimit({
     acceptedOnly: true,
   });
 
-  if (acceptedEmailAttempts >= 2) {
+  if (acceptedEmailAttempts >= 5) {
     return {
       allowed: false,
       ipHash,

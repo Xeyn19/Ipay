@@ -102,9 +102,9 @@ When a visitor completes Turnstile and opens `/privacy-policy`, the `/request-pr
 
 ## Key Architectural Highlights
 
-- **`proposal-form.tsx`**: Restores draft values and recent unused Turnstile tokens from `sessionStorage`, gates submission on privacy consent and human verification, renders the captcha after route remounts, and displays server-action success/error feedback through toasts.
+- **`proposal-form.tsx`**: Restores draft values from `sessionStorage`, gates submission on privacy consent and live human verification, renders the captcha after route remounts, and displays server-action success/error feedback through toasts.
 - **`request-proposal/actions.ts`**: Validates proposal fields server-side, records honeypot and rate-limit attempts, verifies Turnstile tokens, and inserts accepted leads through a server-only Supabase admin client.
-- **`proposal-rate-limit.ts`**: Hashes IP and email values with `RATE_LIMIT_HASH_SECRET` and enforces Supabase-backed submission limits without storing raw visitor identifiers.
+- **`proposal-rate-limit.ts`**: Hashes IP and email values with `RATE_LIMIT_HASH_SECRET` and enforces Supabase-backed submission limits without storing raw visitor identifiers. Current limits are 5 raw IP attempts per 10 minutes, 3 accepted IP submissions per hour, and 5 accepted email submissions per 24 hours.
 - **`auth-toast-listener.tsx`**: Reads auth result flags from the URL, displays login/logout success toasts at the top center, and cleans the query string after the toast is triggered.
 - **`login-form.tsx`**: Handles sign-in errors, pending state, and password visibility toggling with accessible eye icons.
 - **`dashboard-charts.tsx`**: Loads Chart.js from a pinned CDN URL and renders the request trend chart with Daily, Weekly, Monthly, and Custom date range controls.

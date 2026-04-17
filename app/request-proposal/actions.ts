@@ -155,17 +155,17 @@ export async function submitProposal(
       };
     }
 
-    const isHuman = await verifyTurnstileToken({
+    const turnstileResult = await verifyTurnstileToken({
       token: values.captchaToken,
       remoteIp: clientIp,
     });
 
-    if (!isHuman) {
+    if (!turnstileResult.success) {
       await recordProposalAttempt({
         ipHash: rateLimit.ipHash,
         emailHash: rateLimit.emailHash,
         accepted: false,
-        reason: "turnstile_failed",
+        reason: `turnstile_${turnstileResult.reason}`.slice(0, 120),
       });
 
       return {

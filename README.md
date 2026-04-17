@@ -85,10 +85,11 @@ For local development, use:
 TURNSTILE_EXPECTED_HOSTNAME=localhost
 ```
 
-For production, use only the production hostname:
+For production, use only the production hostname. If both apex and `www` are valid, use a comma-separated list:
 
 ```env
 TURNSTILE_EXPECTED_HOSTNAME=example.com
+TURNSTILE_EXPECTED_HOSTNAME=example.com,www.example.com
 ```
 
 Keep `TURNSTILE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `RATE_LIMIT_HASH_SECRET` server-only. Never prefix them with `NEXT_PUBLIC_`.

@@ -11,13 +11,43 @@ type TurnstileSiteverifyResponse = {
   "error-codes"?: string[];
 };
 
+type TurnstileVerificationResult =
+  | {
+      success: true;
+    }
+  | {
+      success: false;
+      reason: string;
+    };
+
+function normalizeHostname(value: string) {
+  const trimmed = value.trim().toLowerCase();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  try {
+    return new URL(trimmed).hostname;
+  } catch {
+    return trimmed.split("/")[0]?.split(":")[0] ?? "";
+  }
+}
+
+function getExpectedHostnames() {
+  return (process.env.TURNSTILE_EXPECTED_HOSTNAME ?? "")
+    .split(",")
+    .map(normalizeHostname)
+    .filter(Boolean);
+}
+
 export async function verifyTurnstileToken({
   token,
   remoteIp,
 }: {
   token: string;
   remoteIp: string;
-}) {
+}): Promise<TurnstileVerificationResult> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
 
   if (!secret) {
@@ -25,7 +55,10 @@ export async function verifyTurnstileToken({
   }
 
   if (!token || token.length > 2048) {
-    return false;
+    return {
+      success: false,
+      reason: "missing_or_invalid_token",
+    };
   }
 
   const response = await fetch(TURNSTILE_SITEVERIFY_URL, {
@@ -42,23 +75,63 @@ export async function verifyTurnstileToken({
   });
 
   if (!response.ok) {
-    return false;
+    console.warn("Turnstile siteverify HTTP error", {
+      status: response.status,
+      statusText: response.statusText,
+    });
+
+    return {
+      success: false,
+      reason: `siteverify_http_${response.status}`,
+    };
   }
 
   const result = (await response.json()) as TurnstileSiteverifyResponse;
 
   if (!result.success) {
-    return false;
+    console.warn("Turnstile siteverify rejected token", {
+      errorCodes: result["error-codes"],
+      hostname: result.hostname,
+      action: result.action,
+    });
+
+    return {
+      success: false,
+      reason: result["error-codes"]?.join("_") || "siteverify_rejected",
+    };
   }
 
   if (result.action && result.action !== "request_proposal") {
-    return false;
+    console.warn("Turnstile action mismatch", {
+      action: result.action,
+      expectedAction: "request_proposal",
+    });
+
+    return {
+      success: false,
+      reason: "action_mismatch",
+    };
   }
 
-  const expectedHostname = process.env.TURNSTILE_EXPECTED_HOSTNAME;
-  if (expectedHostname && result.hostname !== expectedHostname) {
-    return false;
+  const expectedHostnames = getExpectedHostnames();
+  const verifiedHostname = normalizeHostname(result.hostname ?? "");
+
+  if (
+    expectedHostnames.length > 0 &&
+    !expectedHostnames.includes(verifiedHostname)
+  ) {
+    console.warn("Turnstile hostname mismatch", {
+      verifiedHostname,
+      expectedHostnames,
+    });
+
+    return {
+      success: false,
+      reason: "hostname_mismatch",
+    };
   }
 
-  return true;
+  return {
+    success: true,
+  };
 }

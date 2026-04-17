@@ -17,6 +17,7 @@ A premium marketing and lead-generation portal for iPay. Built with Next.js 16 (
 - **Strict Privacy Compliance**: Integrated `IntersectionObserver` that forcefully enforces users to scroll to the very bottom of the `/privacy-policy` page before unlocking the "Submit" action for their proposal.
 - **Request Proposal Dashboard**: Secure `/dashboard` overview and `/dashboard/leads` detail page mapped directly from the Supabase `leads` table to monitor request proposal submissions.
 - **Proposal Anti-Spam Protection**: `/request-proposal` submissions are handled by a server action with Cloudflare Turnstile verification, a hidden honeypot, and Supabase-backed rate limiting before any lead is inserted.
+- **Route-Safe Human Verification**: The proposal form starts Turnstile only on `/request-proposal`, preserves a fresh unused token while users review `/privacy-policy`, and restores the visible captcha when they return instead of losing verification state.
 - **Modern Request Analytics**: Dashboard overview includes responsive request proposal metrics and a Chart.js-powered request trend chart with Daily, Weekly, Monthly, and Custom date views.
 - **Full Message Review Modal**: Dashboard users can open long request proposal messages in a scrollable modal, keep the table context visible, and reply through Gmail compose with the recipient email prefilled.
 - **Polished Auth Feedback**: Login and logout actions display top-center success toasts, with logout returning users to `/login` and using a distinct red confirmation style.
@@ -92,9 +93,15 @@ TURNSTILE_EXPECTED_HOSTNAME=example.com
 
 Keep `TURNSTILE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `RATE_LIMIT_HASH_SECRET` server-only. Never prefix them with `NEXT_PUBLIC_`.
 
+### 4. Proposal Form Verification Flow
+
+The proposal form stores drafts and privacy-review state in `sessionStorage`. Turnstile is loaded with `next/script` using `onReady` so the widget can render correctly after client-side route navigation.
+
+When a visitor completes Turnstile and opens `/privacy-policy`, the `/request-proposal` page is unmounted by Next.js. The app keeps the recent unused Turnstile token for up to 4.5 minutes, then shows the captcha widget again when the visitor returns. The stored token is cleared when it expires, fails, or after any submit attempt that asks the client to reset captcha.
+
 ## Key Architectural Highlights
 
-- **`proposal-form.tsx`**: Restores draft values from `sessionStorage`, gates submission on privacy consent and Turnstile completion, and displays server-action success/error feedback through toasts.
+- **`proposal-form.tsx`**: Restores draft values and recent unused Turnstile tokens from `sessionStorage`, gates submission on privacy consent and human verification, renders the captcha after route remounts, and displays server-action success/error feedback through toasts.
 - **`request-proposal/actions.ts`**: Validates proposal fields server-side, records honeypot and rate-limit attempts, verifies Turnstile tokens, and inserts accepted leads through a server-only Supabase admin client.
 - **`proposal-rate-limit.ts`**: Hashes IP and email values with `RATE_LIMIT_HASH_SECRET` and enforces Supabase-backed submission limits without storing raw visitor identifiers.
 - **`auth-toast-listener.tsx`**: Reads auth result flags from the URL, displays login/logout success toasts at the top center, and cleans the query string after the toast is triggered.

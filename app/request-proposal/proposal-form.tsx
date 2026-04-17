@@ -43,6 +43,15 @@ const formStorageKeys = [
   "ipp_form_message",
 ];
 
+const captchaTokenStorageKey = "ipp_turnstile_token";
+const captchaIssuedAtStorageKey = "ipp_turnstile_issued_at";
+const captchaReuseWindowMs = 4.5 * 60 * 1000;
+
+function clearStoredCaptchaToken() {
+  sessionStorage.removeItem(captchaTokenStorageKey);
+  sessionStorage.removeItem(captchaIssuedAtStorageKey);
+}
+
 export function ProposalForm() {
   const [state, formAction, pending] = useActionState(
     submitProposal,
@@ -55,7 +64,10 @@ export function ProposalForm() {
   const [message, setMessage] = useState("");
   const [hasReadPrivacy, setHasReadPrivacy] = useState(false);
   const [isTurnstileLoaded, setIsTurnstileLoaded] = useState(false);
+  const [hasCheckedStoredCaptcha, setHasCheckedStoredCaptcha] =
+    useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaIssuedAt, setCaptchaIssuedAt] = useState<number | null>(null);
   const [captchaError, setCaptchaError] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const turnstileContainerRef = useRef<HTMLDivElement>(null);
@@ -92,6 +104,24 @@ export function ProposalForm() {
       const savedMessage = sessionStorage.getItem("ipp_form_message");
       if (savedMessage) setMessage(savedMessage);
       checkPrivacyStatus();
+
+      const savedCaptchaToken = sessionStorage.getItem(captchaTokenStorageKey);
+      const savedCaptchaIssuedAt = Number(
+        sessionStorage.getItem(captchaIssuedAtStorageKey)
+      );
+      const canReuseCaptcha =
+        savedCaptchaToken &&
+        savedCaptchaIssuedAt &&
+        Date.now() - savedCaptchaIssuedAt < captchaReuseWindowMs;
+
+      if (canReuseCaptcha) {
+        setCaptchaToken(savedCaptchaToken);
+        setCaptchaIssuedAt(savedCaptchaIssuedAt);
+      } else {
+        clearStoredCaptchaToken();
+      }
+
+      setHasCheckedStoredCaptcha(true);
     });
 
     window.addEventListener("storage", checkPrivacyStatus);
@@ -107,6 +137,7 @@ export function ProposalForm() {
     if (
       !turnstileSiteKey ||
       !isTurnstileLoaded ||
+      !hasCheckedStoredCaptcha ||
       !window.turnstile ||
       !turnstileContainerRef.current ||
       turnstileWidgetIdRef.current
@@ -121,15 +152,23 @@ export function ProposalForm() {
         action: "request_proposal",
         theme: "auto",
         callback: (token) => {
+          const issuedAt = Date.now();
+          sessionStorage.setItem(captchaTokenStorageKey, token);
+          sessionStorage.setItem(captchaIssuedAtStorageKey, String(issuedAt));
           setCaptchaToken(token);
+          setCaptchaIssuedAt(issuedAt);
           setCaptchaError("");
         },
         "expired-callback": () => {
+          clearStoredCaptchaToken();
           setCaptchaToken("");
+          setCaptchaIssuedAt(null);
           setCaptchaError("Human verification expired. Please verify again.");
         },
         "error-callback": () => {
+          clearStoredCaptchaToken();
           setCaptchaToken("");
+          setCaptchaIssuedAt(null);
           setCaptchaError("Human verification failed. Please try again.");
         },
       }
@@ -141,7 +180,26 @@ export function ProposalForm() {
         turnstileWidgetIdRef.current = null;
       }
     };
-  }, [isTurnstileLoaded, turnstileSiteKey]);
+  }, [hasCheckedStoredCaptcha, isTurnstileLoaded, turnstileSiteKey]);
+
+  useEffect(() => {
+    if (!captchaToken || !captchaIssuedAt) return;
+
+    const expiresIn = captchaReuseWindowMs - (Date.now() - captchaIssuedAt);
+
+    const timeoutId = window.setTimeout(() => {
+      clearStoredCaptchaToken();
+      setCaptchaToken("");
+      setCaptchaIssuedAt(null);
+      setCaptchaError("Human verification expired. Please verify again.");
+
+      if (turnstileWidgetIdRef.current && window.turnstile) {
+        window.turnstile.reset(turnstileWidgetIdRef.current);
+      }
+    }, Math.max(0, expiresIn));
+
+    return () => window.clearTimeout(timeoutId);
+  }, [captchaIssuedAt, captchaToken]);
 
   useEffect(() => {
     if (!state.submittedAt) return;
@@ -163,7 +221,9 @@ export function ProposalForm() {
       }
 
       if (state.resetCaptcha) {
+        clearStoredCaptchaToken();
         setCaptchaToken("");
+        setCaptchaIssuedAt(null);
         setCaptchaError("");
 
         if (turnstileWidgetIdRef.current && window.turnstile) {
@@ -180,9 +240,10 @@ export function ProposalForm() {
     <>
       {turnstileSiteKey && (
         <Script
+          id="cloudflare-turnstile"
           src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
           strategy="afterInteractive"
-          onLoad={() => setIsTurnstileLoaded(true)}
+          onReady={() => setIsTurnstileLoaded(Boolean(window.turnstile))}
         />
       )}
 
@@ -430,12 +491,18 @@ export function ProposalForm() {
         {/* Human verification */}
         <div className="space-y-2">
           {turnstileSiteKey ? (
-            <div className="flex w-full items-center justify-start overflow-hidden">
-              <div
-                ref={turnstileContainerRef}
-                className="max-w-full overflow-hidden"
-              />
-            </div>
+            hasCheckedStoredCaptcha ? (
+              <div className="flex w-full items-center justify-start overflow-hidden">
+                <div
+                  ref={turnstileContainerRef}
+                  className="max-w-full overflow-hidden"
+                />
+              </div>
+            ) : (
+              <p className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-subtle)] px-3 py-2 text-xs text-[var(--text-muted)]">
+                Loading human verification...
+              </p>
+            )
           ) : (
             <p className="rounded-lg border border-red-300/40 bg-red-50/60 px-3 py-2 text-xs text-red-700">
               Human verification is not configured yet.

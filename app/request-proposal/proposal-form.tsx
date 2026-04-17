@@ -4,7 +4,7 @@ import { submitProposal, type ProposalFormState } from "./actions";
 import Link from "next/link";
 import Script from "next/script";
 import { useActionState, useEffect, useRef, useState } from "react";
-import { toast } from "react-hot-toast";
+import { toast, type ToastOptions } from "react-hot-toast";
 
 type TurnstileRenderOptions = {
   sitekey: string;
@@ -42,6 +42,21 @@ const formStorageKeys = [
   "ipp_form_contact_number",
   "ipp_form_message",
 ];
+
+const proposalErrorToastOptions: ToastOptions = {
+  style: {
+    border: "1px solid var(--border-orange)",
+    borderRadius: "8px",
+    background:
+      "linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-subtle) 100%)",
+    color: "var(--text-primary)",
+    boxShadow: "var(--shadow-large)",
+  },
+  iconTheme: {
+    primary: "var(--brand)",
+    secondary: "var(--bg-elevated)",
+  },
+};
 
 export function ProposalForm() {
   const [state, formAction, pending] = useActionState(
@@ -165,7 +180,7 @@ export function ProposalForm() {
       }
 
       if (state.status === "error") {
-        toast.error(state.message);
+        toast.error(state.message, proposalErrorToastOptions);
       }
 
       if (state.resetCaptcha) {

@@ -21,8 +21,10 @@ type CountOptions = {
   column: "ip_hash" | "email_hash";
   value: string;
   since: Date;
-  acceptedOnly?: boolean;
 };
+
+const ACCEPTED_IP_LIMIT_PER_HOUR = 3;
+const ACCEPTED_EMAIL_LIMIT_PER_DAY = 5;
 
 function getHashSecret() {
   const secret = process.env.RATE_LIMIT_HASH_SECRET;
@@ -48,19 +50,13 @@ async function countAttempts({
   column,
   value,
   since,
-  acceptedOnly,
 }: CountOptions) {
-  let query = createAdminClient()
+  const { count, error } = await createAdminClient()
     .from("proposal_submission_attempts")
     .select("id", { count: "exact", head: true })
     .eq(column, value)
+    .eq("accepted", true)
     .gte("created_at", since.toISOString());
-
-  if (acceptedOnly) {
-    query = query.eq("accepted", true);
-  }
-
-  const { count, error } = await query;
 
   if (error) {
     throw new Error(`Unable to check proposal rate limit: ${error.message}`);
@@ -79,30 +75,13 @@ export async function checkProposalRateLimit({
   const ipHash = hashRateLimitValue(ip || "unknown");
   const emailHash = hashRateLimitValue(email);
 
-  const rawIpAttempts = await countAttempts({
-    column: "ip_hash",
-    value: ipHash,
-    since: minutesAgo(10),
-  });
-
-  if (rawIpAttempts >= 5) {
-    return {
-      allowed: false,
-      ipHash,
-      emailHash,
-      reason: "ip_attempts_10m",
-      retryAfterSeconds: 10 * 60,
-    };
-  }
-
   const acceptedIpAttempts = await countAttempts({
     column: "ip_hash",
     value: ipHash,
     since: minutesAgo(60),
-    acceptedOnly: true,
   });
 
-  if (acceptedIpAttempts >= 3) {
+  if (acceptedIpAttempts >= ACCEPTED_IP_LIMIT_PER_HOUR) {
     return {
       allowed: false,
       ipHash,
@@ -116,10 +95,9 @@ export async function checkProposalRateLimit({
     column: "email_hash",
     value: emailHash,
     since: minutesAgo(24 * 60),
-    acceptedOnly: true,
   });
 
-  if (acceptedEmailAttempts >= 5) {
+  if (acceptedEmailAttempts >= ACCEPTED_EMAIL_LIMIT_PER_DAY) {
     return {
       allowed: false,
       ipHash,
@@ -136,40 +114,23 @@ export async function checkProposalRateLimit({
   };
 }
 
-export async function recordProposalAttempt({
+export async function recordAcceptedProposalAttempt({
   ipHash,
   emailHash,
-  accepted,
-  reason,
 }: {
   ipHash: string;
   emailHash: string;
-  accepted: boolean;
-  reason: string;
 }) {
   const { error } = await createAdminClient()
     .from("proposal_submission_attempts")
     .insert({
       ip_hash: ipHash,
       email_hash: emailHash,
-      accepted,
-      reason,
+      accepted: true,
+      reason: "accepted",
     });
 
   if (error) {
     throw new Error(`Unable to record proposal attempt: ${error.message}`);
   }
-}
-
-export function createProposalAttemptHashes({
-  ip,
-  email,
-}: {
-  ip: string;
-  email: string;
-}) {
-  return {
-    ipHash: hashRateLimitValue(ip || "unknown"),
-    emailHash: hashRateLimitValue(email || "unknown"),
-  };
 }

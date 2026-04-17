@@ -60,7 +60,29 @@ The site runs locally at `http://localhost:3000`.
 
 ### 3. Configure Proposal Anti-Spam
 
-Run the Supabase SQL setup in `supabase/proposal-anti-spam.sql` from the Supabase SQL Editor. This creates the submission-attempt table, indexes the rate-limit lookups, enables RLS, and revokes direct browser inserts into `leads` so proposal creation must go through the Next.js server action.
+Run the Supabase SQL setup in `supabase/proposal-anti-spam.sql` from the Supabase SQL Editor. This creates the accepted-submission tracking table, indexes the rate-limit lookups, enables RLS, and revokes direct browser inserts into `leads` so proposal creation must go through the Next.js server action.
+
+If the tracking table already exists from an older setup, run this one-time cleanup in the Supabase SQL Editor so only accepted submissions remain:
+
+```sql
+delete from public.proposal_submission_attempts
+where accepted = false;
+
+alter table public.proposal_submission_attempts
+alter column accepted set default true;
+
+alter table public.proposal_submission_attempts
+alter column reason set default 'accepted';
+
+create index if not exists proposal_submission_attempts_ip_created_idx
+  on public.proposal_submission_attempts (ip_hash, created_at desc);
+
+create index if not exists proposal_submission_attempts_email_created_idx
+  on public.proposal_submission_attempts (email_hash, created_at desc);
+
+create index if not exists proposal_submission_attempts_created_idx
+  on public.proposal_submission_attempts (created_at desc);
+```
 
 Create a Cloudflare Turnstile widget and add the hostnames you will use:
 
@@ -98,13 +120,13 @@ Keep `TURNSTILE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `RATE_LIMIT_HASH_S
 
 The proposal form stores drafts and privacy-review state in `sessionStorage`. Turnstile is loaded with `next/script` using `onReady` so the widget can render correctly after client-side route navigation.
 
-When a visitor completes Turnstile and opens `/privacy-policy`, the `/request-proposal` page is unmounted by Next.js. The app keeps the recent unused Turnstile token for up to 4.5 minutes, then shows the captcha widget again when the visitor returns. The stored token is cleared when it expires, fails, or after any submit attempt that asks the client to reset captcha.
+Turnstile verification must be completed on the active `/request-proposal` page before Submit is enabled. Captcha failures, honeypot hits, rate-limit blocks, validation errors, and failed inserts are not saved to Supabase; only accepted submissions are recorded in `proposal_submission_attempts` for future rate-limit checks.
 
 ## Key Architectural Highlights
 
 - **`proposal-form.tsx`**: Restores draft values from `sessionStorage`, gates submission on privacy consent and live human verification, renders the captcha after route remounts, and displays server-action success/error feedback through toasts.
-- **`request-proposal/actions.ts`**: Validates proposal fields server-side, records honeypot and rate-limit attempts, verifies Turnstile tokens, and inserts accepted leads through a server-only Supabase admin client.
-- **`proposal-rate-limit.ts`**: Hashes IP and email values with `RATE_LIMIT_HASH_SECRET` and enforces Supabase-backed submission limits without storing raw visitor identifiers. Current limits are 5 raw IP attempts per 10 minutes, 3 accepted IP submissions per hour, and 5 accepted email submissions per 24 hours.
+- **`request-proposal/actions.ts`**: Validates proposal fields server-side, verifies Turnstile tokens, and inserts accepted leads through a server-only Supabase admin client.
+- **`proposal-rate-limit.ts`**: Hashes IP and email values with `RATE_LIMIT_HASH_SECRET` and enforces Supabase-backed accepted-submission limits without storing raw visitor identifiers. Current limits are 3 accepted IP submissions per hour and 5 accepted email submissions per 24 hours.
 - **`auth-toast-listener.tsx`**: Reads auth result flags from the URL, displays login/logout success toasts at the top center, and cleans the query string after the toast is triggered.
 - **`login-form.tsx`**: Handles sign-in errors, pending state, and password visibility toggling with accessible eye icons.
 - **`dashboard-charts.tsx`**: Loads Chart.js from a pinned CDN URL and renders the request trend chart with Daily, Weekly, Monthly, and Custom date range controls.

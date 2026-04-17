@@ -4,8 +4,7 @@ import { headers } from "next/headers";
 import { createAdminClient } from "@/app/lib/supabase-admin";
 import {
   checkProposalRateLimit,
-  createProposalAttemptHashes,
-  recordProposalAttempt,
+  recordAcceptedProposalAttempt,
 } from "@/app/lib/proposal-rate-limit";
 import { verifyTurnstileToken } from "@/app/lib/turnstile";
 
@@ -113,18 +112,7 @@ export async function submitProposal(
   const clientIp = getClientIp(headersList);
 
   try {
-    const attemptHashes = createProposalAttemptHashes({
-      ip: clientIp,
-      email: values.email,
-    });
-
     if (values.honeypot) {
-      await recordProposalAttempt({
-        ...attemptHashes,
-        accepted: false,
-        reason: "honeypot",
-      });
-
       return {
         status: "success",
         message: "Request submitted successfully! We'll be in touch soon.",
@@ -139,13 +127,6 @@ export async function submitProposal(
     });
 
     if (!rateLimit.allowed) {
-      await recordProposalAttempt({
-        ipHash: rateLimit.ipHash,
-        emailHash: rateLimit.emailHash,
-        accepted: false,
-        reason: rateLimit.reason,
-      });
-
       return {
         status: "error",
         message:
@@ -161,13 +142,6 @@ export async function submitProposal(
     });
 
     if (!turnstileResult.success) {
-      await recordProposalAttempt({
-        ipHash: rateLimit.ipHash,
-        emailHash: rateLimit.emailHash,
-        accepted: false,
-        reason: `turnstile_${turnstileResult.reason}`.slice(0, 120),
-      });
-
       return {
         status: "error",
         message: "Please complete the human verification and try again.",
@@ -185,12 +159,6 @@ export async function submitProposal(
     });
 
     if (error) {
-      await recordProposalAttempt({
-        ipHash: rateLimit.ipHash,
-        emailHash: rateLimit.emailHash,
-        accepted: false,
-        reason: "lead_insert_failed",
-      });
       console.error("Error submitting proposal request:", error);
 
       return {
@@ -201,11 +169,9 @@ export async function submitProposal(
       };
     }
 
-    await recordProposalAttempt({
+    await recordAcceptedProposalAttempt({
       ipHash: rateLimit.ipHash,
       emailHash: rateLimit.emailHash,
-      accepted: true,
-      reason: "accepted",
     });
 
     return {

@@ -7,6 +7,7 @@ import {
   recordAcceptedProposalAttempt,
 } from "@/app/lib/proposal-rate-limit";
 import { verifyTurnstileToken } from "@/app/lib/turnstile";
+import { getProposalEmailError } from "./email-policy";
 
 type ProposalField = "name" | "company" | "email" | "contactNumber" | "terms";
 
@@ -57,12 +58,10 @@ function validateProposalForm(formData: FormData) {
     fieldErrors.company = "Enter your company name.";
   }
 
-  if (
-    !email ||
-    email.length > 254 ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  ) {
-    fieldErrors.email = "Enter a valid email address.";
+  const emailError = getProposalEmailError(email);
+
+  if (emailError) {
+    fieldErrors.email = emailError;
   }
 
   if (

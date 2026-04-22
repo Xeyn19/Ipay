@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/app/lib/supabase-server";
+import { getAutoReplyStatus } from "@/app/dashboard/auto-reply-status";
 import { DashboardCharts } from "./dashboard-charts";
 
 export const metadata: Metadata = {
@@ -9,17 +10,27 @@ export const metadata: Metadata = {
 };
 
 type Lead = {
-  id?: number;
-  name?: string;
+  auto_reply_last_error?: string | null;
+  auto_reply_sent_at?: string | null;
+  auto_reply_status?: string | null;
   company?: string;
-  email?: string;
   contact_number?: string;
-  message?: string;
   created_at?: string;
+  email?: string;
+  id?: number;
+  message?: string;
+  name?: string;
+};
+
+type SummaryCard = {
+  icon: "failed" | "ready" | "requests" | "sent";
+  label: string;
+  tone: string;
+  value: number;
 };
 
 function formatDate(dateString: string | undefined) {
-  if (!dateString) return "—";
+  if (!dateString) return "-";
 
   return new Date(dateString).toLocaleDateString("en-PH", {
     year: "numeric",
@@ -28,41 +39,126 @@ function formatDate(dateString: string | undefined) {
   });
 }
 
-function getMetricCards(leads: Lead[]) {
+function AutoReplyBadge({
+  autoReplyEnabled,
+  lead,
+}: {
+  autoReplyEnabled: boolean;
+  lead: Lead;
+}) {
+  const status = getAutoReplyStatus(lead, autoReplyEnabled);
+
+  return (
+    <span
+      className={`inline-flex min-w-[5.5rem] items-center justify-center rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] ${status.className}`}
+    >
+      {status.label}
+    </span>
+  );
+}
+
+function getMetricCards(leads: Lead[]): SummaryCard[] {
   return [
     {
-      label: "Total requests",
+      icon: "requests",
+      label: "Total Requests",
+      tone: "brand",
       value: leads.length,
-      tone: "brand",
-    },
-    {
-      label: "Can email back",
-      value: leads.filter((lead) => Boolean(lead.email?.trim())).length,
-      tone: "blue",
-    },
-    {
-      label: "Can call back",
-      value: leads.filter((lead) => Boolean(lead.contact_number?.trim())).length,
-      tone: "brand",
     },
   ];
 }
 
-function MetricIcon({ tone }: { tone: string }) {
+function getAutoReplyBreakdownCards(
+  leads: Lead[],
+  autoReplyEnabled: boolean
+): SummaryCard[] {
+  const statusCounts = leads.reduce(
+    (counts, lead) => {
+      const status = getAutoReplyStatus(lead, autoReplyEnabled).label;
+
+      if (status === "Sent") counts.sent += 1;
+      if (status === "Failed") counts.failed += 1;
+      if (status === "Ready") counts.ready += 1;
+
+      return counts;
+    },
+    {
+      failed: 0,
+      ready: 0,
+      sent: 0,
+    }
+  );
+
+  return [
+    {
+      icon: "sent",
+      label: "Auto-Replies Sent",
+      tone: "green",
+      value: statusCounts.sent,
+    },
+    {
+      icon: "failed",
+      label: "Auto-Replies Failed",
+      tone: "red",
+      value: statusCounts.failed,
+    },
+    {
+      icon: "ready",
+      label: "Auto-Replies Ready to Send",
+      tone: "gold",
+      value: statusCounts.ready,
+    },
+  ];
+}
+
+function MetricIcon({
+  icon,
+  tone,
+}: {
+  icon: "failed" | "ready" | "requests" | "sent";
+  tone: string;
+}) {
   const colorClass =
     tone === "green"
       ? "bg-[var(--tone-green-soft)] text-[var(--tone-green)]"
+      : tone === "red"
+        ? "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-300"
       : tone === "gold"
         ? "bg-[var(--tone-gold-soft)] text-[var(--tone-gold)]"
         : tone === "blue"
           ? "bg-[var(--tone-blue-soft)] text-[var(--tone-blue)]"
           : "bg-[var(--brand-pale)] text-[var(--brand)]";
 
+  const iconPath =
+    icon === "sent" ? (
+      <>
+        <path d="M17 6l-7.5 7.5L6 10" />
+        <path d="M17 10v5a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h8" />
+      </>
+    ) : icon === "failed" ? (
+      <>
+        <path d="M10 3l8 14H2L10 3z" />
+        <path d="M10 8v4" />
+        <path d="M10 15h.01" />
+      </>
+    ) : icon === "ready" ? (
+      <>
+        <path d="M4 6h12a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z" />
+        <path d="M2 8l8 5 8-5" />
+        <path d="M14 4h4" />
+        <path d="M16 2v4" />
+      </>
+    ) : (
+      <>
+        <path d="M4 14.5V7.75A2.75 2.75 0 016.75 5h6.5A2.75 2.75 0 0116 7.75v4.5A2.75 2.75 0 0113.25 15H8l-4 2.5v-3z" />
+        <path d="M7.5 9h5M7.5 12h3.25" />
+      </>
+    );
+
   return (
     <span className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${colorClass}`}>
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
-        <path d="M4 14.5V7.75A2.75 2.75 0 016.75 5h6.5A2.75 2.75 0 0116 7.75v4.5A2.75 2.75 0 0113.25 15H8l-4 2.5v-3z" />
-        <path d="M7.5 9h5M7.5 12h3.25" />
+        {iconPath}
       </svg>
     </span>
   );
@@ -70,6 +166,7 @@ function MetricIcon({ tone }: { tone: string }) {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
+  const autoReplyEnabled = process.env.AUTO_REPLY_ENABLED !== "false";
 
   const { data: leads, error } = await supabase
     .from("leads")
@@ -78,6 +175,11 @@ export default async function DashboardPage() {
 
   const leadRows = (leads ?? []) as Lead[];
   const metricCards = getMetricCards(leadRows);
+  const autoReplyBreakdownCards = getAutoReplyBreakdownCards(
+    leadRows,
+    autoReplyEnabled
+  );
+  const summaryCards = [...metricCards, ...autoReplyBreakdownCards];
   const requestDates = leadRows
     .map((lead) => lead.created_at)
     .filter((date): date is string => Boolean(date));
@@ -94,7 +196,7 @@ export default async function DashboardPage() {
             Request Proposal Analytics
           </h1>
           <p className="mt-1 text-sm text-[var(--text-muted)]">
-            Review request proposal activity and follow-up readiness.
+            Review request proposal activity and auto-reply readiness.
           </p>
         </div>
         <Link
@@ -123,8 +225,8 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <>
-          <section className="grid gap-4 md:grid-cols-3">
-            {metricCards.map((metric) => (
+          <section className="grid gap-4 lg:grid-cols-4">
+            {summaryCards.map((metric) => (
               <article
                 key={metric.label}
                 className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-elevated)] p-5 shadow-[var(--shadow-card)]"
@@ -138,7 +240,7 @@ export default async function DashboardPage() {
                       {metric.value}
                     </p>
                   </div>
-                  <MetricIcon tone={metric.tone} />
+                  <MetricIcon icon={metric.icon} tone={metric.tone} />
                 </div>
               </article>
             ))}
@@ -192,9 +294,15 @@ export default async function DashboardPage() {
                         {lead.company || lead.email || "No company or email provided"}
                       </p>
                     </div>
-                    <p className="text-xs font-medium text-[var(--text-faint)] sm:text-right">
-                      {formatDate(lead.created_at)}
-                    </p>
+                    <div className="flex items-center gap-3 sm:flex-col sm:items-end">
+                      <AutoReplyBadge
+                        autoReplyEnabled={autoReplyEnabled}
+                        lead={lead}
+                      />
+                      <p className="text-xs font-medium text-[var(--text-faint)] sm:text-right">
+                        {formatDate(lead.created_at)}
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>

@@ -9,6 +9,7 @@ export const metadata: Metadata = {
 
 export default async function LeadsPage() {
   const supabase = await createClient();
+  const autoReplyEnabled = process.env.AUTO_REPLY_ENABLED !== "false";
 
   const { data: leads, error } = await supabase
     .from("leads")
@@ -28,7 +29,11 @@ export default async function LeadsPage() {
       </div>
 
       {/* Table */}
-      <LeadsTable leads={leads ?? []} error={error?.message} />
+      <LeadsTable
+        autoReplyEnabled={autoReplyEnabled}
+        leads={leads ?? []}
+        error={error?.message}
+      />
     </div>
   );
 }

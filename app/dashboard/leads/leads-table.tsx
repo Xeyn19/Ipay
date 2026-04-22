@@ -1,19 +1,34 @@
 'use client'
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useOptimistic, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { sendLeadAutoReply } from "./actions";
 
 type Lead = {
-  id?: number;
-  name?: string;
+  auto_reply_last_error?: string | null;
+  auto_reply_message_id?: string | null;
+  auto_reply_sent_at?: string | null;
+  auto_reply_sent_by?: string | null;
+  auto_reply_status?: string | null;
+  auto_reply_subject?: string | null;
   company?: string;
-  email?: string;
   contact_number?: string;
-  message?: string;
   created_at?: string;
+  email?: string;
+  id?: number;
+  message?: string;
+  name?: string;
 };
 
-function formatDate(dateString: string | undefined) {
-  if (!dateString) return "—";
+type ReplyFeedback = {
+  message: string;
+  status: "error" | "success";
+};
+
+function formatDate(dateString: string | undefined | null) {
+  if (!dateString) return "-";
+
   return new Date(dateString).toLocaleDateString("en-PH", {
     year: "numeric",
     month: "short",
@@ -23,26 +38,101 @@ function formatDate(dateString: string | undefined) {
   });
 }
 
-function getGmailComposeUrl(email: string) {
-  return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email.trim())}`;
+function getAutoReplyStatus(lead: Lead, autoReplyEnabled: boolean) {
+  if (!autoReplyEnabled) {
+    return {
+      className:
+        "border-[var(--border-light)] bg-[var(--bg-subtle)] text-[var(--text-faint)]",
+      label: "Disabled",
+    };
+  }
+
+  if (!lead.email?.trim()) {
+    return {
+      className:
+        "border-[var(--border-light)] bg-[var(--bg-subtle)] text-[var(--text-faint)]",
+      label: "No email",
+    };
+  }
+
+  if (lead.auto_reply_sent_at) {
+    return {
+      className:
+        "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-950/30 dark:text-emerald-300",
+      label: "Sent",
+    };
+  }
+
+  if (lead.auto_reply_status === "sending") {
+    return {
+      className:
+        "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-950/30 dark:text-sky-300",
+      label: "Sending",
+    };
+  }
+
+  if (lead.auto_reply_status === "failed") {
+    return {
+      className:
+        "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-950/30 dark:text-red-300",
+      label: "Failed",
+    };
+  }
+
+  return {
+    className:
+      "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-300",
+    label: "Ready",
+  };
+}
+
+function AutoReplyBadge({
+  autoReplyEnabled,
+  lead,
+}: {
+  autoReplyEnabled: boolean;
+  lead: Lead;
+}) {
+  const status = getAutoReplyStatus(lead, autoReplyEnabled);
+
+  return (
+    <span
+      className={`inline-flex min-w-[5.5rem] items-center justify-center rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] ${status.className}`}
+    >
+      {status.label}
+    </span>
+  );
 }
 
 export function LeadsTable({
+  autoReplyEnabled,
   leads,
   error,
 }: {
+  autoReplyEnabled: boolean;
   leads: Lead[];
   error?: string;
 }) {
+  const router = useRouter();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [replyFeedback, setReplyFeedback] = useState<ReplyFeedback | null>(null);
+  const [isSendingReply, startReplyTransition] = useTransition();
   const modalTitleId = useId();
   const modalDescriptionId = useId();
+  const [leadRows, updateLeadRows] = useOptimistic(
+    leads,
+    (currentLeads, updatedLead: Partial<Lead> & Pick<Lead, "id">) =>
+      currentLeads.map((lead) =>
+        lead.id === updatedLead.id ? { ...lead, ...updatedLead } : lead
+      )
+  );
 
   useEffect(() => {
     if (!selectedLead) return;
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
+        setReplyFeedback(null);
         setSelectedLead(null);
       }
     }
@@ -53,6 +143,46 @@ export function LeadsTable({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [selectedLead]);
+
+  function updateLeadState(updatedLead: Partial<Lead> & Pick<Lead, "id">) {
+    updateLeadRows(updatedLead);
+    setSelectedLead((currentLead) =>
+      currentLead?.id === updatedLead.id
+        ? { ...currentLead, ...updatedLead }
+        : currentLead
+    );
+  }
+
+  function handleSendAutoReply() {
+    const leadId = selectedLead?.id;
+
+    if (!leadId) {
+      return;
+    }
+
+    startReplyTransition(async () => {
+      setReplyFeedback(null);
+
+      const result = await sendLeadAutoReply(leadId);
+
+      if (result.lead?.id) {
+        updateLeadState(result.lead);
+      }
+
+      setReplyFeedback({
+        message: result.message,
+        status: result.status,
+      });
+
+      if (result.status === "success") {
+        toast.success(result.message);
+        router.refresh();
+        return;
+      }
+
+      toast.error(result.message);
+    });
+  }
 
   if (error) {
     return (
@@ -74,7 +204,7 @@ export function LeadsTable({
     );
   }
 
-  if (leads.length === 0) {
+  if (leadRows.length === 0) {
     return (
       <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-elevated)] px-6 py-16 text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--border-light)] bg-[var(--bg-subtle)]">
@@ -95,161 +225,223 @@ export function LeadsTable({
   }
 
   const selectedLeadEmail = selectedLead?.email?.trim();
+  const selectedLeadHasSentReply = Boolean(selectedLead?.auto_reply_sent_at);
+  const selectedLeadIsSending = selectedLead?.auto_reply_status === "sending";
+  const canSendAutoReply =
+    Boolean(selectedLead?.id) &&
+    autoReplyEnabled &&
+    Boolean(selectedLeadEmail) &&
+    !selectedLeadHasSentReply &&
+    !selectedLeadIsSending;
 
   return (
     <>
       <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
-
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm" id="leads-table">
-          <thead>
-            <tr className="border-b border-[var(--border-light)] bg-[var(--bg-subtle)]">
-              <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                Name
-              </th>
-              <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                Company
-              </th>
-              <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                Email
-              </th>
-              <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                Contact Number
-              </th>
-              <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                Message
-              </th>
-              <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                Request Date
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--border-light)]">
-            {leads.map((lead, idx) => (
-              <tr
-                key={lead.id ?? idx}
-                className="transition-colors duration-150 hover:bg-[var(--bg-subtle)]"
-              >
-                <td className="whitespace-nowrap px-5 py-3.5 font-medium text-[var(--text-primary)]">
-                  {lead.name || "—"}
-                </td>
-                <td className="whitespace-nowrap px-5 py-3.5 text-[var(--text-secondary)]">
-                  {lead.company || "—"}
-                </td>
-                <td className="whitespace-nowrap px-5 py-3.5 text-[var(--text-secondary)]">
-                  {lead.email ? (
-                    <a
-                      href={`mailto:${lead.email}`}
-                      className="text-[var(--brand)] underline decoration-[var(--brand)]/30 underline-offset-2 transition-colors hover:decoration-[var(--brand)]"
-                    >
-                      {lead.email}
-                    </a>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="whitespace-nowrap px-5 py-3.5 text-[var(--text-secondary)]">
-                  {lead.contact_number || "—"}
-                </td>
-                <td className="max-w-xs px-5 py-3.5 text-[var(--text-muted)]">
-                  {lead.message ? (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedLead(lead)}
-                      className="block max-w-xs truncate rounded-md text-left text-[var(--brand)] underline decoration-[var(--brand)]/25 underline-offset-2 transition-colors hover:decoration-[var(--brand)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
-                      aria-label={`Read full message from ${lead.name || lead.email || "request proposal"}`}
-                    >
-                      {lead.message}
-                    </button>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="whitespace-nowrap px-5 py-3.5 text-xs text-[var(--text-faint)]">
-                  {formatDate(lead.created_at)}
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm" id="leads-table">
+            <thead>
+              <tr className="border-b border-[var(--border-light)] bg-[var(--bg-subtle)]">
+                <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Name
+                </th>
+                <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Company
+                </th>
+                <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Email
+                </th>
+                <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Contact Number
+                </th>
+                <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Message
+                </th>
+                <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Auto Reply
+                </th>
+                <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Request Date
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-[var(--border-light)]">
+              {leadRows.map((lead, idx) => (
+                <tr
+                  key={lead.id ?? idx}
+                  className="transition-colors duration-150 hover:bg-[var(--bg-subtle)]"
+                >
+                  <td className="whitespace-nowrap px-5 py-3.5 font-medium text-[var(--text-primary)]">
+                    {lead.name || "-"}
+                  </td>
+                  <td className="whitespace-nowrap px-5 py-3.5 text-[var(--text-secondary)]">
+                    {lead.company || "-"}
+                  </td>
+                  <td className="whitespace-nowrap px-5 py-3.5 text-[var(--text-secondary)]">
+                    {lead.email ? (
+                      <a
+                        href={`mailto:${lead.email}`}
+                        className="text-[var(--brand)] underline decoration-[var(--brand)]/30 underline-offset-2 transition-colors hover:decoration-[var(--brand)]"
+                      >
+                        {lead.email}
+                      </a>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td className="whitespace-nowrap px-5 py-3.5 text-[var(--text-secondary)]">
+                    {lead.contact_number || "-"}
+                  </td>
+                  <td className="max-w-xs px-5 py-3.5 text-[var(--text-muted)]">
+                    {lead.message ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplyFeedback(null);
+                          setSelectedLead(lead);
+                        }}
+                        className="block max-w-xs truncate rounded-md text-left text-[var(--brand)] underline decoration-[var(--brand)]/25 underline-offset-2 transition-colors hover:decoration-[var(--brand)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+                        aria-label={`Read full message from ${lead.name || lead.email || "request proposal"}`}
+                      >
+                        {lead.message}
+                      </button>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td className="whitespace-nowrap px-5 py-3.5">
+                    <AutoReplyBadge autoReplyEnabled={autoReplyEnabled} lead={lead} />
+                  </td>
+                  <td className="whitespace-nowrap px-5 py-3.5 text-xs text-[var(--text-faint)]">
+                    {formatDate(lead.created_at)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-      </div>
+
       {selectedLead && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 py-6 sm:px-6">
           <button
             type="button"
             aria-label="Close message"
-            onClick={() => setSelectedLead(null)}
+            onClick={() => {
+              setReplyFeedback(null);
+              setSelectedLead(null);
+            }}
             className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
           />
-        <section
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={modalTitleId}
-          aria-describedby={modalDescriptionId}
-          className="relative flex max-h-[calc(100vh-3rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-large)]"
-        >
-          <div className="flex items-start justify-between gap-4 border-b border-[var(--border-light)] bg-[var(--bg-subtle)] px-5 py-4">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                Request proposal message
-              </p>
-              <h2
-                id={modalTitleId}
-                className="mt-1 truncate font-heading text-lg font-semibold tracking-[-0.02em] text-[var(--text-primary)]"
-              >
-                {selectedLead.name || "Unnamed request proposal"}
-              </h2>
-              <p
-                id={modalDescriptionId}
-                className="mt-1 text-sm text-[var(--text-muted)]"
-              >
-                {selectedLead.company || "No company provided"} | {formatDate(selectedLead.created_at)}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelectedLead(null)}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-elevated-muted)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-subtle)]"
-              aria-label="Close message"
-            >
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
-                <path d="M5 5l10 10M15 5L5 15" />
-              </svg>
-            </button>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
-            <p className="whitespace-pre-wrap break-words text-sm leading-6 text-[var(--text-secondary)]">
-              {selectedLead.message}
-            </p>
-          </div>
-
-          <div className="flex flex-col-reverse gap-2 border-t border-[var(--border-light)] bg-[var(--bg-elevated-muted)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-[var(--text-faint)]">
-              {selectedLeadEmail || "No email provided"}
-            </p>
-            <div className="flex flex-col gap-2 sm:flex-row">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={modalTitleId}
+            aria-describedby={modalDescriptionId}
+            className="relative flex max-h-[calc(100vh-3rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-large)]"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-[var(--border-light)] bg-[var(--bg-subtle)] px-5 py-4">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Request proposal message
+                </p>
+                <h2
+                  id={modalTitleId}
+                  className="mt-1 truncate font-heading text-lg font-semibold tracking-[-0.02em] text-[var(--text-primary)]"
+                >
+                  {selectedLead.name || "Unnamed request proposal"}
+                </h2>
+                <p
+                  id={modalDescriptionId}
+                  className="mt-1 text-sm text-[var(--text-muted)]"
+                >
+                  {selectedLead.company || "No company provided"} | {formatDate(selectedLead.created_at)}
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={() => setSelectedLead(null)}
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-medium text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated-muted)]"
+                onClick={() => {
+                  setReplyFeedback(null);
+                  setSelectedLead(null);
+                }}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-elevated-muted)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-subtle)]"
+                aria-label="Close message"
               >
-                Close
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+                  <path d="M5 5l10 10M15 5L5 15" />
+                </svg>
               </button>
-              {selectedLeadEmail && (
-                <a
-                  href={getGmailComposeUrl(selectedLeadEmail)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex h-10 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white shadow-[var(--shadow-button)] hover:bg-[var(--brand-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated-muted)]"
-                >
-                  Reply in Gmail
-                </a>
-              )}
             </div>
-          </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+              <p className="whitespace-pre-wrap break-words text-sm leading-6 text-[var(--text-secondary)]">
+                {selectedLead.message}
+              </p>
+            </div>
+
+            <div className="border-t border-[var(--border-light)] bg-[var(--bg-elevated-muted)] px-5 py-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-xs text-[var(--text-faint)]">
+                    {selectedLeadEmail || "No email provided"}
+                  </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <AutoReplyBadge autoReplyEnabled={autoReplyEnabled} lead={selectedLead} />
+                    {selectedLead.auto_reply_sent_at && (
+                      <span className="text-xs text-[var(--text-faint)]">
+                        Sent {formatDate(selectedLead.auto_reply_sent_at)}
+                      </span>
+                    )}
+                  </div>
+                  {selectedLead.auto_reply_last_error && !selectedLead.auto_reply_sent_at && (
+                    <p className="mt-2 text-xs text-red-500">
+                      {selectedLead.auto_reply_last_error}
+                    </p>
+                  )}
+                  {replyFeedback && (
+                    <p
+                      className={`mt-2 text-xs ${
+                        replyFeedback.status === "success"
+                          ? "text-emerald-600 dark:text-emerald-300"
+                          : "text-red-500"
+                      }`}
+                    >
+                      {replyFeedback.message}
+                    </p>
+                  )}
+                  {!autoReplyEnabled && (
+                    <p className="mt-2 text-xs text-[var(--text-faint)]">
+                      Auto reply is disabled. Set `AUTO_REPLY_ENABLED=true` to send emails.
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReplyFeedback(null);
+                      setSelectedLead(null);
+                    }}
+                    className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-medium text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated-muted)]"
+                  >
+                    Close
+                  </button>
+                  {selectedLeadEmail && (
+                    <button
+                      type="button"
+                      disabled={!canSendAutoReply || isSendingReply}
+                      onClick={handleSendAutoReply}
+                      className="inline-flex h-10 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white shadow-[var(--shadow-button)] hover:bg-[var(--brand-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated-muted)] disabled:cursor-not-allowed disabled:bg-[var(--border-medium)] disabled:shadow-none"
+                    >
+                      {isSendingReply || selectedLeadIsSending
+                        ? "Sending auto reply..."
+                        : selectedLeadHasSentReply
+                          ? "Auto reply sent"
+                          : "Send auto reply"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
           </section>
         </div>
       )}

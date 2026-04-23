@@ -1,6 +1,6 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { createAdminClient } from "@/app/lib/supabase-admin";
 import {
   checkProposalRateLimit,
@@ -8,6 +8,7 @@ import {
 } from "@/app/lib/proposal-rate-limit";
 import { verifyTurnstileToken } from "@/app/lib/turnstile";
 import { getProposalEmailError } from "./email-policy";
+import { proposalSuccessCookieName } from "./success-cookie";
 
 type ProposalField = "name" | "company" | "email" | "contactNumber" | "terms";
 
@@ -21,6 +22,20 @@ export type ProposalFormState = {
 
 const genericError =
   "We could not send your request right now. Please try again later.";
+const successMessage =
+  "Your proposal request has been sent successfully.";
+
+async function markProposalSuccess() {
+  const cookieStore = await cookies();
+
+  cookieStore.set(proposalSuccessCookieName, "1", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/request-proposal/success",
+    maxAge: 60 * 5,
+  });
+}
 
 function getFormValue(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -112,9 +127,11 @@ export async function submitProposal(
 
   try {
     if (values.honeypot) {
+      await markProposalSuccess();
+
       return {
         status: "success",
-        message: "Request submitted successfully! We'll be in touch soon.",
+        message: successMessage,
         resetCaptcha: true,
         submittedAt: Date.now(),
       };
@@ -172,10 +189,11 @@ export async function submitProposal(
       ipHash: rateLimit.ipHash,
       emailHash: rateLimit.emailHash,
     });
+    await markProposalSuccess();
 
     return {
       status: "success",
-      message: "Request submitted successfully! We'll be in touch soon.",
+      message: successMessage,
       resetCaptcha: true,
       submittedAt: Date.now(),
     };

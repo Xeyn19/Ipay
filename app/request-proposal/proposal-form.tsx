@@ -2,6 +2,7 @@
 
 import { submitProposal, type ProposalFormState } from "./actions";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { toast, type ToastOptions } from "react-hot-toast";
@@ -58,7 +59,10 @@ const proposalErrorToastOptions: ToastOptions = {
   },
 };
 
+const proposalSuccessRedirectDelayMs = 1800;
+
 export function ProposalForm() {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(
     submitProposal,
     initialState
@@ -78,6 +82,7 @@ export function ProposalForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const turnstileContainerRef = useRef<HTMLDivElement>(null);
   const turnstileWidgetIdRef = useRef<string | null>(null);
+  const redirectTimeoutRef = useRef<number | null>(null);
   const turnstileSiteKey =
     process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
@@ -120,6 +125,16 @@ export function ProposalForm() {
       window.removeEventListener("ipp_privacy_read", checkPrivacyStatus);
     };
   }, []);
+
+  useEffect(() => {
+    router.prefetch("/request-proposal/success");
+
+    return () => {
+      if (redirectTimeoutRef.current !== null) {
+        window.clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, [router]);
 
   useEffect(() => {
     if (
@@ -168,6 +183,11 @@ export function ProposalForm() {
     if (!state.submittedAt) return;
 
     queueMicrotask(() => {
+      if (redirectTimeoutRef.current !== null) {
+        window.clearTimeout(redirectTimeoutRef.current);
+        redirectTimeoutRef.current = null;
+      }
+
       if (state.status === "success") {
         setName("");
         setCompany("");
@@ -177,6 +197,10 @@ export function ProposalForm() {
         formStorageKeys.forEach((key) => sessionStorage.removeItem(key));
         formRef.current?.reset();
         toast.success(state.message);
+        redirectTimeoutRef.current = window.setTimeout(() => {
+          redirectTimeoutRef.current = null;
+          router.push("/request-proposal/success");
+        }, proposalSuccessRedirectDelayMs);
       }
 
       if (state.status === "error") {
@@ -193,7 +217,13 @@ export function ProposalForm() {
         }
       }
     });
-  }, [state.submittedAt, state.status, state.message, state.resetCaptcha]);
+  }, [
+    router,
+    state.submittedAt,
+    state.status,
+    state.message,
+    state.resetCaptcha,
+  ]);
 
   const isCaptchaVerified = captchaStatus === "verified" && Boolean(captchaToken);
   const isSubmitDisabled =

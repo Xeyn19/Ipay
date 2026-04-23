@@ -54,7 +54,7 @@ function getClientIp(headersList: Headers) {
   );
 }
 
-function validateProposalForm(formData: FormData) {
+async function validateProposalForm(formData: FormData) {
   const name = getFormValue(formData, "name");
   const company = getFormValue(formData, "company");
   const email = getFormValue(formData, "email").toLowerCase();
@@ -73,7 +73,7 @@ function validateProposalForm(formData: FormData) {
     fieldErrors.company = "Enter your company name.";
   }
 
-  const emailError = getProposalEmailError(email);
+  const emailError = await getProposalEmailError(email);
 
   if (emailError) {
     fieldErrors.email = emailError;
@@ -110,7 +110,7 @@ export async function submitProposal(
   _prevState: ProposalFormState,
   formData: FormData
 ): Promise<ProposalFormState> {
-  const { values, fieldErrors, isValid } = validateProposalForm(formData);
+  const { values, fieldErrors, isValid } = await validateProposalForm(formData);
 
   if (!isValid) {
     return {

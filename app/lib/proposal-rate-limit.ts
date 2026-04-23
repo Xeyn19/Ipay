@@ -23,7 +23,7 @@ type CountOptions = {
   since: Date;
 };
 
-const ACCEPTED_IP_LIMIT_PER_HOUR = 3;
+const ACCEPTED_IP_LIMIT_PER_HOUR = 5;
 const ACCEPTED_EMAIL_LIMIT_PER_DAY = 5;
 
 function getHashSecret() {

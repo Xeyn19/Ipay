@@ -1,11 +1,14 @@
 "use client";
 
 import { submitProposal, type ProposalFormState } from "./actions";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { toast, type ToastOptions } from "react-hot-toast";
+import {
+  PrivacyPolicyContent,
+  PRIVACY_POLICY_LAST_UPDATED,
+} from "../privacy-policy/policy-content";
 
 type TurnstileRenderOptions = {
   sitekey: string;
@@ -43,6 +46,7 @@ const formStorageKeys = [
   "ipp_form_contact_number",
   "ipp_form_message",
 ];
+const privacyStorageKey = "ipp_privacy_read";
 
 const proposalErrorToastOptions: ToastOptions = {
   style: {
@@ -73,13 +77,18 @@ export function ProposalForm() {
   const [contactNumber, setContactNumber] = useState("");
   const [message, setMessage] = useState("");
   const [hasReadPrivacy, setHasReadPrivacy] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [isTurnstileLoaded, setIsTurnstileLoaded] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
   const [captchaStatus, setCaptchaStatus] = useState<
     "idle" | "verified" | "expired" | "error"
   >("idle");
   const [captchaError, setCaptchaError] = useState("");
+  const modalTitleId = useId();
+  const modalDescriptionId = useId();
   const formRef = useRef<HTMLFormElement>(null);
+  const privacyTriggerRef = useRef<HTMLButtonElement>(null);
+  const privacyCloseButtonRef = useRef<HTMLButtonElement>(null);
   const turnstileContainerRef = useRef<HTMLDivElement>(null);
   const turnstileWidgetIdRef = useRef<string | null>(null);
   const redirectTimeoutRef = useRef<number | null>(null);
@@ -96,11 +105,6 @@ export function ProposalForm() {
   };
 
   useEffect(() => {
-    const checkPrivacyStatus = () => {
-      const status = sessionStorage.getItem("ipp_privacy_read") === "true";
-      setHasReadPrivacy(status);
-    };
-
     queueMicrotask(() => {
       const savedName = sessionStorage.getItem("ipp_form_name");
       if (savedName) setName(savedName);
@@ -114,17 +118,38 @@ export function ProposalForm() {
       if (savedContactNumber) setContactNumber(savedContactNumber);
       const savedMessage = sessionStorage.getItem("ipp_form_message");
       if (savedMessage) setMessage(savedMessage);
-      checkPrivacyStatus();
+      setHasReadPrivacy(sessionStorage.getItem(privacyStorageKey) === "true");
     });
+  }, []);
 
-    window.addEventListener("storage", checkPrivacyStatus);
-    window.addEventListener("ipp_privacy_read", checkPrivacyStatus);
+  useEffect(() => {
+    if (!isPrivacyModalOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    const triggerElement = privacyTriggerRef.current;
+    document.body.style.overflow = "hidden";
+
+    const focusTimer = window.setTimeout(() => {
+      privacyCloseButtonRef.current?.focus();
+    }, 0);
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsPrivacyModalOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener("storage", checkPrivacyStatus);
-      window.removeEventListener("ipp_privacy_read", checkPrivacyStatus);
+      window.clearTimeout(focusTimer);
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      triggerElement?.focus();
     };
-  }, []);
+  }, [isPrivacyModalOpen]);
 
   useEffect(() => {
     router.prefetch("/request-proposal/success");
@@ -228,6 +253,12 @@ export function ProposalForm() {
   const isCaptchaVerified = captchaStatus === "verified" && Boolean(captchaToken);
   const isSubmitDisabled =
     !hasReadPrivacy || pending || !turnstileSiteKey || !isCaptchaVerified;
+
+  const openPrivacyModal = () => {
+    setIsPrivacyModalOpen(true);
+    setHasReadPrivacy(true);
+    sessionStorage.setItem(privacyStorageKey, "true");
+  };
 
   return (
     <>
@@ -438,7 +469,7 @@ export function ProposalForm() {
               disabled={!hasReadPrivacy}
               title={
                 !hasReadPrivacy
-                  ? "Please scroll through our Privacy Policy first"
+                  ? "Please review our Privacy Policy first"
                   : ""
               }
               aria-invalid={Boolean(state.fieldErrors?.terms)}
@@ -449,28 +480,36 @@ export function ProposalForm() {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label
-              htmlFor="terms-checkbox"
+            <div
               className={`text-xs leading-5 text-[var(--text-secondary)] ${
                 !hasReadPrivacy ? "opacity-70" : ""
               }`}
             >
-              By checking this box, you confirm that you have read and agree to
-              our <strong>Terms of Use</strong> and that you consent to our
-              processing of your Personal Data in accordance with our{" "}
-              <Link
-                href="/privacy-policy"
-                className="text-[var(--text-primary)] underline hover:text-[var(--brand)]"
+              <label htmlFor="terms-checkbox" className="cursor-pointer">
+                By checking this box, you confirm that you have read and agree
+                to our <strong>Terms of Use</strong> and that you consent to
+                our processing of your Personal Data in accordance with our{" "}
+              </label>
+              <button
+                type="button"
+                ref={privacyTriggerRef}
+                onClick={openPrivacyModal}
+                className="inline font-semibold text-[var(--text-primary)] underline underline-offset-2 transition-colors hover:text-[var(--brand)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)]"
               >
                 <strong>Privacy Policy</strong>
-              </Link>
+              </button>
               .
-            </label>
+            </div>
 
             {!hasReadPrivacy && (
               <p className="text-[0.65rem] font-medium text-orange-500/80">
-                For compliance purposes, kindly review our Privacy Policy to
-                proceed.
+                Review our Privacy Policy to enable the consent checkbox.
+              </p>
+            )}
+            {hasReadPrivacy && (
+              <p className="text-[0.65rem] font-medium text-emerald-600/80">
+                Privacy Policy reviewed. You can now confirm consent and
+                continue.
               </p>
             )}
             {state.fieldErrors?.terms && (
@@ -534,6 +573,89 @@ export function ProposalForm() {
           </p>
         </div>
       </form>
+
+      {isPrivacyModalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 py-6 sm:px-6">
+          <button
+            type="button"
+            aria-label="Close privacy policy"
+            onClick={() => setIsPrivacyModalOpen(false)}
+            className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
+          />
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={modalTitleId}
+            aria-describedby={modalDescriptionId}
+            className="relative flex max-h-[calc(100vh-3rem)] w-full max-w-3xl flex-col overflow-hidden rounded-[28px] border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-large)]"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-[var(--border-light)] bg-[linear-gradient(180deg,var(--bg-subtle)_0%,var(--bg-elevated)_100%)] px-5 py-4 sm:px-6">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--brand)]">
+                  Privacy Policy
+                </p>
+                <h2
+                  id={modalTitleId}
+                  className="mt-1 font-heading text-xl font-semibold tracking-[-0.03em] text-[var(--text-primary)]"
+                >
+                  How iPay handles personal data
+                </h2>
+                <p
+                  id={modalDescriptionId}
+                  className="mt-1 text-sm text-[var(--text-muted)]"
+                >
+                  Last updated {PRIVACY_POLICY_LAST_UPDATED}. Opening this
+                  policy unlocks consent for the proposal form.
+                </p>
+              </div>
+              <button
+                type="button"
+                ref={privacyCloseButtonRef}
+                onClick={() => setIsPrivacyModalOpen(false)}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-muted)] transition-colors hover:border-[var(--border-orange)] hover:bg-[var(--bg-elevated-muted)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-subtle)]"
+                aria-label="Close privacy policy"
+              >
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                >
+                  <path d="M5 5l10 10M15 5L5 15" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+              <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-base)]/75 p-4 sm:p-5">
+                <div className="prose prose-sm max-w-none prose-a:text-[var(--brand)] prose-headings:font-heading prose-headings:font-semibold prose-headings:tracking-[-0.03em] prose-headings:text-[var(--text-primary)] prose-li:text-[var(--text-muted)] prose-p:text-[var(--text-muted)] prose-strong:text-[var(--text-primary)] hover:prose-a:text-[var(--brand-dark)]">
+                  <PrivacyPolicyContent showHeading={false} />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-[var(--border-light)] bg-[var(--bg-elevated-muted)] px-5 py-4 sm:px-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs leading-5 text-[var(--text-faint)]">
+                  You can close this panel anytime and continue filling out the
+                  request form.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsPrivacyModalOpen(false)}
+                  className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated-muted)]"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
     </>
   );
 }

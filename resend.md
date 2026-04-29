@@ -1,88 +1,70 @@
-# Resend Auto Reply Testing Guide
+# SMTP / Nodemailer Auto Reply Guide
 
-This project is currently set up to test the auto-reply feature on:
+This project now sends dashboard lead auto-replies through Nodemailer using your SMTP provider.
+
+The app can run on:
 
 - `localhost`
 - `ipays.vercel.app`
 
-For now, this guide focuses on testing only.
+Those hosts are where the app runs. Your actual ability to send mail depends on whether your SMTP provider accepts the configured sender address.
 
-## Important Limitation
-
-`localhost` and `ipays.vercel.app` are where the app runs.
-
-They are not your email sender domain.
-
-That means:
-
-- you can test the app locally on `http://localhost:3000`
-- you can test the deployed app on `https://ipays.vercel.app`
-- but you still cannot send real emails from `no-reply@ipays.ph` until `ipays.ph` is verified in Resend
-
-For testing right now, use Resend's test sender:
-
-```env
-RESEND_FROM_EMAIL=onboarding@resend.dev
-```
-
-Resend only allows this sender to send to your own Resend account email.
-
-So if you use `onboarding@resend.dev`:
-
-- test only with your own email address
-- do not test with real client email addresses yet
-
-Reference:
-
-- https://resend.com/docs/knowledge-base/403-error-resend-dev-domain
-
-## Current Testing Goal
+## Current Goal
 
 Use the dashboard auto-reply button to confirm that:
 
 - the button works
 - the server action runs
-- Resend accepts the request
+- the SMTP provider accepts the message
 - the lead row updates to `Sent`
 - the auto-reply metadata is saved in Supabase
 
-## Environment Variables For Local Testing
+## Environment Variables
 
-Put these in `.env.local`:
+Put these in `.env.local` for local testing:
 
 ```env
-RESEND_API_KEY=your_resend_api_key
-RESEND_FROM_EMAIL=onboarding@resend.dev
-RESEND_REPLY_TO_EMAIL=your_email@example.com
 AUTO_REPLY_ENABLED=true
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your_smtp_username
+SMTP_PASS=your_smtp_password
+AUTO_REPLY_FROM_EMAIL=no-reply@example.com
+AUTO_REPLY_REPLY_TO_EMAIL=your_email@example.com
 ```
 
 ### Variable Meaning
 
-- `RESEND_API_KEY`
-  Your Resend API key
-
-- `RESEND_FROM_EMAIL`
-  Use `onboarding@resend.dev` for test mode only
-
-- `RESEND_REPLY_TO_EMAIL`
-  Your own email for reply handling during testing
-
 - `AUTO_REPLY_ENABLED`
   Must be `true` to allow the dashboard button to send
+
+- `SMTP_HOST`
+  Your SMTP server hostname
+
+- `SMTP_PORT`
+  Usually `587` for STARTTLS or `465` for implicit TLS
+
+- `SMTP_SECURE`
+  Use `true` for port `465`, `false` for port `587` in most setups
+
+- `SMTP_USER`
+  SMTP username or mailbox login
+
+- `SMTP_PASS`
+  SMTP password or app password
+
+- `AUTO_REPLY_FROM_EMAIL`
+  Sender address allowed by your SMTP provider
+
+- `AUTO_REPLY_REPLY_TO_EMAIL`
+  Inbox that receives replies from leads
 
 ## Localhost Test Setup
 
 ### 1. Add env vars
 
-Make sure `.env.local` contains:
-
-```env
-RESEND_API_KEY=your_resend_api_key
-RESEND_FROM_EMAIL=onboarding@resend.dev
-RESEND_REPLY_TO_EMAIL=your_email@example.com
-AUTO_REPLY_ENABLED=true
-```
+Make sure `.env.local` contains valid SMTP credentials and sender values.
 
 ### 2. Run the migration
 
@@ -109,13 +91,7 @@ Open:
 
 `http://localhost:3000/dashboard/leads`
 
-### 4. Use your own email in the lead
-
-Because you are using `onboarding@resend.dev`, the lead email should be your own email address connected to your Resend account.
-
-If the lead email is not yours, Resend will reject the send.
-
-### 5. Test the auto reply
+### 4. Test the auto reply
 
 1. Log in to the dashboard
 2. Open `/dashboard/leads`
@@ -125,13 +101,11 @@ If the lead email is not yours, Resend will reject the send.
 Expected result:
 
 - the request succeeds
-- Resend accepts the email
+- the SMTP provider accepts the email
 - the row updates to `Sent`
 - metadata is stored in the `leads` row
 
 ## `ipays.vercel.app` Test Setup
-
-You can also test the deployed app on Vercel.
 
 ### 1. Add env vars in Vercel
 
@@ -139,14 +113,7 @@ Open:
 
 `Vercel Project Settings -> Environment Variables`
 
-Add:
-
-```env
-RESEND_API_KEY=your_resend_api_key
-RESEND_FROM_EMAIL=onboarding@resend.dev
-RESEND_REPLY_TO_EMAIL=your_email@example.com
-AUTO_REPLY_ENABLED=true
-```
+Add the same SMTP and auto-reply variables used locally.
 
 ### 2. Redeploy
 
@@ -158,15 +125,11 @@ Open:
 
 `https://ipays.vercel.app/dashboard/leads`
 
-### 4. Use your own email in the lead
-
-Just like local testing, the lead email must be your own email if you are using `onboarding@resend.dev`.
-
-### 5. Click `Send auto reply`
+### 4. Click `Send auto reply`
 
 Expected result:
 
-- the auto reply sends through Resend
+- the auto reply sends through your SMTP provider
 - the row updates correctly
 - the dashboard shows `Sent`
 
@@ -178,49 +141,9 @@ Vercel does not read your local file.
 
 For `ipays.vercel.app`, you must add the same environment variables in the Vercel dashboard.
 
-## What Works Right Now
-
-Right now, you can test:
-
-- app flow on `localhost`
-- app flow on `ipays.vercel.app`
-- server action execution
-- Supabase update after sending
-- Resend integration using the test sender
-
-## What Does Not Work Yet
-
-Right now, you cannot:
-
-- send from `no-reply@ipays.ph`
-- send to arbitrary client email addresses
-- use `ipays.ph` as the sender domain before Resend verifies it
-
-## When You Want Real Sending Later
-
-Later, when you want to send real auto replies to actual leads:
-
-1. Verify a domain in Resend
-2. Best option: verify a sending subdomain like `mail.ipays.ph`
-3. Change:
-
-```env
-RESEND_FROM_EMAIL=no-reply@mail.ipays.ph
-```
-
-Then the same code will work for real recipients on:
-
-- `localhost`
-- `ipays.vercel.app`
-
-Reference:
-
-- Domain verification: https://resend.com/docs/dashboard/domains/introduction
-- Vercel + Resend domain setup: https://resend.com/docs/knowledge-base/vercel
-
 ## Files Used By This Feature
 
-- [app/lib/resend.ts](/C:/Users/EDGAR/Documents/ipay/app/lib/resend.ts)
+- [app/lib/mailer.ts](/C:/Users/EDGAR/Documents/ipay/app/lib/mailer.ts)
 - [app/dashboard/leads/actions.ts](/C:/Users/EDGAR/Documents/ipay/app/dashboard/leads/actions.ts)
 - [app/dashboard/leads/leads-table.tsx](/C:/Users/EDGAR/Documents/ipay/app/dashboard/leads/leads-table.tsx)
 - [app/dashboard/leads/page.tsx](/C:/Users/EDGAR/Documents/ipay/app/dashboard/leads/page.tsx)
@@ -228,30 +151,27 @@ Reference:
 
 ## Common Errors
 
-### `The ipays.ph domain is not verified`
+### `SMTP_HOST is not configured`
 
 Cause:
 
-- you are trying to send from `no-reply@ipays.ph`
-- Resend has not verified `ipays.ph`
-
-Fix for test mode:
-
-- use `RESEND_FROM_EMAIL=onboarding@resend.dev`
-
-Fix for real sending later:
-
-- verify `ipays.ph` or `mail.ipays.ph` in Resend
-
-### `403` when using `onboarding@resend.dev`
-
-Cause:
-
-- you are sending to an email address that is not your own Resend account email
+- one or more required SMTP variables are missing
 
 Fix:
 
-- use your own email address for the lead during testing
+- set all required SMTP and auto-reply variables
+
+### Authentication or connection errors
+
+Cause:
+
+- the SMTP hostname, port, secure mode, username, or password is wrong
+
+Fix:
+
+- verify the provider settings
+- make sure `SMTP_SECURE` matches the selected port
+- if you are using Gmail or Microsoft, use the provider-approved app password or SMTP credentials
 
 ### Auto reply button does not send
 
@@ -261,15 +181,14 @@ Possible causes:
 - Vercel env vars are missing
 - migration was not run
 - lead has no email
-- lead email is not your own email while using `onboarding@resend.dev`
+- the SMTP provider rejected the sender or credentials
 
 ## Quick Test Checklist
 
-- `.env.local` updated for local test mode
+- `.env.local` updated with SMTP credentials
 - Vercel env vars added for deployed test mode
-- `RESEND_FROM_EMAIL=onboarding@resend.dev`
-- lead email is your own email address
-- migration applied
 - `AUTO_REPLY_ENABLED=true`
+- `AUTO_REPLY_FROM_EMAIL` is valid for the provider
+- migration applied
 - dashboard login works
 - `Send auto reply` updates the row to `Sent`

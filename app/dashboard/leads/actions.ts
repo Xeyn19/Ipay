@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { sendAutoReplyEmail } from "@/app/lib/mailer";
 import { createAdminClient } from "@/app/lib/supabase-admin";
-import { sendResendEmail } from "@/app/lib/resend";
 import { createClient } from "@/app/lib/supabase-server";
 
 type LeadRecord = {
@@ -53,7 +53,7 @@ function buildAutoReplyMessage(lead: LeadRecord) {
   const companyLine = lead.company?.trim()
     ? `We have received your request for ${lead.company.trim()}.`
     : "We have received your request proposal.";
-  const replyTo = process.env.RESEND_REPLY_TO_EMAIL?.trim() || "our team";
+  const replyTo = process.env.AUTO_REPLY_REPLY_TO_EMAIL?.trim() || "our team";
 
   const text = [
     greeting,
@@ -222,7 +222,7 @@ export async function sendLeadAutoReply(
 
   try {
     const { html, text } = buildAutoReplyMessage(leadRecord);
-    const response = await sendResendEmail({
+    const response = await sendAutoReplyEmail({
       html,
       idempotencyKey: `lead-auto-reply-${leadId}`,
       subject: AUTO_REPLY_SUBJECT,

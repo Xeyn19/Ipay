@@ -8,6 +8,7 @@ A premium marketing and lead-generation portal for iPay. Built with Next.js 16 (
 - **UI & State**: React `19.2.4`
 - **Styling**: Tailwind CSS v4
 - **Database / Backend**: `@supabase/supabase-js` & SSR
+- **Email Delivery**: Nodemailer over SMTP for dashboard lead auto-replies
 - **Notifications**: `react-hot-toast` (Premium Glass-morphic overrides)
 - **Language**: TypeScript
 
@@ -122,7 +123,28 @@ Keep `TURNSTILE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `RATE_LIMIT_HASH_S
 
 If `ABSTRACT_EMAIL_API_KEY` is configured, the proposal form uses Abstract's Email Validation API to screen disposable and free/personal email domains. `PROPOSAL_BLOCKED_EMAIL_DOMAINS` is always enforced directly from server env config, and `PROPOSAL_FALLBACK_RESTRICTED_EMAIL_DOMAINS` is used only when Abstract is unavailable, times out, or the free quota is exhausted.
 
-### 4. Proposal Form Verification Flow
+### 4. Configure Lead Auto Reply
+
+The dashboard auto-reply button in `/dashboard/leads` sends through Nodemailer using your SMTP provider.
+
+Add these server-only environment variables:
+
+```env
+AUTO_REPLY_ENABLED=true
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+AUTO_REPLY_FROM_EMAIL=
+AUTO_REPLY_REPLY_TO_EMAIL=
+```
+
+`AUTO_REPLY_FROM_EMAIL` must be an address your SMTP provider allows you to send from. `AUTO_REPLY_REPLY_TO_EMAIL` is the inbox that receives replies from leads.
+
+Keep `SMTP_USER`, `SMTP_PASS`, and any provider credentials server-only. Never prefix them with `NEXT_PUBLIC_`.
+
+### 5. Proposal Form Verification Flow
 
 The proposal form stores drafts and privacy-review state in `sessionStorage`. Turnstile is loaded with `next/script` using `onReady` so the widget can render correctly after client-side route navigation.
 
@@ -133,6 +155,7 @@ Turnstile verification must be completed on the active `/request-proposal` page 
 - **`proposal-form.tsx`**: Restores draft values from `sessionStorage`, gates submission on privacy consent and live human verification, renders the captcha after route remounts, and displays server-action success/error feedback through toasts.
 - **`request-proposal/actions.ts`**: Validates proposal fields server-side, including optional Abstract email validation, verifies Turnstile tokens, and inserts accepted leads through a server-only Supabase admin client.
 - **`proposal-rate-limit.ts`**: Hashes IP and email values with `RATE_LIMIT_HASH_SECRET` and enforces Supabase-backed accepted-submission limits without storing raw visitor identifiers. Current limits are 3 accepted IP submissions per hour and 5 accepted email submissions per 24 hours.
+- **`mailer.ts`**: Creates the SMTP transporter for dashboard auto-replies and returns the provider message id used for lead tracking.
 - **`auth-toast-listener.tsx`**: Reads auth result flags from the URL, displays login/logout success toasts at the top center, and cleans the query string after the toast is triggered.
 - **`login-form.tsx`**: Handles sign-in errors, pending state, and password visibility toggling with accessible eye icons.
 - **`dashboard-charts.tsx`**: Loads Chart.js from a pinned CDN URL and renders the request trend chart with Daily, Weekly, Monthly, and Custom date range controls.

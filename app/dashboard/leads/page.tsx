@@ -5,7 +5,8 @@ import { LeadsTable } from "./leads-table";
 
 export const metadata: Metadata = {
   title: "Request Proposal | iPay Dashboard",
-  description: "View and manage your request proposals from the iPay dashboard.",
+  description:
+    "Review, manage, trash, and restore request proposals from the iPay dashboard.",
 };
 
 type LeadsPageProps = {
@@ -32,7 +33,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
           Request Proposal
         </h1>
         <p className="mt-1 text-sm text-[var(--text-muted)]">
-          View all request proposals submitted through the website.
+          Review new requests, revisit handled leads, and manage trash in one place.
         </p>
       </div>
 

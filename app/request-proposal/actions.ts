@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies, headers } from "next/headers";
+import { sendLeadAutoReplyForLead } from "@/app/lib/lead-auto-reply";
 import { createAdminClient } from "@/app/lib/supabase-admin";
 import {
   checkProposalRateLimit,
@@ -8,7 +9,11 @@ import {
 } from "@/app/lib/proposal-rate-limit";
 import { verifyTurnstileToken } from "@/app/lib/turnstile";
 import { getProposalEmailError } from "./email-policy";
-import { proposalSuccessCookieName } from "./success-cookie";
+import {
+  proposalSuccessCookieName,
+  proposalSuccessOutcomeCookieName,
+  type ProposalSuccessOutcome,
+} from "./success-cookie";
 
 type ProposalField = "name" | "company" | "email" | "contactNumber" | "terms";
 
@@ -23,17 +28,35 @@ export type ProposalFormState = {
 const genericError =
   "We could not send your request right now. Please try again later.";
 const successMessage =
-  "Your proposal request has been sent successfully.";
+  "Your proposal request has been sent successfully. You will receive a confirmation email shortly.";
+const partialSuccessMessage =
+  "Your proposal request has been received, but we could not send the confirmation email right now.";
 
-async function markProposalSuccess() {
+const proposalSuccessCookieOptions = {
+  httpOnly: true,
+  maxAge: 60 * 5,
+  path: "/request-proposal/success",
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+};
+
+async function markProposalSuccess(outcome?: ProposalSuccessOutcome) {
   const cookieStore = await cookies();
 
-  cookieStore.set(proposalSuccessCookieName, "1", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/request-proposal/success",
-    maxAge: 60 * 5,
+  cookieStore.set(proposalSuccessCookieName, "1", proposalSuccessCookieOptions);
+
+  if (outcome) {
+    cookieStore.set(
+      proposalSuccessOutcomeCookieName,
+      outcome,
+      proposalSuccessCookieOptions
+    );
+    return;
+  }
+
+  cookieStore.set(proposalSuccessOutcomeCookieName, "", {
+    ...proposalSuccessCookieOptions,
+    maxAge: 0,
   });
 }
 
@@ -131,7 +154,7 @@ export async function submitProposal(
 
       return {
         status: "success",
-        message: successMessage,
+        message: "Your proposal request has been sent successfully.",
         resetCaptcha: true,
         submittedAt: Date.now(),
       };
@@ -166,15 +189,19 @@ export async function submitProposal(
       };
     }
 
-    const { error } = await createAdminClient().from("leads").insert({
-      name: values.name,
-      company: values.company,
-      email: values.email,
-      contact_number: values.contactNumber,
-      message: values.message,
-    });
+    const { data: lead, error } = await createAdminClient()
+      .from("leads")
+      .insert({
+        name: values.name,
+        company: values.company,
+        email: values.email,
+        contact_number: values.contactNumber,
+        message: values.message,
+      })
+      .select("id, name, company, email")
+      .single();
 
-    if (error) {
+    if (error || !lead) {
       console.error("Error submitting proposal request:", error);
 
       return {
@@ -189,11 +216,32 @@ export async function submitProposal(
       ipHash: rateLimit.ipHash,
       emailHash: rateLimit.emailHash,
     });
-    await markProposalSuccess();
+
+    const autoReplyResult = await sendLeadAutoReplyForLead(lead, {
+      actorUserId: null,
+      idempotencyKey: `proposal-auto-reply-${lead.id}`,
+    });
+
+    if (autoReplyResult.status === "success") {
+      await markProposalSuccess("sent");
+
+      return {
+        status: "success",
+        message: successMessage,
+        resetCaptcha: true,
+        submittedAt: Date.now(),
+      };
+    }
+
+    console.error(
+      "Auto reply could not be sent for proposal request:",
+      autoReplyResult.message
+    );
+    await markProposalSuccess("email_failed");
 
     return {
       status: "success",
-      message: successMessage,
+      message: partialSuccessMessage,
       resetCaptcha: true,
       submittedAt: Date.now(),
     };

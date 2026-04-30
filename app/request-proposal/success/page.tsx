@@ -7,7 +7,10 @@ import { Footer } from "@/app/components/home/footer";
 import { Navbar } from "@/app/components/home/navbar";
 import { Button } from "@/app/components/home/ui";
 import { DEFAULT_THEME, THEME_COOKIE_KEY, isTheme } from "@/app/lib/theme";
-import { proposalSuccessCookieName } from "../success-cookie";
+import {
+  proposalSuccessCookieName,
+  proposalSuccessOutcomeCookieName,
+} from "../success-cookie";
 
 export const metadata: Metadata = {
   title: "Proposal Request Received | iPay",
@@ -18,6 +21,9 @@ export const metadata: Metadata = {
 export default async function RequestProposalSuccessPage() {
   const cookieStore = await cookies();
   const hasProposalSuccessCookie = cookieStore.has(proposalSuccessCookieName);
+  const proposalSuccessOutcome = cookieStore.get(
+    proposalSuccessOutcomeCookieName
+  )?.value;
 
   if (!hasProposalSuccessCookie) {
     redirect("/request-proposal");
@@ -25,6 +31,16 @@ export default async function RequestProposalSuccessPage() {
 
   const cookieTheme = cookieStore.get(THEME_COOKIE_KEY)?.value;
   const initialTheme = isTheme(cookieTheme) ? cookieTheme : DEFAULT_THEME;
+  const hasConfirmationEmail = proposalSuccessOutcome === "sent";
+  const emailDeliveryFailed = proposalSuccessOutcome === "email_failed";
+  const statusLabel = hasConfirmationEmail
+    ? "Confirmation Email Sent"
+    : "Submission Confirmed";
+  const description = hasConfirmationEmail
+    ? "Thank you for reaching out to iPay. We've received your request, and a confirmation email is on its way to the address you provided. Our team will review your details and follow up with a focused next step for your business."
+    : emailDeliveryFailed
+      ? "Thank you for reaching out to iPay. We've received your request and our team is already reviewing it. We could not send your confirmation email right now, but we will still follow up with the next step for your business."
+      : "Thank you for reaching out to iPay. We've received your request and our team will review it carefully before getting in touch with a focused next step for your business.";
 
   return (
     <main className="overflow-x-hidden bg-[var(--bg-base)] pt-[var(--nav-height)] text-[var(--text-primary)]">
@@ -54,7 +70,7 @@ export default async function RequestProposalSuccessPage() {
                 aria-hidden="true"
                 className="h-2.5 w-2.5 rounded-full bg-[var(--tone-green)]"
               />
-              Submission Confirmed
+              {statusLabel}
             </div>
 
             <h1 className="mt-6 font-heading text-[clamp(2.4rem,5vw,4.5rem)] font-semibold leading-[1.02] tracking-[-0.05em] text-white">
@@ -63,9 +79,7 @@ export default async function RequestProposalSuccessPage() {
             </h1>
 
             <p className="mt-5 text-base leading-8 text-white/88 sm:text-lg">
-              Thank you for reaching out to iPay. We&apos;ve received your
-              request and our team will review it carefully before getting in
-              touch with a focused next step for your business.
+              {description}
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import {
+  getLeadReadStatus,
+  isLeadRead,
+} from "@/app/dashboard/lead-read-status";
 import { createClient } from "@/app/lib/supabase-server";
-import { getAutoReplyStatus } from "@/app/dashboard/auto-reply-status";
 import { DashboardCharts } from "./dashboard-charts";
 
 export const metadata: Metadata = {
   title: "Overview | iPay Dashboard",
-  description: "Review request proposal analytics and recent submissions.",
+  description: "Review request proposal activity and read status.",
 };
 
 type Lead = {
-  auto_reply_last_error?: string | null;
-  auto_reply_sent_at?: string | null;
-  auto_reply_status?: string | null;
   company?: string;
   contact_number?: string;
   created_at?: string;
@@ -20,10 +20,11 @@ type Lead = {
   id?: number;
   message?: string;
   name?: string;
+  read_at?: string | null;
 };
 
 type SummaryCard = {
-  icon: "failed" | "ready" | "requests" | "sent";
+  icon: "read" | "requests" | "unread";
   label: string;
   tone: string;
   value: number;
@@ -39,14 +40,8 @@ function formatDate(dateString: string | undefined) {
   });
 }
 
-function AutoReplyBadge({
-  autoReplyEnabled,
-  lead,
-}: {
-  autoReplyEnabled: boolean;
-  lead: Lead;
-}) {
-  const status = getAutoReplyStatus(lead, autoReplyEnabled);
+function ReadStatusBadge({ lead }: { lead: Pick<Lead, "read_at"> }) {
+  const status = getLeadReadStatus(lead);
 
   return (
     <span
@@ -57,7 +52,10 @@ function AutoReplyBadge({
   );
 }
 
-function getMetricCards(leads: Lead[]): SummaryCard[] {
+function getSummaryCards(leads: Lead[]): SummaryCard[] {
+  const unreadCount = leads.filter((lead) => !isLeadRead(lead)).length;
+  const readCount = leads.length - unreadCount;
+
   return [
     {
       icon: "requests",
@@ -65,48 +63,17 @@ function getMetricCards(leads: Lead[]): SummaryCard[] {
       tone: "brand",
       value: leads.length,
     },
-  ];
-}
-
-function getAutoReplyBreakdownCards(
-  leads: Lead[],
-  autoReplyEnabled: boolean
-): SummaryCard[] {
-  const statusCounts = leads.reduce(
-    (counts, lead) => {
-      const status = getAutoReplyStatus(lead, autoReplyEnabled).label;
-
-      if (status === "Sent") counts.sent += 1;
-      if (status === "Failed") counts.failed += 1;
-      if (status === "Ready") counts.ready += 1;
-
-      return counts;
-    },
     {
-      failed: 0,
-      ready: 0,
-      sent: 0,
-    }
-  );
-
-  return [
-    {
-      icon: "sent",
-      label: "Auto-Replies Sent",
-      tone: "green",
-      value: statusCounts.sent,
-    },
-    {
-      icon: "failed",
-      label: "Auto-Replies Failed",
-      tone: "red",
-      value: statusCounts.failed,
-    },
-    {
-      icon: "ready",
-      label: "Auto-Replies Ready to Send",
+      icon: "unread",
+      label: "Unread Requests",
       tone: "gold",
-      value: statusCounts.ready,
+      value: unreadCount,
+    },
+    {
+      icon: "read",
+      label: "Read Requests",
+      tone: "blue",
+      value: readCount,
     },
   ];
 }
@@ -115,7 +82,7 @@ function MetricIcon({
   icon,
   tone,
 }: {
-  icon: "failed" | "ready" | "requests" | "sent";
+  icon: "read" | "requests" | "unread";
   tone: string;
 }) {
   const colorClass =
@@ -130,23 +97,15 @@ function MetricIcon({
           : "bg-[var(--brand-pale)] text-[var(--brand)]";
 
   const iconPath =
-    icon === "sent" ? (
+    icon === "read" ? (
       <>
-        <path d="M17 6l-7.5 7.5L6 10" />
-        <path d="M17 10v5a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h8" />
+        <path d="M1.75 10s3-5.25 8.25-5.25S18.25 10 18.25 10s-3 5.25-8.25 5.25S1.75 10 1.75 10z" />
+        <circle cx="10" cy="10" r="2.5" />
       </>
-    ) : icon === "failed" ? (
+    ) : icon === "unread" ? (
       <>
-        <path d="M10 3l8 14H2L10 3z" />
-        <path d="M10 8v4" />
-        <path d="M10 15h.01" />
-      </>
-    ) : icon === "ready" ? (
-      <>
-        <path d="M4 6h12a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z" />
-        <path d="M2 8l8 5 8-5" />
-        <path d="M14 4h4" />
-        <path d="M16 2v4" />
+        <path d="M3 6h14a2 2 0 012 2v6a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2z" />
+        <path d="M1 8l9 5 9-5" />
       </>
     ) : (
       <>
@@ -166,7 +125,6 @@ function MetricIcon({
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const autoReplyEnabled = process.env.AUTO_REPLY_ENABLED !== "false";
 
   const { data: leads, error } = await supabase
     .from("leads")
@@ -174,12 +132,7 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false });
 
   const leadRows = (leads ?? []) as Lead[];
-  const metricCards = getMetricCards(leadRows);
-  const autoReplyBreakdownCards = getAutoReplyBreakdownCards(
-    leadRows,
-    autoReplyEnabled
-  );
-  const summaryCards = [...metricCards, ...autoReplyBreakdownCards];
+  const summaryCards = getSummaryCards(leadRows);
   const requestDates = leadRows
     .map((lead) => lead.created_at)
     .filter((date): date is string => Boolean(date));
@@ -196,7 +149,7 @@ export default async function DashboardPage() {
             Request Proposal Analytics
           </h1>
           <p className="mt-1 text-sm text-[var(--text-muted)]">
-            Review request proposal activity and auto-reply readiness.
+            Review request proposal activity and read status.
           </p>
         </div>
         <Link
@@ -225,7 +178,7 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <>
-          <section className="grid gap-4 lg:grid-cols-4">
+          <section className="grid gap-4 lg:grid-cols-3">
             {summaryCards.map((metric) => (
               <article
                 key={metric.label}
@@ -295,10 +248,7 @@ export default async function DashboardPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3 sm:flex-col sm:items-end">
-                      <AutoReplyBadge
-                        autoReplyEnabled={autoReplyEnabled}
-                        lead={lead}
-                      />
+                      <ReadStatusBadge lead={lead} />
                       <p className="text-xs font-medium text-[var(--text-faint)] sm:text-right">
                         {formatDate(lead.created_at)}
                       </p>

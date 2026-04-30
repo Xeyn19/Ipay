@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { normalizeLeadReadFilter } from "@/app/dashboard/lead-read-status";
 import { createClient } from "@/app/lib/supabase-server";
 import { LeadsTable } from "./leads-table";
 
@@ -7,9 +8,16 @@ export const metadata: Metadata = {
   description: "View and manage your request proposals from the iPay dashboard.",
 };
 
-export default async function LeadsPage() {
+type LeadsPageProps = {
+  searchParams: Promise<{
+    filter?: string | string[] | undefined;
+  }>;
+};
+
+export default async function LeadsPage({ searchParams }: LeadsPageProps) {
   const supabase = await createClient();
-  const autoReplyEnabled = process.env.AUTO_REPLY_ENABLED !== "false";
+  const { filter } = await searchParams;
+  const activeFilter = normalizeLeadReadFilter(filter);
 
   const { data: leads, error } = await supabase
     .from("leads")
@@ -30,7 +38,7 @@ export default async function LeadsPage() {
 
       {/* Table */}
       <LeadsTable
-        autoReplyEnabled={autoReplyEnabled}
+        activeFilter={activeFilter}
         leads={leads ?? []}
         error={error?.message}
       />

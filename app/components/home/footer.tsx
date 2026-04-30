@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { DM_Sans, Sora } from "next/font/google";
 import { BrandLogo } from "@/app/components/home/brand-logo";
 import { footerServices, navigation, trustItems } from "@/app/components/home/data";
 
@@ -12,14 +11,6 @@ const googlePlayUrl =
   "https://play.google.com/store/apps/details?id=ph.ipay.android";
 const appStoreUrl = "https://apps.apple.com/ph/app/ipays/id6479975365";
 const corSealImageUrl = "/img/CORSeal (2)_page-0001.png";
-const sora = Sora({
-  subsets: ["latin"],
-  weight: ["600", "700", "800"],
-});
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-});
 const credentialIcons = {
   "Regulatory Compliant": (
     <svg
@@ -71,7 +62,7 @@ const credentialIcons = {
 export function Footer() {
   return (
     <footer
-      className={`${dmSans.className} relative overflow-hidden border-t border-white/10 bg-[#0D0D1A] text-white`}
+      className="relative overflow-hidden border-t border-white/10 bg-[#0D0D1A] text-white"
     >
       <div
         aria-hidden="true"
@@ -86,7 +77,7 @@ export function Footer() {
             </div>
             <div className="h-0.5 w-10 rounded-full bg-[linear-gradient(90deg,#F5A623,transparent)]" />
             <p
-              className={`${sora.className} mx-auto max-w-[15rem] text-[0.68rem] font-bold leading-6 uppercase tracking-[0.14em] text-white/44 md:mx-0`}
+              className="font-heading mx-auto max-w-[15rem] text-[0.68rem] font-bold leading-6 uppercase tracking-[0.14em] text-white/44 md:mx-0"
             >
               Powering Seamless Business Payments Across the Philippines
             </p>
@@ -98,7 +89,7 @@ export function Footer() {
 
           <div className="flex flex-col items-center gap-4 text-center md:items-start md:text-left">
             <p
-              className={`${sora.className} text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#F5A623]`}
+              className="font-heading text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#F5A623]"
             >
               Navigation
             </p>
@@ -117,7 +108,7 @@ export function Footer() {
 
           <div className="flex flex-col items-center gap-4 text-center md:items-start md:text-left">
             <p
-              className={`${sora.className} text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#F5A623]`}
+              className="font-heading text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#F5A623]"
             >
               Solutions
             </p>
@@ -142,7 +133,7 @@ export function Footer() {
                     className="h-1.5 w-1.5 rounded-full bg-[#F5A623] shadow-[0_0_6px_rgba(245,166,35,1)]"
                   />
                   <span
-                    className={`${sora.className} text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[#F5A623]`}
+                    className="font-heading text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[#F5A623]"
                   >
                     Get The App
                   </span>
@@ -154,7 +145,7 @@ export function Footer() {
                   Mobile Access
                 </p>
                 <h3
-                  className={`${sora.className} mt-1 text-[1.56rem] font-extrabold leading-[1.16] text-white`}
+                  className="font-heading mt-1 text-[1.56rem] font-extrabold leading-[1.16] text-white"
                 >
                   Download from your
                   <br />
@@ -202,7 +193,7 @@ export function Footer() {
                     <span className="text-[0.56rem] font-medium uppercase tracking-[0.08em] text-[#5a6a84]">
                       Get it on
                     </span>
-                    <span className={`${sora.className} text-[0.82rem] font-bold text-white`}>
+                    <span className="font-heading text-[0.82rem] font-bold text-white">
                       Google Play
                     </span>
                   </span>
@@ -230,7 +221,7 @@ export function Footer() {
                     <span className="text-[0.56rem] font-medium tracking-[0.04em] text-white/45">
                       Download on
                     </span>
-                    <span className={`${sora.className} text-[0.82rem] font-bold text-white`}>
+                    <span className="font-heading text-[0.82rem] font-bold text-white">
                       App Store
                     </span>
                   </span>
@@ -261,7 +252,7 @@ export function Footer() {
                     <p className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-white/42">
                       {item.title}
                     </p>
-                    <p className={`${sora.className} mt-1 text-[0.94rem] font-bold leading-5 text-white`}>
+                    <p className="font-heading mt-1 text-[0.94rem] font-bold leading-5 text-white">
                       {item.description}
                     </p>
                   </div>

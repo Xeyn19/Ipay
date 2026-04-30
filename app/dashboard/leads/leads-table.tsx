@@ -556,7 +556,7 @@ export function LeadsTable({
 
   const activeFilterTitle = getActiveFilterTitle(activeFilter);
   const activeFilterDescription = getActiveFilterDescription(activeFilter);
-  const selectedLeadId = selectedLead?.id ?? null;
+  const selectedLeadId = selectedLead?.id;
   const selectedLeadIsRead = Boolean(selectedLead?.read_at);
   const selectedLeadIsTrashed = Boolean(selectedLead?.trashed_at);
   const selectedLeadEmail = selectedLead?.email?.trim();

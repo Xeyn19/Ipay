@@ -1,135 +1,107 @@
-# iPay Landing Page & Dashboard Platform
+# iPay Landing Page and Dashboard
 
-A premium marketing and lead-generation portal for iPay. Built with Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, and backed by Supabase.
+Marketing site and lead-management platform for iPay. The app is built on Next.js 16 App Router with React 19, Tailwind CSS v4, and Supabase.
 
 ## Tech Stack
 
-- **Framework**: Next.js `16.2.1`
-- **UI & State**: React `19.2.4`
-- **Styling**: Tailwind CSS v4
-- **Database / Backend**: `@supabase/supabase-js` & SSR
-- **Email Delivery**: Nodemailer over SMTP for dashboard lead auto-replies
-- **Notifications**: `react-hot-toast` (Premium Glass-morphic overrides)
-- **Language**: TypeScript
+- Framework: Next.js `16.2.1`
+- UI: React `19.2.4`
+- Language: TypeScript
+- Styling: Tailwind CSS v4
+- Database and auth: Supabase SSR and `@supabase/supabase-js`
+- Email: Nodemailer over SMTP
+- Icons: `lucide-react`
+- Notifications: `react-hot-toast`
 
-## Cutting-Edge Features
+## Current Product Features
 
-- **Split-Screen Proposal Workflow**: Advanced `/request-proposal` page featuring resilient draft persistence via `sessionStorage` so users never lose their typed data while navigating.
-- **Strict Privacy Compliance**: Integrated `IntersectionObserver` that forcefully enforces users to scroll to the very bottom of the `/privacy-policy` page before unlocking the "Submit" action for their proposal.
-- **Request Proposal Dashboard**: Secure `/dashboard` overview and `/dashboard/leads` detail page mapped directly from the Supabase `leads` table to monitor request proposal submissions.
-- **Proposal Anti-Spam Protection**: `/request-proposal` submissions are handled by a server action with Cloudflare Turnstile verification, a hidden honeypot, and Supabase-backed rate limiting before any lead is inserted.
-- **Route-Safe Human Verification**: The proposal form starts Turnstile only on `/request-proposal`, preserves a fresh unused token while users review `/privacy-policy`, and restores the visible captcha when they return instead of losing verification state.
-- **Modern Request Analytics**: Dashboard overview includes responsive request proposal metrics and a Chart.js-powered request trend chart with Daily, Weekly, Monthly, and Custom date views.
-- **Full Message Review Modal**: Dashboard users can open long request proposal messages in a scrollable modal, keep the table context visible, and reply through Gmail compose with the recipient email prefilled.
-- **Polished Auth Feedback**: Login and logout actions display top-center success toasts, with logout returning users to `/login` and using a distinct red confirmation style.
-- **User-Friendly Password Entry**: The login form includes an accessible eye icon toggle for showing or hiding the password while preserving the existing input design language.
-- **Flawless Smooth Scrolling**: Custom DOM `window.scrollTo` router interception in Next.js perfectly offsets against sticky-nav heights and guarantees silky smooth anchor-link transitions without URL-hash snapping.
-- **CLS Eradication**: Responsive `min-height` architectural constraints applied across automatic Carousel & Partner Tab cycle components completely neutralize Cumulative Layout Shifts (CLS), preventing any layout jitters.
-- **Animated 3D Cards**: Implemented custom `GSAP` 3D stacked card mechanics for "How It Works" workflow highlights.
+- Public `/request-proposal` form with:
+  - draft persistence in `sessionStorage`
+  - privacy-policy scroll gate
+  - Cloudflare Turnstile verification
+  - honeypot protection
+  - Supabase-backed accepted-submission rate limiting
+  - optional Abstract email validation
+- Automatic iPay confirmation email after a successful proposal submission.
+- Success page that changes its message depending on whether the confirmation email was sent or failed.
+- Protected `/dashboard` overview with cards for total, unread, read, and trashed requests.
+- `/dashboard/leads` management flow with:
+  - `Unread`, `Read`, and `Trash` filters
+  - clickable message previews that open a full modal
+  - mark as read / unread actions
+  - trash, restore, and permanent delete actions
+  - confirmation modals before state-changing actions
+  - 30-day trash retention support when the database cleanup job is configured
 
 ## Project Structure
 
 ```text
 app/
   components/
-    dashboard/          # Dashboard layout & sidebar interfaces
-    home/               # Modular landing page components (navbar, footer, partners)
-  dashboard/            # Protected analytics overview and request proposal portal
-    leads/              # Request proposal table, full-message modal, and Gmail reply flow
-  lib/                  # Supabase, theme, Turnstile, and rate-limit helpers
-  login/                # Authentication page with password visibility toggle
-  privacy-policy/       # Scroll-tracked legal document
-  request-proposal/     # Main lead-capture form & layout
-  globals.css           # Design tokens & glass-morphism overrides
-  layout.tsx            # Root layout including Toaster implementation
-  page.tsx              # Main entry landing page
+    dashboard/          # Dashboard shell and navigation
+    home/               # Landing page sections and shared marketing UI
+  dashboard/
+    leads/              # Leads table, message modal, and lead actions
+  lib/
+    lead-auto-reply.ts  # Shared auto-reply builder and send logic
+    mailer.ts           # SMTP transport and outbound email send
+    proposal-rate-limit.ts
+    supabase-*.ts       # SSR and admin Supabase clients
+  login/
+  privacy-policy/
+  request-proposal/
+    actions.ts
+    success/
+    success-cookie.ts
+  globals.css
+  layout.tsx
+  page.tsx
+supabase/
+  migrations/           # Add your project SQL migrations here
 ```
 
-## Getting Started
+## Local Development
 
-### 1. Install Dependencies
-Run via Bun for superior speed:
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+If you prefer Bun, this repo also includes `bun.lock`:
+
 ```bash
 bun install
 ```
 
-### 2. Run Development Server
+### 2. Run the app
+
 ```bash
-bun run dev
-```
-The site runs locally at `http://localhost:3000`.
-
-### 3. Configure Proposal Anti-Spam
-
-Run the Supabase SQL setup in `supabase/proposal-anti-spam.sql` from the Supabase SQL Editor. This creates the accepted-submission tracking table, indexes the rate-limit lookups, enables RLS, and revokes direct browser inserts into `leads` so proposal creation must go through the Next.js server action.
-
-If the tracking table already exists from an older setup, run this one-time cleanup in the Supabase SQL Editor so only accepted submissions remain:
-
-```sql
-delete from public.proposal_submission_attempts
-where accepted = false;
-
-alter table public.proposal_submission_attempts
-alter column accepted set default true;
-
-alter table public.proposal_submission_attempts
-alter column reason set default 'accepted';
-
-create index if not exists proposal_submission_attempts_ip_created_idx
-  on public.proposal_submission_attempts (ip_hash, created_at desc);
-
-create index if not exists proposal_submission_attempts_email_created_idx
-  on public.proposal_submission_attempts (email_hash, created_at desc);
-
-create index if not exists proposal_submission_attempts_created_idx
-  on public.proposal_submission_attempts (created_at desc);
+npm run dev
 ```
 
-Create a Cloudflare Turnstile widget and add the hostnames you will use:
+Open `http://localhost:3000`.
 
-- Local development: `localhost`
-- Production: your real hostname, for example `example.com`
+## Required Environment Variables
 
-Do not include `http://`, `https://`, ports, or paths in Cloudflare hostnames.
-
-Add these environment variables:
+Add these to `.env.local`:
 
 ```env
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 TURNSTILE_SECRET_KEY=
+TURNSTILE_EXPECTED_HOSTNAME=localhost
+
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+
 RATE_LIMIT_HASH_SECRET=
-TURNSTILE_EXPECTED_HOSTNAME=
+
 ABSTRACT_EMAIL_API_KEY=
 PROPOSAL_EMAIL_VALIDATION_ENABLED=true
 PROPOSAL_BLOCKED_EMAIL_DOMAINS=
 PROPOSAL_FALLBACK_RESTRICTED_EMAIL_DOMAINS=
-```
 
-For local development, use:
-
-```env
-TURNSTILE_EXPECTED_HOSTNAME=localhost
-```
-
-For production, use only the production hostname. If both apex and `www` are valid, use a comma-separated list:
-
-```env
-TURNSTILE_EXPECTED_HOSTNAME=example.com
-TURNSTILE_EXPECTED_HOSTNAME=example.com,www.example.com
-```
-
-Keep `TURNSTILE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `RATE_LIMIT_HASH_SECRET` server-only. Never prefix them with `NEXT_PUBLIC_`.
-
-If `ABSTRACT_EMAIL_API_KEY` is configured, the proposal form uses Abstract's Email Validation API to screen disposable and free/personal email domains. `PROPOSAL_BLOCKED_EMAIL_DOMAINS` is always enforced directly from server env config, and `PROPOSAL_FALLBACK_RESTRICTED_EMAIL_DOMAINS` is used only when Abstract is unavailable, times out, or the free quota is exhausted.
-
-### 4. Configure Lead Auto Reply
-
-The dashboard auto-reply button in `/dashboard/leads` sends through Nodemailer using your SMTP provider.
-
-Add these server-only environment variables:
-
-```env
 AUTO_REPLY_ENABLED=true
 SMTP_HOST=
 SMTP_PORT=587
@@ -140,25 +112,91 @@ AUTO_REPLY_FROM_EMAIL=
 AUTO_REPLY_REPLY_TO_EMAIL=
 ```
 
-`AUTO_REPLY_FROM_EMAIL` must be an address your SMTP provider allows you to send from. `AUTO_REPLY_REPLY_TO_EMAIL` is the inbox that receives replies from leads.
+Notes:
 
-Keep `SMTP_USER`, `SMTP_PASS`, and any provider credentials server-only. Never prefix them with `NEXT_PUBLIC_`.
+- Keep `TURNSTILE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RATE_LIMIT_HASH_SECRET`, `SMTP_USER`, and `SMTP_PASS` server-only.
+- `TURNSTILE_EXPECTED_HOSTNAME` should be `localhost` in local development.
+- In production, use your real hostname only. If you support both apex and `www`, use a comma-separated list.
+- `AUTO_REPLY_FROM_EMAIL` must be allowed by your SMTP provider.
 
-### 5. Proposal Form Verification Flow
+## Supabase Requirements
 
-The proposal form stores drafts and privacy-review state in `sessionStorage`. Turnstile is loaded with `next/script` using `onReady` so the widget can render correctly after client-side route navigation.
+This app expects these database capabilities:
 
-Turnstile verification must be completed on the active `/request-proposal` page before Submit is enabled. Captcha failures, honeypot hits, rate-limit blocks, validation errors, and failed inserts are not saved to Supabase; only accepted submissions are recorded in `proposal_submission_attempts` for future rate-limit checks.
+### `public.leads`
 
-## Key Architectural Highlights
+The `leads` table should contain the normal proposal fields plus:
 
-- **`proposal-form.tsx`**: Restores draft values from `sessionStorage`, gates submission on privacy consent and live human verification, renders the captcha after route remounts, and displays server-action success/error feedback through toasts.
-- **`request-proposal/actions.ts`**: Validates proposal fields server-side, including optional Abstract email validation, verifies Turnstile tokens, and inserts accepted leads through a server-only Supabase admin client.
-- **`proposal-rate-limit.ts`**: Hashes IP and email values with `RATE_LIMIT_HASH_SECRET` and enforces Supabase-backed accepted-submission limits without storing raw visitor identifiers. Current limits are 3 accepted IP submissions per hour and 5 accepted email submissions per 24 hours.
-- **`mailer.ts`**: Creates the SMTP transporter for dashboard auto-replies and returns the provider message id used for lead tracking.
-- **`auth-toast-listener.tsx`**: Reads auth result flags from the URL, displays login/logout success toasts at the top center, and cleans the query string after the toast is triggered.
-- **`login-form.tsx`**: Handles sign-in errors, pending state, and password visibility toggling with accessible eye icons.
-- **`dashboard-charts.tsx`**: Loads Chart.js from a pinned CDN URL and renders the request trend chart with Daily, Weekly, Monthly, and Custom date range controls.
-- **`leads-table.tsx`**: Renders the request proposal table with clickable message previews, an accessible scrollable message modal, and Gmail compose reply links that prefill the recipient address.
-- **`partners.tsx`**: Uses flexible, non-wrapping native layouts paired with pre-calculated container boundaries guaranteeing flawless cross-device visual parity without breaking DOM height allocations.
-- **`layout.tsx`**: Centralizes both the `next/script` theme loader and the `react-hot-toast` `<Toaster>` provider engineered with beautiful transluscent gradients.
+- `read_at timestamptz null`
+- `trashed_at timestamptz null`
+- auto-reply tracking fields used by `app/lib/lead-auto-reply.ts`:
+  - `auto_reply_status`
+  - `auto_reply_sent_at`
+  - `auto_reply_message_id`
+  - `auto_reply_subject`
+  - `auto_reply_sent_by`
+  - `auto_reply_last_error`
+
+### `public.proposal_submission_attempts`
+
+The rate limiter expects a table that stores accepted attempts with:
+
+- `ip_hash`
+- `email_hash`
+- `accepted`
+- `reason`
+- `created_at`
+
+It also expects indexes that support recent lookups by IP hash, email hash, and created date.
+
+### Trash cleanup
+
+If you want trashed leads to be removed automatically after 30 days, configure a Supabase SQL function plus a scheduled `pg_cron` job that deletes rows where:
+
+```sql
+trashed_at <= now() - interval '30 days'
+```
+
+Without that cleanup job, trash, restore, and manual permanent delete will still work, but automatic removal will not happen.
+
+## Request Proposal Flow
+
+1. User fills out `/request-proposal`.
+2. Client-side checks require privacy review and a valid Turnstile token.
+3. Server action validates fields, verifies Turnstile, checks the honeypot, checks rate limits, and optionally validates the email domain.
+4. Accepted submissions are inserted into `public.leads`.
+5. Accepted submissions are recorded in `public.proposal_submission_attempts`.
+6. The app attempts to send the iPay confirmation email.
+7. The success popup and `/request-proposal/success` page reflect the real result:
+   - request saved + email sent
+   - request saved + email failed
+
+## Dashboard Lead Workflow
+
+- `Unread` is the default filter.
+- `Read` contains reviewed active leads.
+- `Trash` contains soft-deleted leads.
+- Trashed leads can be restored or permanently deleted.
+- The message modal is used for reading full inquiries and updating read status.
+- Table actions handle trash, restore, and permanent delete.
+- Confirmation modals are shown before trash, restore, delete, mark-as-read, and mark-as-unread actions.
+
+## Important Files
+
+- [app/request-proposal/actions.ts](app/request-proposal/actions.ts): proposal validation, rate limiting, lead insert, and public auto-reply send.
+- [app/request-proposal/success/page.tsx](app/request-proposal/success/page.tsx): outcome-aware success page.
+- [app/lib/lead-auto-reply.ts](app/lib/lead-auto-reply.ts): shared auto-reply content and lead tracking updates.
+- [app/lib/proposal-rate-limit.ts](app/lib/proposal-rate-limit.ts): accepted-submission rate limiting.
+- [app/dashboard/page.tsx](app/dashboard/page.tsx): overview stats and recent requests.
+- [app/dashboard/leads/leads-table.tsx](app/dashboard/leads/leads-table.tsx): filters, table UX, message modal, and confirmation modal.
+- [app/dashboard/leads/actions.ts](app/dashboard/leads/actions.ts): read, trash, restore, delete, and dashboard auto-reply actions.
+
+## Verification
+
+Run:
+
+```bash
+npm run lint
+```
+
+At the time of writing, lint passes with one existing warning in `app/components/cardswap.tsx` about an unnecessary `useCallback` dependency.

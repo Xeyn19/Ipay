@@ -3,13 +3,15 @@ import Link from "next/link";
 import {
   getLeadReadStatus,
   isLeadRead,
+  isLeadTrashed,
 } from "@/app/dashboard/lead-read-status";
 import { createClient } from "@/app/lib/supabase-server";
 import { DashboardCharts } from "./dashboard-charts";
 
 export const metadata: Metadata = {
   title: "Overview | iPay Dashboard",
-  description: "Review request proposal activity and read status.",
+  description:
+    "Review request proposal activity, read status, and active follow-ups.",
 };
 
 type Lead = {
@@ -21,10 +23,11 @@ type Lead = {
   message?: string;
   name?: string;
   read_at?: string | null;
+  trashed_at?: string | null;
 };
 
 type SummaryCard = {
-  icon: "read" | "requests" | "unread";
+  icon: "read" | "requests" | "trash" | "unread";
   label: string;
   tone: string;
   value: number;
@@ -55,6 +58,7 @@ function ReadStatusBadge({ lead }: { lead: Pick<Lead, "read_at"> }) {
 function getSummaryCards(leads: Lead[]): SummaryCard[] {
   const unreadCount = leads.filter((lead) => !isLeadRead(lead)).length;
   const readCount = leads.length - unreadCount;
+  const trashedCount = leads.filter((lead) => isLeadTrashed(lead)).length;
 
   return [
     {
@@ -75,6 +79,12 @@ function getSummaryCards(leads: Lead[]): SummaryCard[] {
       tone: "blue",
       value: readCount,
     },
+    {
+      icon: "trash",
+      label: "Trashed Requests",
+      tone: "red",
+      value: trashedCount,
+    },
   ];
 }
 
@@ -82,7 +92,7 @@ function MetricIcon({
   icon,
   tone,
 }: {
-  icon: "read" | "requests" | "unread";
+  icon: "read" | "requests" | "trash" | "unread";
   tone: string;
 }) {
   const colorClass =
@@ -106,6 +116,12 @@ function MetricIcon({
       <>
         <path d="M3 6h14a2 2 0 012 2v6a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2z" />
         <path d="M1 8l9 5 9-5" />
+      </>
+    ) : icon === "trash" ? (
+      <>
+        <path d="M5.75 6.25h8.5" />
+        <path d="M7 6.25V5a1 1 0 011-1h4a1 1 0 011 1v1.25" />
+        <path d="M7.75 8.5v4.75M12.25 8.5v4.75M6.75 6.25l.5 8a1 1 0 001 .94h2.5a1 1 0 001-.94l.5-8" />
       </>
     ) : (
       <>
@@ -132,11 +148,12 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false });
 
   const leadRows = (leads ?? []) as Lead[];
+  const activeLeadRows = leadRows.filter((lead) => !isLeadTrashed(lead));
   const summaryCards = getSummaryCards(leadRows);
-  const requestDates = leadRows
+  const requestDates = activeLeadRows
     .map((lead) => lead.created_at)
     .filter((date): date is string => Boolean(date));
-  const recentLeads = leadRows.slice(0, 3);
+  const recentLeads = activeLeadRows.slice(0, 3);
 
   return (
     <div className="space-y-6">
@@ -149,7 +166,7 @@ export default async function DashboardPage() {
             Request Proposal Analytics
           </h1>
           <p className="mt-1 text-sm text-[var(--text-muted)]">
-            Review request proposal activity and read status.
+            Review request proposal activity and active follow-ups.
           </p>
         </div>
         <Link
@@ -178,7 +195,7 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <>
-          <section className="grid gap-4 lg:grid-cols-3">
+          <section className="grid gap-4 lg:grid-cols-4">
             {summaryCards.map((metric) => (
               <article
                 key={metric.label}

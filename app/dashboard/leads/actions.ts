@@ -10,11 +10,30 @@ import { createAdminClient } from "@/app/lib/supabase-admin";
 import { createClient } from "@/app/lib/supabase-server";
 
 export type SendAutoReplyResult = SendLeadAutoReplyResult;
+type LeadMutationPayload = {
+  id: number;
+  read_at: string | null;
+  trashed_at: string | null;
+};
+
 export type ToggleLeadReadResult = {
   lead?: {
     id: number;
     read_at: string | null;
+    trashed_at: string | null;
   };
+  message: string;
+  status: "error" | "success";
+};
+
+export type TrashLeadResult = {
+  lead?: LeadMutationPayload;
+  message: string;
+  status: "error" | "success";
+};
+
+export type DeleteLeadResult = {
+  leadId?: number;
   message: string;
   status: "error" | "success";
 };
@@ -104,13 +123,20 @@ export async function toggleLeadReadStatus(
   const admin = createAdminClient();
   const { data: lead, error } = await admin
     .from("leads")
-    .select("id, read_at")
+    .select("id, read_at, trashed_at")
     .eq("id", leadId)
     .single();
 
   if (error || !lead) {
     return {
       message: "Lead not found.",
+      status: "error",
+    };
+  }
+
+  if (lead.trashed_at) {
+    return {
+      message: "Restore the lead before changing its read status.",
       status: "error",
     };
   }
@@ -122,7 +148,7 @@ export async function toggleLeadReadStatus(
       read_at: nextReadAt,
     })
     .eq("id", leadId)
-    .select("id, read_at")
+    .select("id, read_at, trashed_at")
     .single();
 
   if (updateError || !updatedLead) {
@@ -136,8 +162,200 @@ export async function toggleLeadReadStatus(
   revalidatePath("/dashboard/leads");
 
   return {
-    lead: updatedLead as ToggleLeadReadResult["lead"],
+    lead: updatedLead as LeadMutationPayload,
     message: nextReadAt ? "Marked as read." : "Marked as unread.",
+    status: "success",
+  };
+}
+
+export async function trashLead(leadId: number): Promise<TrashLeadResult> {
+  if (!Number.isInteger(leadId) || leadId <= 0) {
+    return {
+      message: "Invalid lead selection.",
+      status: "error",
+    };
+  }
+
+  try {
+    await getAuthenticatedUserId();
+  } catch {
+    return {
+      message: "You must be signed in to move leads to trash.",
+      status: "error",
+    };
+  }
+
+  const admin = createAdminClient();
+  const { data: lead, error } = await admin
+    .from("leads")
+    .select("id, read_at, trashed_at")
+    .eq("id", leadId)
+    .single();
+
+  if (error || !lead) {
+    return {
+      message: "Lead not found.",
+      status: "error",
+    };
+  }
+
+  if (lead.trashed_at) {
+    return {
+      lead: lead as LeadMutationPayload,
+      message: "Lead is already in trash.",
+      status: "success",
+    };
+  }
+
+  const { data: updatedLead, error: updateError } = await admin
+    .from("leads")
+    .update({
+      trashed_at: new Date().toISOString(),
+    })
+    .eq("id", leadId)
+    .select("id, read_at, trashed_at")
+    .single();
+
+  if (updateError || !updatedLead) {
+    return {
+      message: updateError?.message ?? "Lead could not be moved to trash.",
+      status: "error",
+    };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/leads");
+
+  return {
+    lead: updatedLead as LeadMutationPayload,
+    message: "Lead moved to trash.",
+    status: "success",
+  };
+}
+
+export async function restoreLead(leadId: number): Promise<TrashLeadResult> {
+  if (!Number.isInteger(leadId) || leadId <= 0) {
+    return {
+      message: "Invalid lead selection.",
+      status: "error",
+    };
+  }
+
+  try {
+    await getAuthenticatedUserId();
+  } catch {
+    return {
+      message: "You must be signed in to restore leads.",
+      status: "error",
+    };
+  }
+
+  const admin = createAdminClient();
+  const { data: lead, error } = await admin
+    .from("leads")
+    .select("id, read_at, trashed_at")
+    .eq("id", leadId)
+    .single();
+
+  if (error || !lead) {
+    return {
+      message: "Lead not found.",
+      status: "error",
+    };
+  }
+
+  if (!lead.trashed_at) {
+    return {
+      lead: lead as LeadMutationPayload,
+      message: "Lead is already active.",
+      status: "success",
+    };
+  }
+
+  const { data: updatedLead, error: updateError } = await admin
+    .from("leads")
+    .update({
+      trashed_at: null,
+    })
+    .eq("id", leadId)
+    .select("id, read_at, trashed_at")
+    .single();
+
+  if (updateError || !updatedLead) {
+    return {
+      message: updateError?.message ?? "Lead could not be restored.",
+      status: "error",
+    };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/leads");
+
+  return {
+    lead: updatedLead as LeadMutationPayload,
+    message: "Lead restored from trash.",
+    status: "success",
+  };
+}
+
+export async function permanentlyDeleteLead(
+  leadId: number
+): Promise<DeleteLeadResult> {
+  if (!Number.isInteger(leadId) || leadId <= 0) {
+    return {
+      message: "Invalid lead selection.",
+      status: "error",
+    };
+  }
+
+  try {
+    await getAuthenticatedUserId();
+  } catch {
+    return {
+      message: "You must be signed in to permanently delete leads.",
+      status: "error",
+    };
+  }
+
+  const admin = createAdminClient();
+  const { data: lead, error } = await admin
+    .from("leads")
+    .select("id, trashed_at")
+    .eq("id", leadId)
+    .single();
+
+  if (error || !lead) {
+    return {
+      message: "Lead not found.",
+      status: "error",
+    };
+  }
+
+  if (!lead.trashed_at) {
+    return {
+      message: "Move the lead to trash before deleting it permanently.",
+      status: "error",
+    };
+  }
+
+  const { error: deleteError } = await admin
+    .from("leads")
+    .delete()
+    .eq("id", leadId);
+
+  if (deleteError) {
+    return {
+      message: deleteError.message || "Lead could not be deleted permanently.",
+      status: "error",
+    };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/leads");
+
+  return {
+    leadId,
+    message: "Lead permanently deleted.",
     status: "success",
   };
 }

@@ -2,6 +2,23 @@ import "server-only";
 
 import nodemailer from "nodemailer";
 
+type MailAttachment = {
+  content: Buffer;
+  contentType?: string;
+  filename: string;
+};
+
+type SendEmailOptions = {
+  attachments?: MailAttachment[];
+  from?: string;
+  html: string;
+  idempotencyKey: string;
+  replyTo?: string;
+  subject: string;
+  text: string;
+  to: string;
+};
+
 type SendAutoReplyEmailOptions = {
   html: string;
   idempotencyKey: string;
@@ -52,26 +69,14 @@ export function isAutoReplyEnabled() {
   return process.env.AUTO_REPLY_ENABLED !== "false";
 }
 
-export async function sendAutoReplyEmail({
-  html,
-  idempotencyKey,
-  subject,
-  text,
-  to,
-}: SendAutoReplyEmailOptions): Promise<SendAutoReplyEmailResponse> {
-  if (!isAutoReplyEnabled()) {
-    throw new Error("Auto reply is disabled.");
-  }
-
+function createTransporter() {
   const host = getRequiredEnv("SMTP_HOST");
   const port = parseSmtpPort(getRequiredEnv("SMTP_PORT"));
   const secure = parseSmtpSecure(getRequiredEnv("SMTP_SECURE"));
   const user = getRequiredEnv("SMTP_USER");
   const pass = getRequiredEnv("SMTP_PASS");
-  const from = getRequiredEnv("AUTO_REPLY_FROM_EMAIL");
-  const replyTo = getRequiredEnv("AUTO_REPLY_REPLY_TO_EMAIL");
 
-  const transporter = nodemailer.createTransport({
+  return nodemailer.createTransport({
     auth: {
       pass,
       user,
@@ -80,8 +85,22 @@ export async function sendAutoReplyEmail({
     port,
     secure,
   });
+}
+
+export async function sendEmail({
+  attachments = [],
+  from,
+  html,
+  idempotencyKey,
+  replyTo,
+  subject,
+  text,
+  to,
+}: SendEmailOptions): Promise<SendAutoReplyEmailResponse> {
+  const transporter = createTransporter();
 
   const info = await transporter.sendMail({
+    attachments,
     from,
     headers: {
       "X-Idempotency-Key": idempotencyKey,
@@ -100,4 +119,29 @@ export async function sendAutoReplyEmail({
   return {
     id: info.messageId,
   };
+}
+
+export async function sendAutoReplyEmail({
+  html,
+  idempotencyKey,
+  subject,
+  text,
+  to,
+}: SendAutoReplyEmailOptions): Promise<SendAutoReplyEmailResponse> {
+  if (!isAutoReplyEnabled()) {
+    throw new Error("Auto reply is disabled.");
+  }
+
+  const from = getRequiredEnv("AUTO_REPLY_FROM_EMAIL");
+  const replyTo = getRequiredEnv("AUTO_REPLY_REPLY_TO_EMAIL");
+
+  return sendEmail({
+    from,
+    html,
+    idempotencyKey,
+    replyTo,
+    subject,
+    text,
+    to,
+  });
 }

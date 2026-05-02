@@ -89,6 +89,8 @@ export function ProposalForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const privacyTriggerRef = useRef<HTMLButtonElement>(null);
   const privacyCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const privacyScrollContainerRef = useRef<HTMLDivElement>(null);
+  const privacyScrollSentinelRef = useRef<HTMLDivElement>(null);
   const turnstileContainerRef = useRef<HTMLDivElement>(null);
   const turnstileWidgetIdRef = useRef<string | null>(null);
   const redirectTimeoutRef = useRef<number | null>(null);
@@ -150,6 +152,37 @@ export function ProposalForm() {
       triggerElement?.focus();
     };
   }, [isPrivacyModalOpen]);
+
+  useEffect(() => {
+    if (
+      !isPrivacyModalOpen ||
+      hasReadPrivacy ||
+      !privacyScrollContainerRef.current ||
+      !privacyScrollSentinelRef.current
+    ) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) {
+          return;
+        }
+
+        setHasReadPrivacy(true);
+        sessionStorage.setItem(privacyStorageKey, "true");
+        observer.disconnect();
+      },
+      {
+        root: privacyScrollContainerRef.current,
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(privacyScrollSentinelRef.current);
+
+    return () => observer.disconnect();
+  }, [hasReadPrivacy, isPrivacyModalOpen]);
 
   useEffect(() => {
     router.prefetch("/request-proposal/success");
@@ -256,8 +289,6 @@ export function ProposalForm() {
 
   const openPrivacyModal = () => {
     setIsPrivacyModalOpen(true);
-    setHasReadPrivacy(true);
-    sessionStorage.setItem(privacyStorageKey, "true");
   };
 
   return (
@@ -469,7 +500,7 @@ export function ProposalForm() {
               disabled={!hasReadPrivacy}
               title={
                 !hasReadPrivacy
-                  ? "Please review our Privacy Policy first"
+                  ? "Please scroll through our Privacy Policy first"
                   : ""
               }
               aria-invalid={Boolean(state.fieldErrors?.terms)}
@@ -503,7 +534,8 @@ export function ProposalForm() {
 
             {!hasReadPrivacy && (
               <p className="text-[0.65rem] font-medium text-orange-500/80">
-                Review our Privacy Policy to enable the consent checkbox.
+                For compliance purposes, please review the Privacy Policy in
+                full to enable the consent checkbox.
               </p>
             )}
             {hasReadPrivacy && (
@@ -604,8 +636,8 @@ export function ProposalForm() {
                   id={modalDescriptionId}
                   className="mt-1 text-sm text-[var(--text-muted)]"
                 >
-                  Last updated {PRIVACY_POLICY_LAST_UPDATED}. Opening this
-                  policy unlocks consent for the proposal form.
+                  Last updated {PRIVACY_POLICY_LAST_UPDATED}. Scroll to the end
+                  of this policy to unlock consent for the proposal form.
                 </p>
               </div>
               <button
@@ -630,11 +662,19 @@ export function ProposalForm() {
               </button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+            <div
+              ref={privacyScrollContainerRef}
+              className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6"
+            >
               <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-base)]/75 p-4 sm:p-5">
                 <div className="prose prose-sm max-w-none prose-a:text-[var(--brand)] prose-headings:font-heading prose-headings:font-semibold prose-headings:tracking-[-0.03em] prose-headings:text-[var(--text-primary)] prose-li:text-[var(--text-muted)] prose-p:text-[var(--text-muted)] prose-strong:text-[var(--text-primary)] hover:prose-a:text-[var(--brand-dark)]">
                   <PrivacyPolicyContent showHeading={false} />
                 </div>
+                <div
+                  ref={privacyScrollSentinelRef}
+                  className="h-1 w-full"
+                  aria-hidden="true"
+                />
               </div>
             </div>
 

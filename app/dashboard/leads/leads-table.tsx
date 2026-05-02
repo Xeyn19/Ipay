@@ -2,12 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LoaderCircle, Trash, Trash2, Undo2 } from "lucide-react";
 import {
-  type ReactNode,
+  Archive,
+  Check,
+  LoaderCircle,
+  Reply,
+  Search,
+  Trash,
+  Undo2,
+  X,
+} from "lucide-react";
+import {
+  useDeferredValue,
   useEffect,
   useId,
   useOptimistic,
+  useRef,
   useState,
   useTransition,
 } from "react";
@@ -20,10 +30,14 @@ import {
   type LeadReadFilter,
 } from "@/app/dashboard/lead-read-status";
 import {
-  permanentlyDeleteLead,
+  archiveLead,
+  bulkArchiveLeads,
+  bulkPermanentlyDeleteLeads,
+  bulkRestoreLeads,
+  markLeadAsRead,
+  markLeadAsUnread,
   restoreLead,
-  toggleLeadReadStatus,
-  trashLead,
+  permanentlyDeleteLead,
 } from "./actions";
 
 type Lead = {
@@ -43,7 +57,13 @@ type ActionFeedback = {
   status: "error" | "success";
 };
 
-type LeadMutationType = "delete" | "read" | "restore" | "trash";
+type LeadMutationType =
+  | "archive"
+  | "delete"
+  | "mark-read"
+  | "mark-unread"
+  | "restore";
+type BulkMutationType = "bulk-archive" | "bulk-delete" | "bulk-restore";
 type ConfirmationTone = "danger" | "neutral" | "warning";
 
 type LeadOptimisticAction =
@@ -59,11 +79,38 @@ type LeadOptimisticAction =
 type ConfirmationRequest = {
   confirmLabel: string;
   description: string;
-  lead: Lead;
+  lead?: Lead;
+  leadIds?: number[];
   title: string;
   tone: ConfirmationTone;
-  type: LeadMutationType;
+  type: BulkMutationType | LeadMutationType;
 };
+
+const leadToastOptions = {
+  position: "top-right" as const,
+};
+
+function formatRequestCount(count: number) {
+  return `${count} request${count === 1 ? "" : "s"}`;
+}
+
+function matchesLeadSearchQuery(lead: Lead, query: string) {
+  if (!query) {
+    return true;
+  }
+
+  const searchableValues = [
+    lead.name,
+    lead.company,
+    lead.email,
+    lead.contact_number,
+    lead.message,
+  ];
+
+  return searchableValues.some((value) =>
+    value?.toLowerCase().includes(query)
+  );
+}
 
 function formatDate(dateString: string | undefined | null) {
   if (!dateString) return "-";
@@ -125,37 +172,8 @@ function TrashStatusBadge({ lead }: { lead: Pick<Lead, "trashed_at"> }) {
 
   return (
     <span className="inline-flex min-w-[5.5rem] items-center justify-center rounded-full border border-red-200/70 bg-red-50 px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-red-600 dark:border-red-500/30 dark:bg-red-950/30 dark:text-red-300">
-      In trash
+      Archived
     </span>
-  );
-}
-
-function LeadActionIconButton({
-  ariaLabel,
-  children,
-  className,
-  disabled,
-  onClick,
-  title,
-}: {
-  ariaLabel: string;
-  children: ReactNode;
-  className: string;
-  disabled?: boolean;
-  onClick: () => void;
-  title: string;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={ariaLabel}
-      title={title}
-      disabled={disabled}
-      onClick={onClick}
-      className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -179,7 +197,7 @@ function getActiveFilterTitle(activeFilter: LeadReadFilter) {
   }
 
   if (activeFilter === "trash") {
-    return "Trash";
+    return "Archive";
   }
 
   return "Unread requests";
@@ -191,7 +209,7 @@ function getActiveFilterDescription(activeFilter: LeadReadFilter) {
   }
 
   if (activeFilter === "trash") {
-    return "Restore requests when needed or let them auto-delete after 30 days.";
+    return "Restore archived requests when needed or delete them permanently.";
   }
 
   return "Review new proposal requests waiting for follow-up.";
@@ -207,14 +225,23 @@ export function LeadsTable({
   error?: string;
 }) {
   const pathname = usePathname();
+  const selectAllRef = useRef<HTMLInputElement>(null);
+  const visibleLeadIdsRef = useRef<number[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [confirmationRequest, setConfirmationRequest] =
     useState<ConfirmationRequest | null>(null);
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLeadIds, setSelectedLeadIds] = useState<number[]>([]);
   const [isMutatingLead, startLeadMutationTransition] = useTransition();
+  const [isMutatingBulkAction, startBulkActionTransition] = useTransition();
   const [pendingMutation, setPendingMutation] = useState<{
     leadId: number;
     type: LeadMutationType;
+  } | null>(null);
+  const [pendingBulkAction, setPendingBulkAction] = useState<{
+    leadIds: number[];
+    type: BulkMutationType;
   } | null>(null);
   const modalTitleId = useId();
   const modalDescriptionId = useId();
@@ -230,6 +257,31 @@ export function LeadsTable({
       );
     }
   );
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const normalizedSearchQuery = deferredSearchQuery.trim().toLowerCase();
+
+  const activeLeadRows = leadRows.filter((lead) => !isLeadTrashed(lead));
+  const trashLeadCount = leadRows.length - activeLeadRows.length;
+  const unreadLeadCount = activeLeadRows.filter((lead) => !lead.read_at).length;
+  const readLeadCount = activeLeadRows.length - unreadLeadCount;
+  const filteredLeadRows = leadRows
+    .filter((lead) => matchesLeadReadFilter(lead, activeFilter))
+    .filter((lead) => matchesLeadSearchQuery(lead, normalizedSearchQuery));
+  const visibleLeadIds = filteredLeadRows
+    .map((lead) => lead.id)
+    .filter((leadId): leadId is number => Number.isInteger(leadId));
+  visibleLeadIdsRef.current = visibleLeadIds;
+  const visibleLeadIdsKey = visibleLeadIds.join(",");
+  const selectedVisibleLeadIds = selectedLeadIds.filter((leadId) =>
+    visibleLeadIds.includes(leadId)
+  );
+  const areAllVisibleSelected =
+    visibleLeadIds.length > 0 &&
+    selectedVisibleLeadIds.length === visibleLeadIds.length;
+  const hasSelectedVisibleLeads = selectedVisibleLeadIds.length > 0;
+  const hasSomeVisibleSelected =
+    hasSelectedVisibleLeads && !areAllVisibleSelected;
+  const isAnyMutationPending = isMutatingLead || isMutatingBulkAction;
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -255,6 +307,27 @@ export function LeadsTable({
     };
   }, [confirmationRequest, selectedLead]);
 
+  useEffect(() => {
+    setSelectedLeadIds((currentIds) => {
+      const nextIds = currentIds.filter((leadId) =>
+        visibleLeadIdsRef.current.includes(leadId)
+      );
+
+      return nextIds.length === currentIds.length &&
+        nextIds.every((leadId, index) => leadId === currentIds[index])
+        ? currentIds
+        : nextIds;
+    });
+  }, [activeFilter, visibleLeadIdsKey]);
+
+  useEffect(() => {
+    if (!selectAllRef.current) {
+      return;
+    }
+
+    selectAllRef.current.indeterminate = hasSomeVisibleSelected;
+  }, [hasSomeVisibleSelected]);
+
   function updateLeadState(updatedLead: Partial<Lead> & Pick<Lead, "id">) {
     updateLeadRows({
       type: "update",
@@ -272,18 +345,99 @@ export function LeadsTable({
       leadId,
       type: "delete",
     });
+    setSelectedLeadIds((currentIds) =>
+      currentIds.filter((currentLeadId) => currentLeadId !== leadId)
+    );
     setSelectedLead((currentLead) =>
       currentLead?.id === leadId ? null : currentLead
     );
   }
 
+  function updateMultipleLeadStates(
+    updatedLeads: Array<Partial<Lead> & Pick<Lead, "id">>
+  ) {
+    updatedLeads.forEach((updatedLead) => {
+      updateLeadState(updatedLead);
+    });
+  }
+
+  function removeMultipleLeadStates(leadIds: number[]) {
+    leadIds.forEach((leadId) => {
+      removeLeadState(leadId);
+    });
+  }
+
+  function clearSelectedLeadIds(leadIds: number[]) {
+    if (leadIds.length === 0) {
+      return;
+    }
+
+    setSelectedLeadIds((currentIds) =>
+      currentIds.filter((leadId) => !leadIds.includes(leadId))
+    );
+  }
+
+  function toggleLeadSelection(leadId: number) {
+    setSelectedLeadIds((currentIds) =>
+      currentIds.includes(leadId)
+        ? currentIds.filter((currentLeadId) => currentLeadId !== leadId)
+        : [...currentIds, leadId]
+    );
+  }
+
+  function toggleSelectAllVisible() {
+    setSelectedLeadIds((currentIds) => {
+      if (areAllVisibleSelected) {
+        return currentIds.filter((leadId) => !visibleLeadIds.includes(leadId));
+      }
+
+      return [...new Set([...currentIds, ...visibleLeadIds])];
+    });
+  }
+
   function openLead(lead: Lead) {
     setActionFeedback(null);
     setSelectedLead(lead);
+
+    if (!lead.id || lead.read_at || lead.trashed_at) {
+      return;
+    }
+
+    runLeadMutation({ leadId: lead.id, type: "mark-read" }, async () => {
+      const result = await markLeadAsRead(lead.id as number);
+
+      if (result.lead?.id) {
+        updateLeadState(result.lead);
+      }
+
+      if (result.status === "error") {
+        setActionFeedback({
+          message: result.message,
+          status: result.status,
+        });
+        toast.error(result.message, leadToastOptions);
+      }
+    });
+  }
+
+  function closeLeadModal() {
+    if (confirmationRequest) {
+      setConfirmationRequest(null);
+      return;
+    }
+
+    setActionFeedback(null);
+    setSelectedLead(null);
   }
 
   function getFilterHref(filter: LeadReadFilter) {
     return filter === "unread" ? pathname : `${pathname}?filter=${filter}`;
+  }
+
+  function getReplyHref(leadId: number) {
+    return activeFilter === "unread"
+      ? `/dashboard/leads/${leadId}/reply`
+      : `/dashboard/leads/${leadId}/reply?filter=${activeFilter}`;
   }
 
   function runLeadMutation(
@@ -302,43 +456,31 @@ export function LeadsTable({
     });
   }
 
-  function handleToggleReadStatus(lead: Pick<Lead, "id" | "read_at">) {
-    const leadId = lead.id;
+  function runBulkMutation(
+    mutation: { leadIds: number[]; type: BulkMutationType },
+    task: () => Promise<void>
+  ) {
+    startBulkActionTransition(async () => {
+      setPendingBulkAction(mutation);
+      setActionFeedback(null);
 
-    if (!leadId) {
-      return;
-    }
-
-    runLeadMutation({ leadId, type: "read" }, async () => {
-      const result = await toggleLeadReadStatus(leadId);
-
-      if (result.lead?.id) {
-        updateLeadState(result.lead);
+      try {
+        await task();
+      } finally {
+        setPendingBulkAction(null);
       }
-
-      setActionFeedback({
-        message: result.message,
-        status: result.status,
-      });
-
-      if (result.status === "success") {
-        toast.success(result.message);
-        return;
-      }
-
-      toast.error(result.message);
     });
   }
 
-  function handleTrashLead(lead: Pick<Lead, "id">) {
+  function handleMarkLeadAsUnread(lead: Pick<Lead, "id">) {
     const leadId = lead.id;
 
     if (!leadId) {
       return;
     }
 
-    runLeadMutation({ leadId, type: "trash" }, async () => {
-      const result = await trashLead(leadId);
+    runLeadMutation({ leadId, type: "mark-unread" }, async () => {
+      const result = await markLeadAsUnread(leadId);
 
       if (result.lead?.id) {
         updateLeadState(result.lead);
@@ -350,11 +492,39 @@ export function LeadsTable({
       });
 
       if (result.status === "success") {
-        toast.success(result.message);
+        toast.success(result.message, leadToastOptions);
         return;
       }
 
-      toast.error(result.message);
+      toast.error(result.message, leadToastOptions);
+    });
+  }
+
+  function handleArchiveLead(lead: Pick<Lead, "id">) {
+    const leadId = lead.id;
+
+    if (!leadId) {
+      return;
+    }
+
+    runLeadMutation({ leadId, type: "archive" }, async () => {
+      const result = await archiveLead(leadId);
+
+      if (result.lead?.id) {
+        updateLeadState(result.lead);
+      }
+
+      setActionFeedback({
+        message: result.message,
+        status: result.status,
+      });
+
+      if (result.status === "success") {
+        toast.success(result.message, leadToastOptions);
+        return;
+      }
+
+      toast.error(result.message, leadToastOptions);
     });
   }
 
@@ -378,11 +548,11 @@ export function LeadsTable({
       });
 
       if (result.status === "success") {
-        toast.success(result.message);
+        toast.success(result.message, leadToastOptions);
         return;
       }
 
-      toast.error(result.message);
+      toast.error(result.message, leadToastOptions);
     });
   }
 
@@ -406,11 +576,77 @@ export function LeadsTable({
       });
 
       if (result.status === "success") {
-        toast.success(result.message);
+        toast.success(result.message, leadToastOptions);
         return;
       }
 
-      toast.error(result.message);
+      toast.error(result.message, leadToastOptions);
+    });
+  }
+
+  function handleBulkArchiveLeads(leadIds: number[]) {
+    if (leadIds.length === 0) {
+      return;
+    }
+
+    runBulkMutation({ leadIds, type: "bulk-archive" }, async () => {
+      const result = await bulkArchiveLeads(leadIds);
+
+      if (result.updatedLeads?.length) {
+        updateMultipleLeadStates(result.updatedLeads);
+      }
+
+      if (result.status === "success") {
+        clearSelectedLeadIds(leadIds);
+        toast.success(result.message, leadToastOptions);
+        return;
+      }
+
+      toast.error(result.message, leadToastOptions);
+    });
+  }
+
+  function handleBulkRestoreLeads(leadIds: number[]) {
+    if (leadIds.length === 0) {
+      return;
+    }
+
+    runBulkMutation({ leadIds, type: "bulk-restore" }, async () => {
+      const result = await bulkRestoreLeads(leadIds);
+
+      if (result.updatedLeads?.length) {
+        updateMultipleLeadStates(result.updatedLeads);
+      }
+
+      if (result.status === "success") {
+        clearSelectedLeadIds(leadIds);
+        toast.success(result.message, leadToastOptions);
+        return;
+      }
+
+      toast.error(result.message, leadToastOptions);
+    });
+  }
+
+  function handleBulkDeleteLeads(leadIds: number[]) {
+    if (leadIds.length === 0) {
+      return;
+    }
+
+    runBulkMutation({ leadIds, type: "bulk-delete" }, async () => {
+      const result = await bulkPermanentlyDeleteLeads(leadIds);
+
+      if (result.deletedLeadIds?.length) {
+        removeMultipleLeadStates(result.deletedLeadIds);
+      }
+
+      if (result.status === "success") {
+        clearSelectedLeadIds(leadIds);
+        toast.success(result.message, leadToastOptions);
+        return;
+      }
+
+      toast.error(result.message, leadToastOptions);
     });
   }
 
@@ -419,13 +655,13 @@ export function LeadsTable({
       return;
     }
 
-    if (type === "trash") {
+    if (type === "archive") {
       setConfirmationRequest({
-        confirmLabel: "Yes",
+        confirmLabel: "Archive",
         description:
-          "Are you sure you want to move this request to trash? You can restore it anytime within 30 days.",
+          "Are you sure you want to archive this request? You can restore it anytime from the archive view.",
         lead,
-        title: "Move this request to trash?",
+        title: "Archive this request?",
         tone: "warning",
         type,
       });
@@ -434,9 +670,9 @@ export function LeadsTable({
 
     if (type === "restore") {
       setConfirmationRequest({
-        confirmLabel: "Yes",
+        confirmLabel: "Restore",
         description:
-          "Are you sure you want to restore this request from trash and return it to your active leads?",
+          "Are you sure you want to restore this request from the archive and return it to your active leads?",
         lead,
         title: "Restore this request?",
         tone: "neutral",
@@ -447,7 +683,7 @@ export function LeadsTable({
 
     if (type === "delete") {
       setConfirmationRequest({
-        confirmLabel: "Yes",
+        confirmLabel: "Delete permanently",
         description:
           "Are you sure you want to permanently delete this request? This action cannot be undone.",
         lead,
@@ -458,16 +694,54 @@ export function LeadsTable({
       return;
     }
 
-    const isRead = Boolean(lead.read_at);
+    setConfirmationRequest({
+      confirmLabel: "Mark as unread",
+      description:
+        "Are you sure you want to mark this request as unread so it returns to your follow-up queue?",
+      lead,
+      title: "Mark this request as unread?",
+      tone: "neutral",
+      type,
+    });
+  }
+
+  function openBulkConfirmationRequest(type: BulkMutationType) {
+    if (!selectedVisibleLeadIds.length) {
+      return;
+    }
+
+    const requestCount = formatRequestCount(selectedVisibleLeadIds.length);
+
+    if (type === "bulk-archive") {
+      setConfirmationRequest({
+        confirmLabel: "Archive selected",
+        description: `Archive ${requestCount}? You can restore them anytime from the archive view.`,
+        leadIds: selectedVisibleLeadIds,
+        title: `Archive ${requestCount}?`,
+        tone: "warning",
+        type,
+      });
+      return;
+    }
+
+    if (type === "bulk-restore") {
+      setConfirmationRequest({
+        confirmLabel: "Restore selected",
+        description: `Restore ${requestCount} and return them to your active leads?`,
+        leadIds: selectedVisibleLeadIds,
+        title: `Restore ${requestCount}?`,
+        tone: "neutral",
+        type,
+      });
+      return;
+    }
 
     setConfirmationRequest({
-      confirmLabel: "Yes",
-      description: isRead
-        ? "Are you sure you want to mark this request as unread so it returns to your follow-up queue?"
-        : "Are you sure you want to mark this request as read after reviewing it?",
-      lead,
-      title: isRead ? "Mark this request as unread?" : "Mark this request as read?",
-      tone: "neutral",
+      confirmLabel: "Delete selected",
+      description: `Permanently delete ${requestCount}? This action cannot be undone.`,
+      leadIds: selectedVisibleLeadIds,
+      title: `Delete ${requestCount} permanently?`,
+      tone: "danger",
       type,
     });
   }
@@ -477,11 +751,30 @@ export function LeadsTable({
       return;
     }
 
-    const { lead, type } = confirmationRequest;
+    const { lead, leadIds = [], type } = confirmationRequest;
     setConfirmationRequest(null);
 
-    if (type === "trash") {
-      handleTrashLead(lead);
+    if (type === "bulk-archive") {
+      handleBulkArchiveLeads(leadIds);
+      return;
+    }
+
+    if (type === "bulk-restore") {
+      handleBulkRestoreLeads(leadIds);
+      return;
+    }
+
+    if (type === "bulk-delete") {
+      handleBulkDeleteLeads(leadIds);
+      return;
+    }
+
+    if (!lead) {
+      return;
+    }
+
+    if (type === "archive") {
+      handleArchiveLead(lead);
       return;
     }
 
@@ -495,7 +788,7 @@ export function LeadsTable({
       return;
     }
 
-    handleToggleReadStatus(lead);
+    handleMarkLeadAsUnread(lead);
   }
 
   function isPendingAction(leadId: number | undefined, type?: LeadMutationType) {
@@ -504,6 +797,14 @@ export function LeadsTable({
     }
 
     return type ? pendingMutation.type === type : true;
+  }
+
+  function isPendingBulk(type: BulkMutationType) {
+    return Boolean(
+      pendingBulkAction &&
+        pendingBulkAction.type === type &&
+        isMutatingBulkAction
+    );
   }
 
   if (error) {
@@ -525,14 +826,6 @@ export function LeadsTable({
       </div>
     );
   }
-
-  const activeLeadRows = leadRows.filter((lead) => !isLeadTrashed(lead));
-  const trashLeadCount = leadRows.length - activeLeadRows.length;
-  const unreadLeadCount = activeLeadRows.filter((lead) => !lead.read_at).length;
-  const readLeadCount = activeLeadRows.length - unreadLeadCount;
-  const filteredLeadRows = leadRows.filter((lead) =>
-    matchesLeadReadFilter(lead, activeFilter)
-  );
 
   if (leadRows.length === 0) {
     return (
@@ -560,6 +853,7 @@ export function LeadsTable({
   const selectedLeadIsRead = Boolean(selectedLead?.read_at);
   const selectedLeadIsTrashed = Boolean(selectedLead?.trashed_at);
   const selectedLeadEmail = selectedLead?.email?.trim();
+  const selectedLeadCanReply = Boolean(selectedLeadEmail);
   const selectedLeadReadStatus = selectedLead
     ? getLeadReadStatus(selectedLead)
     : null;
@@ -596,7 +890,7 @@ export function LeadsTable({
               {
                 count: trashLeadCount,
                 filter: "trash" as const,
-                label: "Trash",
+                label: "Archive",
               },
             ].map((filterOption) => (
               <Link
@@ -623,6 +917,111 @@ export function LeadsTable({
           </div>
         </div>
 
+        <div className="border-b border-[var(--border-light)] bg-[var(--bg-elevated-muted)] px-5 py-4">
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+            <label className="relative block w-full">
+              <span className="sr-only">Search requests</span>
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-[var(--text-faint)]"
+                aria-hidden="true"
+                strokeWidth={1.9}
+              />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by name, company, email, contact number, or message"
+                className="h-11 w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-elevated)] pl-10 pr-11 text-sm text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-faint)] focus:border-[var(--border-orange)] focus:ring-2 focus:ring-[rgba(241,122,30,0.18)]"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[var(--text-faint)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" strokeWidth={2} />
+                </button>
+              )}
+            </label>
+            <p className="text-sm text-[var(--text-faint)] lg:justify-self-end">
+              {filteredLeadRows.length} matching {filteredLeadRows.length === 1 ? "request" : "requests"}
+            </p>
+          </div>
+        </div>
+
+        {hasSelectedVisibleLeads && (
+          <div className="border-b border-[var(--border-light)] bg-[var(--bg-elevated-muted)] px-5 py-3">
+            <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full bg-[var(--brand-pale)] px-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--brand-dark)]">
+                  <Check className="h-3.5 w-3.5" aria-hidden="true" strokeWidth={2.2} />
+                  {formatRequestCount(selectedVisibleLeadIds.length)} selected
+                </span>
+                <button
+                  type="button"
+                  disabled={isAnyMutationPending}
+                  onClick={() => clearSelectedLeadIds(selectedVisibleLeadIds)}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--text-faint)] transition-colors hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" strokeWidth={2} />
+                  Clear selection
+                </button>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+              {activeFilter === "trash" ? (
+                <>
+                  <button
+                    type="button"
+                    disabled={isAnyMutationPending}
+                    onClick={() => openBulkConfirmationRequest("bulk-restore")}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-sky-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isPendingBulk("bulk-restore") ? (
+                      <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Undo2 className="h-4 w-4" aria-hidden="true" strokeWidth={1.9} />
+                    )}
+                    {isPendingBulk("bulk-restore") ? "Restoring..." : "Restore selected"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isAnyMutationPending}
+                    onClick={() => openBulkConfirmationRequest("bulk-delete")}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-red-200/80 bg-transparent px-4 text-sm font-semibold text-red-500 transition-colors hover:border-red-300 hover:bg-red-50/70 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-950/30"
+                  >
+                    {isPendingBulk("bulk-delete") ? (
+                      <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Trash className="h-4 w-4" aria-hidden="true" strokeWidth={1.9} />
+                    )}
+                    {isPendingBulk("bulk-delete")
+                      ? "Deleting..."
+                      : "Delete selected"}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isAnyMutationPending}
+                  onClick={() => openBulkConfirmationRequest("bulk-archive")}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white transition-colors hover:bg-[var(--brand-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isPendingBulk("bulk-archive") ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Archive className="h-4 w-4" aria-hidden="true" strokeWidth={1.9} />
+                  )}
+                  {isPendingBulk("bulk-archive")
+                    ? "Archiving..."
+                    : "Archive selected"}
+                </button>
+              )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {filteredLeadRows.length === 0 ? (
           <div className="px-6 py-16 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--border-light)] bg-[var(--bg-subtle)]">
@@ -632,46 +1031,61 @@ export function LeadsTable({
               </svg>
             </div>
             <p className="text-sm font-medium text-[var(--text-primary)]">
-              {activeFilter === "unread"
-                ? "No unread request proposals"
-                : activeFilter === "read"
-                  ? "No read request proposals"
-                  : "Trash is empty"}
+              {normalizedSearchQuery
+                ? "No matching request proposals"
+                : activeFilter === "unread"
+                  ? "No unread request proposals"
+                  : activeFilter === "read"
+                    ? "No read request proposals"
+                    : "Archive is empty"}
             </p>
             <p className="mt-1 text-xs text-[var(--text-muted)]">
-              {activeFilter === "unread"
-                ? "New submissions will appear here until you mark them as read."
-                : activeFilter === "read"
-                  ? "Marked requests will appear here once you review them."
-                  : "Trashed requests will stay here for 30 days before permanent deletion."}
+              {normalizedSearchQuery
+                ? "Try a different keyword or clear the current search."
+                : activeFilter === "unread"
+                  ? "New submissions will appear here until you mark them as read."
+                  : activeFilter === "read"
+                    ? "Marked requests will appear here once you review them."
+                    : "Archived requests will remain here until you restore or permanently delete them."}
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm" id="leads-table">
+            <table className="min-w-[72rem] w-full table-auto text-left text-sm" id="leads-table">
               <thead>
                 <tr className="border-b border-[var(--border-light)] bg-[var(--bg-subtle)]">
-                  <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  <th className="w-14 px-5 py-3">
+                    <input
+                      ref={selectAllRef}
+                      type="checkbox"
+                      checked={areAllVisibleSelected}
+                      disabled={isAnyMutationPending}
+                      onChange={toggleSelectAllVisible}
+                      aria-label="Select all visible leads"
+                      className="h-4 w-4 rounded border-[var(--border-medium)] text-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/40 focus:ring-offset-1 focus:ring-offset-[var(--bg-subtle)]"
+                    />
+                  </th>
+                  <th className="w-[11rem] whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
                     Name
                   </th>
-                  <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  <th className="w-[10rem] whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
                     Company
                   </th>
-                  <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  <th className="w-[13rem] whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
                     Email
                   </th>
-                  <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  <th className="w-[9rem] whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
                     Contact Number
                   </th>
-                  <th className="w-[11rem] max-w-[11rem] px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  <th className="min-w-[22rem] px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
                     Message
                   </th>
                   {activeFilter === "trash" && (
-                    <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                      Trash Window
+                    <th className="w-[9rem] whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                      Archive Window
                     </th>
                   )}
-                  <th className="min-w-[16rem] whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  <th className="w-[9rem] whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
                     Request Date
                   </th>
                 </tr>
@@ -682,15 +1096,25 @@ export function LeadsTable({
                   const trashState = getLeadTrashState(lead);
                   const requestDateParts = formatDateParts(lead.created_at);
                   const leadId = lead.id;
-                  const isTrashingLead = isPendingAction(leadId, "trash");
-                  const isRestoringLead = isPendingAction(leadId, "restore");
-                  const isDeletingLead = isPendingAction(leadId, "delete");
+                  const isSelected = Boolean(leadId && selectedLeadIds.includes(leadId));
 
                   return (
                     <tr
                       key={lead.id ?? idx}
                       className="transition-colors duration-150 hover:bg-[var(--bg-subtle)]"
                     >
+                      <td className="px-5 py-3">
+                        {leadId ? (
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            disabled={isAnyMutationPending}
+                            onChange={() => toggleLeadSelection(leadId)}
+                            aria-label={`Select ${lead.name || lead.email || "request proposal"}`}
+                            className="h-4 w-4 rounded border-[var(--border-medium)] text-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/40 focus:ring-offset-1 focus:ring-offset-[var(--bg-elevated)]"
+                          />
+                        ) : null}
+                      </td>
                       <td className="whitespace-nowrap px-5 py-3 font-medium text-[var(--text-primary)]">
                         {lead.name || "Unnamed request proposal"}
                       </td>
@@ -712,12 +1136,12 @@ export function LeadsTable({
                       <td className="whitespace-nowrap px-5 py-3 text-[var(--text-secondary)]">
                         {lead.contact_number || "-"}
                       </td>
-                      <td className="w-[9rem] max-w-[9rem] px-5 py-3 text-[var(--text-muted)]">
+                      <td className="px-5 py-3 text-[var(--text-muted)]">
                         {lead.message?.trim() ? (
                           <button
                             type="button"
                             onClick={() => openLead(lead)}
-                            className="block max-w-[9rem] truncate rounded-md text-left text-[0.92rem] text-[var(--brand)] underline decoration-[var(--brand)]/25 underline-offset-2 transition-colors hover:decoration-[var(--brand)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+                            className="block w-full truncate rounded-md text-left text-[0.92rem] text-[var(--brand)] underline decoration-[var(--brand)]/25 underline-offset-2 transition-colors hover:decoration-[var(--brand)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
                             aria-label={`Read full message from ${lead.name || lead.email || "request proposal"}`}
                           >
                             {lead.message.trim()}
@@ -738,63 +1162,15 @@ export function LeadsTable({
                         </td>
                       )}
                       <td className="px-5 py-3 align-top text-xs text-[var(--text-faint)]">
-                        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                          <div className="min-w-0">
-                            <p className="text-[0.78rem] font-semibold leading-5 text-[var(--text-secondary)]">
-                              {requestDateParts.date}
+                        <div className="min-w-0">
+                          <p className="text-[0.78rem] font-semibold leading-5 text-[var(--text-secondary)]">
+                            {requestDateParts.date}
+                          </p>
+                          {requestDateParts.time ? (
+                            <p className="text-[0.74rem] leading-5 text-[var(--text-faint)]">
+                              {requestDateParts.time}
                             </p>
-                            {requestDateParts.time ? (
-                              <p className="text-[0.74rem] leading-5 text-[var(--text-faint)]">
-                                {requestDateParts.time}
-                              </p>
-                            ) : null}
-                          </div>
-                          <div className="flex shrink-0 items-center gap-1.5 lg:justify-end">
-                            {leadIsTrashed ? (
-                              <>
-                                <LeadActionIconButton
-                                  ariaLabel="Restore lead"
-                                  title="Restore"
-                                  disabled={isMutatingLead && pendingMutation?.leadId === leadId}
-                                  onClick={() => openConfirmationRequest(lead, "restore")}
-                                  className="border-sky-200 bg-sky-50 text-sky-700 hover:border-sky-300 hover:bg-sky-100 focus-visible:ring-sky-400 focus-visible:ring-offset-[var(--bg-elevated)] dark:border-sky-500/30 dark:bg-sky-950/30 dark:text-sky-300 dark:hover:bg-sky-950/50"
-                                >
-                                  {isRestoringLead ? (
-                                    <LoaderCircle className="h-4.5 w-4.5 animate-spin" aria-hidden="true" />
-                                  ) : (
-                                    <Undo2 className="h-4.5 w-4.5" aria-hidden="true" strokeWidth={1.8} />
-                                  )}
-                                </LeadActionIconButton>
-                                <LeadActionIconButton
-                                  ariaLabel="Delete lead permanently"
-                                  title="Delete now"
-                                  disabled={isMutatingLead && pendingMutation?.leadId === leadId}
-                                  onClick={() => openConfirmationRequest(lead, "delete")}
-                                  className="border-red-200/80 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 focus-visible:ring-red-400 focus-visible:ring-offset-[var(--bg-elevated)] dark:border-red-500/30 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50"
-                                >
-                                  {isDeletingLead ? (
-                                    <LoaderCircle className="h-4.5 w-4.5 animate-spin" aria-hidden="true" />
-                                  ) : (
-                                    <Trash className="h-4.5 w-4.5" aria-hidden="true" strokeWidth={1.8} />
-                                  )}
-                                </LeadActionIconButton>
-                              </>
-                            ) : (
-                              <LeadActionIconButton
-                                ariaLabel="Move lead to trash"
-                                title="Trash"
-                                disabled={isMutatingLead && pendingMutation?.leadId === leadId}
-                                onClick={() => openConfirmationRequest(lead, "trash")}
-                                className="border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-300 hover:bg-amber-100 focus-visible:ring-amber-400 focus-visible:ring-offset-[var(--bg-elevated)] dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/50"
-                              >
-                                {isTrashingLead ? (
-                                  <LoaderCircle className="h-4.5 w-4.5 animate-spin" aria-hidden="true" />
-                                ) : (
-                                  <Trash2 className="h-4.5 w-4.5" aria-hidden="true" strokeWidth={1.8} />
-                                )}
-                              </LeadActionIconButton>
-                            )}
-                          </div>
+                          ) : null}
                         </div>
                       </td>
                     </tr>
@@ -811,15 +1187,7 @@ export function LeadsTable({
           <button
             type="button"
             aria-label="Close message"
-            onClick={() => {
-              if (confirmationRequest) {
-                setConfirmationRequest(null);
-                return;
-              }
-
-              setActionFeedback(null);
-              setSelectedLead(null);
-            }}
+            onClick={closeLeadModal}
             className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
           />
           <section
@@ -829,7 +1197,15 @@ export function LeadsTable({
             aria-describedby={modalDescriptionId}
             className={`relative flex w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-large)] ${modalHeightClass}`}
           >
-            <div className="flex justify-center border-b border-[var(--border-light)] bg-[linear-gradient(180deg,var(--bg-subtle)_0%,var(--bg-elevated)_100%)] px-5 py-4 text-center sm:px-6">
+            <div className="relative border-b border-[var(--border-light)] bg-[linear-gradient(180deg,var(--bg-subtle)_0%,var(--bg-elevated)_100%)] px-5 py-4 text-center sm:px-6">
+              <button
+                type="button"
+                aria-label="Close request details"
+                onClick={closeLeadModal}
+                className="absolute right-5 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-faint)] transition-colors hover:border-[var(--border-orange)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] sm:right-6"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
               <p
                 id={modalTitleId}
                 className="font-heading text-base font-bold tracking-[-0.02em] text-[var(--text-primary)]"
@@ -903,7 +1279,7 @@ export function LeadsTable({
                     {selectedLeadIsTrashed ? (
                       <div>
                         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                          Trash status
+                          Archive status
                         </p>
                         <div className="mt-2 space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
@@ -913,7 +1289,7 @@ export function LeadsTable({
                             </span>
                           </div>
                           <p className="text-xs text-[var(--text-faint)]">
-                            Moved to trash {formatDate(selectedLead.trashed_at)}
+                            Archived {formatDate(selectedLead.trashed_at)}
                           </p>
                         </div>
                       </div>
@@ -945,7 +1321,7 @@ export function LeadsTable({
                   >
                     {selectedLeadIsTrashed
                       ? "Restore this request when you still need it, or delete it permanently."
-                      : "Review the request, then update its read status when needed."}
+                      : "Opening a message marks it as read automatically. You can mark it as unread again if it still needs follow-up."}
                   </p>
                   {actionFeedback && (
                     <p
@@ -960,17 +1336,27 @@ export function LeadsTable({
                   )}
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  {selectedLeadId && selectedLeadCanReply ? (
+                    <Link
+                      href={getReplyHref(selectedLeadId)}
+                      className="inline-flex h-10 min-w-[9.75rem] items-center justify-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated-muted)]"
+                    >
+                      <Reply className="h-4 w-4" aria-hidden="true" />
+                      Reply
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="inline-flex h-10 min-w-[9.75rem] items-center justify-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-semibold text-[var(--text-secondary)] opacity-60"
+                    >
+                      <Reply className="h-4 w-4" aria-hidden="true" />
+                      Reply
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={() => {
-                      if (confirmationRequest) {
-                        setConfirmationRequest(null);
-                        return;
-                      }
-
-                      setActionFeedback(null);
-                      setSelectedLead(null);
-                    }}
+                    onClick={closeLeadModal}
                     className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-medium text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated-muted)]"
                   >
                     Close
@@ -979,7 +1365,7 @@ export function LeadsTable({
                     <>
                       <button
                         type="button"
-                        disabled={isMutatingLead && pendingMutation?.leadId === selectedLeadId}
+                        disabled={isAnyMutationPending}
                         onClick={() => {
                           if (selectedLead) {
                             openConfirmationRequest(selectedLead, "restore");
@@ -993,7 +1379,7 @@ export function LeadsTable({
                       </button>
                       <button
                         type="button"
-                        disabled={isMutatingLead && pendingMutation?.leadId === selectedLeadId}
+                        disabled={isAnyMutationPending}
                         onClick={() => {
                           if (selectedLead) {
                             openConfirmationRequest(selectedLead, "delete");
@@ -1006,28 +1392,22 @@ export function LeadsTable({
                           : "Delete permanently"}
                       </button>
                     </>
-                  ) : (
+                  ) : selectedLeadIsRead ? (
                     <button
                       type="button"
-                      disabled={isMutatingLead && pendingMutation?.leadId === selectedLeadId}
+                      disabled={isAnyMutationPending}
                       onClick={() => {
                         if (selectedLead) {
-                          openConfirmationRequest(selectedLead, "read");
+                          openConfirmationRequest(selectedLead, "mark-unread");
                         }
                       }}
-                      className={`inline-flex h-10 min-w-[10.5rem] items-center justify-center rounded-lg px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated-muted)] disabled:cursor-not-allowed disabled:opacity-60 ${
-                        selectedLeadIsRead
-                          ? "border border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
-                          : "bg-[var(--brand)] text-white hover:bg-[var(--brand-dark)]"
-                      }`}
+                      className="inline-flex h-10 min-w-[10.5rem] items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated-muted)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {isPendingAction(selectedLeadId, "read")
+                      {isPendingAction(selectedLeadId, "mark-unread")
                         ? "Updating..."
-                        : selectedLeadIsRead
-                          ? "Mark as unread"
-                          : "Mark as read"}
+                        : "Mark as unread"}
                     </button>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -1072,9 +1452,19 @@ export function LeadsTable({
                 <button
                   type="button"
                   disabled={
-                    isMutatingLead &&
-                    pendingMutation?.leadId === confirmationRequest.lead.id &&
-                    pendingMutation?.type === confirmationRequest.type
+                    ("lead" in confirmationRequest &&
+                      Boolean(
+                        confirmationRequest.lead?.id &&
+                          isMutatingLead &&
+                          pendingMutation?.leadId === confirmationRequest.lead.id &&
+                          pendingMutation?.type === confirmationRequest.type
+                      )) ||
+                    ("leadIds" in confirmationRequest &&
+                      Boolean(
+                        confirmationRequest.leadIds?.length &&
+                          isMutatingBulkAction &&
+                          pendingBulkAction?.type === confirmationRequest.type
+                      ))
                   }
                   onClick={confirmRequestedAction}
                   className={`inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated-muted)] disabled:cursor-not-allowed disabled:opacity-60 ${
@@ -1085,9 +1475,19 @@ export function LeadsTable({
                         : "bg-[var(--brand)] text-white hover:bg-[var(--brand-dark)] focus-visible:ring-[var(--brand)]"
                   }`}
                 >
-                  {isMutatingLead &&
-                  pendingMutation?.leadId === confirmationRequest.lead.id &&
-                  pendingMutation?.type === confirmationRequest.type
+                  {(("lead" in confirmationRequest &&
+                    Boolean(
+                      confirmationRequest.lead?.id &&
+                        isMutatingLead &&
+                        pendingMutation?.leadId === confirmationRequest.lead.id &&
+                        pendingMutation?.type === confirmationRequest.type
+                    )) ||
+                    ("leadIds" in confirmationRequest &&
+                      Boolean(
+                        confirmationRequest.leadIds?.length &&
+                          isMutatingBulkAction &&
+                          pendingBulkAction?.type === confirmationRequest.type
+                      )))
                     ? "Please wait..."
                     : confirmationRequest.confirmLabel}
                 </button>

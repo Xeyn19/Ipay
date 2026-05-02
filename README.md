@@ -2,6 +2,8 @@
 
 Marketing site and lead-management platform for iPay. The app is built on Next.js 16 App Router with React 19, Tailwind CSS v4, and Supabase.
 
+I developed in iPay International website a more complete request-management experience by restoring the Privacy Policy scroll-to-enable consent flow in the proposal form modal, refining the dashboard leads module into an archive-based workflow with bulk actions, search, responsive table improvements, and automatic read handling, and extending the communication flow with a dedicated reply page that supports reusable templates, attachments, SMTP delivery through nodemailer, and reply-history tracking.
+
 ## Tech Stack
 
 - Framework: Next.js `16.2.1`
@@ -24,14 +26,18 @@ Marketing site and lead-management platform for iPay. The app is built on Next.j
   - optional Abstract email validation
 - Automatic iPay confirmation email after a successful proposal submission.
 - Success page that changes its message depending on whether the confirmation email was sent or failed.
-- Protected `/dashboard` overview with cards for total, unread, read, and trashed requests.
+- Protected `/dashboard` overview with cards for total, unread, read, and archived requests.
 - `/dashboard/leads` management flow with:
-  - `Unread`, `Read`, and `Trash` filters
+  - `Unread`, `Read`, and `Archive` filters
   - clickable message previews that open a full modal
-  - mark as read / unread actions
-  - trash, restore, and permanent delete actions
+  - automatic mark-as-read when a message is opened
+  - manual mark-as-unread for active reviewed leads
+  - archive, restore, and permanent delete actions
+  - bulk selection with archive, restore, and delete actions
+  - search across lead name, company, email, contact number, and message
   - confirmation modals before state-changing actions
-  - 30-day trash retention support when the database cleanup job is configured
+  - dedicated reply page with email templates, file attachments, and nodemailer sending
+  - 30-day archive retention support when the database cleanup job is configured
 
 ## Project Structure
 
@@ -41,7 +47,7 @@ app/
     dashboard/          # Dashboard shell and navigation
     home/               # Landing page sections and shared marketing UI
   dashboard/
-    leads/              # Leads table, message modal, and lead actions
+    leads/              # Leads table, reply page, message modal, and lead actions
   lib/
     lead-auto-reply.ts  # Shared auto-reply builder and send logic
     mailer.ts           # SMTP transport and outbound email send
@@ -110,6 +116,8 @@ SMTP_USER=
 SMTP_PASS=
 AUTO_REPLY_FROM_EMAIL=
 AUTO_REPLY_REPLY_TO_EMAIL=
+MANUAL_REPLY_FROM_EMAIL=
+MANUAL_REPLY_REPLY_TO_EMAIL=
 ```
 
 Notes:
@@ -137,6 +145,23 @@ The `leads` table should contain the normal proposal fields plus:
   - `auto_reply_sent_by`
   - `auto_reply_last_error`
 
+### `public.lead_replies`
+
+The manual reply flow expects a table that stores:
+
+- `lead_id`
+- `recipient_email`
+- `subject`
+- `message_text`
+- `template_key`
+- `sender_user_id`
+- `status`
+- `smtp_message_id`
+- `error_message`
+- `attachment_metadata`
+- `sent_at`
+- `created_at`
+
 ### `public.proposal_submission_attempts`
 
 The rate limiter expects a table that stores accepted attempts with:
@@ -149,15 +174,15 @@ The rate limiter expects a table that stores accepted attempts with:
 
 It also expects indexes that support recent lookups by IP hash, email hash, and created date.
 
-### Trash cleanup
+### Archive cleanup
 
-If you want trashed leads to be removed automatically after 30 days, configure a Supabase SQL function plus a scheduled `pg_cron` job that deletes rows where:
+If you want archived leads to be removed automatically after 30 days, configure a Supabase SQL function plus a scheduled `pg_cron` job that deletes rows where:
 
 ```sql
 trashed_at <= now() - interval '30 days'
 ```
 
-Without that cleanup job, trash, restore, and manual permanent delete will still work, but automatic removal will not happen.
+Without that cleanup job, archive, restore, and manual permanent delete will still work, but automatic removal will not happen.
 
 ## Request Proposal Flow
 
@@ -175,11 +200,13 @@ Without that cleanup job, trash, restore, and manual permanent delete will still
 
 - `Unread` is the default filter.
 - `Read` contains reviewed active leads.
-- `Trash` contains soft-deleted leads.
-- Trashed leads can be restored or permanently deleted.
-- The message modal is used for reading full inquiries and updating read status.
-- Table actions handle trash, restore, and permanent delete.
-- Confirmation modals are shown before trash, restore, delete, mark-as-read, and mark-as-unread actions.
+- `Archive` contains soft-deleted leads.
+- Archived leads can be restored or permanently deleted.
+- Opening a message marks an active unread lead as read automatically.
+- The message modal is used for reading full inquiries, replying, and updating unread status when needed.
+- Bulk actions handle archive, restore, and permanent delete for selected rows.
+- The dedicated reply page supports templates, attachments, and SMTP-based manual replies.
+- Confirmation modals are shown before archive, restore, delete, and mark-as-unread actions.
 
 ## Important Files
 
@@ -188,8 +215,9 @@ Without that cleanup job, trash, restore, and manual permanent delete will still
 - [app/lib/lead-auto-reply.ts](app/lib/lead-auto-reply.ts): shared auto-reply content and lead tracking updates.
 - [app/lib/proposal-rate-limit.ts](app/lib/proposal-rate-limit.ts): accepted-submission rate limiting.
 - [app/dashboard/page.tsx](app/dashboard/page.tsx): overview stats and recent requests.
-- [app/dashboard/leads/leads-table.tsx](app/dashboard/leads/leads-table.tsx): filters, table UX, message modal, and confirmation modal.
-- [app/dashboard/leads/actions.ts](app/dashboard/leads/actions.ts): read, trash, restore, delete, and dashboard auto-reply actions.
+- [app/dashboard/leads/leads-table.tsx](app/dashboard/leads/leads-table.tsx): filters, table UX, archive actions, message modal, and confirmation modal.
+- [app/dashboard/leads/lead-reply-form.tsx](app/dashboard/leads/lead-reply-form.tsx): reusable reply composer with templates and attachments.
+- [app/dashboard/leads/actions.ts](app/dashboard/leads/actions.ts): read, archive, restore, delete, manual reply, and dashboard auto-reply actions.
 
 ## Verification
 

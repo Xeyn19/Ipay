@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { normalizeLeadReadFilter } from "@/app/dashboard/lead-read-status";
 import { LeadReplyForm } from "@/app/dashboard/leads/lead-reply-form";
+import {
+  getLeadReplyTemplates,
+  type LeadReplyTemplateRecord,
+} from "@/app/dashboard/leads/reply-templates";
 import { createClient } from "@/app/lib/supabase-server";
 
 export const metadata: Metadata = {
@@ -129,6 +133,23 @@ export default async function LeadReplyPage({
     );
   }
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  let customTemplates: LeadReplyTemplateRecord[] = [];
+
+  if (user) {
+    const { data } = await supabase
+      .from("lead_reply_templates")
+      .select("id, label, subject, message_text, source_template_key, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true });
+
+    customTemplates = (data ?? []) as LeadReplyTemplateRecord[];
+  }
+
+  const replyTemplates = getLeadReplyTemplates(lead, customTemplates);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -151,7 +172,11 @@ export default async function LeadReplyPage({
         </Link>
       </div>
 
-      <LeadReplyForm lead={lead} backHref={backHref} />
+      <LeadReplyForm
+        backHref={backHref}
+        initialTemplates={replyTemplates}
+        lead={lead}
+      />
     </div>
   );
 }

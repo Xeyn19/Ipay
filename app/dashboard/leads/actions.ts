@@ -6,7 +6,10 @@ import {
   LEAD_REPLY_ALLOWED_MIME_TYPES,
   LEAD_REPLY_MAX_ATTACHMENTS,
   LEAD_REPLY_MAX_FILE_SIZE_BYTES,
+  LEAD_REPLY_MAX_MESSAGE_LENGTH,
+  LEAD_REPLY_MAX_SUBJECT_LENGTH,
   LEAD_REPLY_MAX_TOTAL_SIZE_BYTES,
+  LEAD_REPLY_TEMPLATE_MAX_LABEL_LENGTH,
   type LeadReplyAttachmentMetadata,
 } from "@/app/dashboard/leads/reply-config";
 import {
@@ -17,12 +20,25 @@ import {
 import { sendEmail } from "@/app/lib/mailer";
 import { createAdminClient } from "@/app/lib/supabase-admin";
 import { createClient } from "@/app/lib/supabase-server";
+import {
+  getBuiltInLeadReplyTemplates,
+  mapCustomLeadReplyTemplate,
+  type LeadReplyTemplateDefinition,
+  type LeadReplyTemplateRecord,
+} from "./reply-templates";
 
 export type SendAutoReplyResult = SendLeadAutoReplyResult;
 export type SendLeadReplyResult = {
   fieldErrors?: Partial<Record<"attachments" | "message" | "subject", string>>;
   message: string;
   status: "error" | "success";
+};
+
+export type CreateLeadReplyTemplateResult = {
+  fieldErrors?: Partial<Record<"label" | "message" | "subject", string>>;
+  message: string;
+  status: "error" | "success";
+  template?: LeadReplyTemplateDefinition;
 };
 
 type LeadMutationPayload = {
@@ -49,9 +65,6 @@ type ParsedReplyAttachment = {
   metadata: LeadReplyAttachmentMetadata;
 };
 
-const leadReplyMaxMessageLength = 10000;
-const leadReplyMaxSubjectLength = 200;
-
 async function getAuthenticatedUserId() {
   const supabase = await createClient();
   const {
@@ -77,6 +90,11 @@ function formatRequestCount(count: number) {
 function revalidateLeadPaths() {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/leads");
+}
+
+function revalidateLeadReplyTemplatePaths() {
+  revalidateLeadPaths();
+  revalidatePath("/dashboard/leads/[leadId]/reply", "page");
 }
 
 function escapeHtml(value: string) {
@@ -126,6 +144,22 @@ function getReplyToEmail() {
     process.env.MANUAL_REPLY_REPLY_TO_EMAIL?.trim() ||
     process.env.AUTO_REPLY_REPLY_TO_EMAIL?.trim() ||
     getReplyFromEmail()
+  );
+}
+
+function isMissingLeadReplyTemplatesTableError(message: string | undefined) {
+  if (!message) {
+    return false;
+  }
+
+  const normalizedMessage = message.toLowerCase();
+
+  return (
+    normalizedMessage.includes("lead_reply_templates") &&
+    (normalizedMessage.includes("schema cache") ||
+      normalizedMessage.includes("does not exist") ||
+      normalizedMessage.includes("could not find the table") ||
+      normalizedMessage.includes("relation"))
   );
 }
 
@@ -312,11 +346,11 @@ export async function sendLeadReply(
     };
   }
 
-  if (!subject || subject.length > leadReplyMaxSubjectLength) {
+  if (!subject || subject.length > LEAD_REPLY_MAX_SUBJECT_LENGTH) {
     fieldErrors.subject = "Enter a subject line before sending.";
   }
 
-  if (!message || message.length > leadReplyMaxMessageLength) {
+  if (!message || message.length > LEAD_REPLY_MAX_MESSAGE_LENGTH) {
     fieldErrors.message = "Enter your reply message before sending.";
   }
 
@@ -453,6 +487,80 @@ export async function sendLeadReply(
       status: "error",
     };
   }
+}
+
+export async function createLeadReplyTemplate(
+  formData: FormData
+): Promise<CreateLeadReplyTemplateResult> {
+  const label = getFormValue(formData, "label");
+  const subject = getFormValue(formData, "subject");
+  const message = getFormValue(formData, "message");
+  const sourceTemplateKey = getFormValue(formData, "sourceTemplateKey") || null;
+  const fieldErrors: CreateLeadReplyTemplateResult["fieldErrors"] = {};
+
+  if (!label || label.length > LEAD_REPLY_TEMPLATE_MAX_LABEL_LENGTH) {
+    fieldErrors.label = `Enter a template name up to ${LEAD_REPLY_TEMPLATE_MAX_LABEL_LENGTH} characters.`;
+  }
+
+  if (!subject || subject.length > LEAD_REPLY_MAX_SUBJECT_LENGTH) {
+    fieldErrors.subject = "Enter a subject before saving this template.";
+  }
+
+  if (!message || message.length > LEAD_REPLY_MAX_MESSAGE_LENGTH) {
+    fieldErrors.message = "Enter a message before saving this template.";
+  }
+
+  if (fieldErrors.label || fieldErrors.subject || fieldErrors.message) {
+    return {
+      fieldErrors,
+      message: "Please review the template details and try again.",
+      status: "error",
+    };
+  }
+
+  let userId: string;
+
+  try {
+    userId = await getAuthenticatedUserId();
+  } catch {
+    return {
+      message: "You must be signed in to save templates.",
+      status: "error",
+    };
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("lead_reply_templates")
+    .insert({
+      label,
+      message_text: message,
+      source_template_key: sourceTemplateKey,
+      subject,
+      user_id: userId,
+    })
+    .select("id, label, subject, message_text, source_template_key, created_at")
+    .single();
+
+  if (error || !data) {
+    return {
+      message: isMissingLeadReplyTemplatesTableError(error?.message)
+        ? "Saved templates are not available yet. Apply the latest lead reply template migration first."
+        : error?.message ?? "Template could not be saved.",
+      status: "error",
+    };
+  }
+
+  revalidateLeadReplyTemplatePaths();
+
+  return {
+    message: "Template saved.",
+    status: "success",
+    template: mapCustomLeadReplyTemplate(
+      data as LeadReplyTemplateRecord,
+      getBuiltInLeadReplyTemplates({})
+    ),
+  };
 }
 
 export async function markLeadAsRead(

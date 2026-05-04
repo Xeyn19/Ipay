@@ -2,7 +2,7 @@
 
 Marketing site and lead-management platform for iPay. The app is built on Next.js 16 App Router with React 19, Tailwind CSS v4, and Supabase.
 
-I developed in iPay International website a more complete request-management experience by restoring the Privacy Policy scroll-to-enable consent flow in the proposal form modal, refining the dashboard leads module into an archive-based workflow with bulk actions, search, responsive table improvements, and automatic read handling, and extending the communication flow with a dedicated reply page that supports reusable templates, attachments, SMTP delivery through nodemailer, and reply-history tracking.
+I developed in the iPay International website a more complete request-management experience by restoring the Privacy Policy scroll-to-enable consent flow in the proposal form modal, refining the dashboard leads module into an archive-based workflow with bulk actions, search, responsive table improvements, and automatic read handling, and extending the communication flow with a dedicated reply page that now supports built-in and user-saved reply templates, an in-context modal for creating reusable templates from edited subject and message drafts, attachments, SMTP delivery through nodemailer, and reply-history tracking.
 
 ## Tech Stack
 
@@ -36,7 +36,7 @@ I developed in iPay International website a more complete request-management exp
   - bulk selection with archive, restore, and delete actions
   - search across lead name, company, email, contact number, and message
   - confirmation modals before state-changing actions
-  - dedicated reply page with email templates, file attachments, and nodemailer sending
+  - dedicated reply page with built-in templates, user-saved custom templates, editable template-save modal, file attachments, and nodemailer sending
   - 30-day archive retention support when the database cleanup job is configured
 
 ## Project Structure
@@ -162,6 +162,18 @@ The manual reply flow expects a table that stores:
 - `sent_at`
 - `created_at`
 
+### `public.lead_reply_templates`
+
+The saved-template flow expects a table that stores:
+
+- `user_id`
+- `label`
+- `subject`
+- `message_text`
+- `source_template_key`
+- `created_at`
+- `updated_at`
+
 ### `public.proposal_submission_attempts`
 
 The rate limiter expects a table that stores accepted attempts with:
@@ -205,7 +217,7 @@ Without that cleanup job, archive, restore, and manual permanent delete will sti
 - Opening a message marks an active unread lead as read automatically.
 - The message modal is used for reading full inquiries, replying, and updating unread status when needed.
 - Bulk actions handle archive, restore, and permanent delete for selected rows.
-- The dedicated reply page supports templates, attachments, and SMTP-based manual replies.
+- The dedicated reply page supports built-in templates, user-saved custom templates, editable save-template modal fields, attachments, and SMTP-based manual replies.
 - Confirmation modals are shown before archive, restore, delete, and mark-as-unread actions.
 
 ## Important Files
@@ -217,7 +229,7 @@ Without that cleanup job, archive, restore, and manual permanent delete will sti
 - [app/dashboard/page.tsx](app/dashboard/page.tsx): overview stats and recent requests.
 - [app/dashboard/leads/leads-table.tsx](app/dashboard/leads/leads-table.tsx): filters, table UX, archive actions, message modal, and confirmation modal.
 - [app/dashboard/leads/lead-reply-form.tsx](app/dashboard/leads/lead-reply-form.tsx): reusable reply composer with templates and attachments.
-- [app/dashboard/leads/actions.ts](app/dashboard/leads/actions.ts): read, archive, restore, delete, manual reply, and dashboard auto-reply actions.
+- [app/dashboard/leads/actions.ts](app/dashboard/leads/actions.ts): read, archive, restore, delete, manual reply, saved-template creation, and dashboard auto-reply actions.
 
 ## Verification
 

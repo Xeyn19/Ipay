@@ -3,11 +3,24 @@ type LeadTemplateLead = {
   name?: string | null;
 };
 
+export type LeadReplyTemplateKind = "built-in" | "custom";
+
 export type LeadReplyTemplateDefinition = {
   description: string;
+  kind: LeadReplyTemplateKind;
   key: string;
   label: string;
   message: string;
+  sourceTemplateKey?: string | null;
+  subject: string;
+};
+
+export type LeadReplyTemplateRecord = {
+  created_at?: string | null;
+  id: number;
+  label: string;
+  message_text: string;
+  source_template_key?: string | null;
   subject: string;
 };
 
@@ -19,7 +32,7 @@ function getCompanyReference(company: string | null | undefined) {
   return company?.trim() ? company.trim() : "your team";
 }
 
-export function getLeadReplyTemplates(
+export function getBuiltInLeadReplyTemplates(
   lead: LeadTemplateLead
 ): LeadReplyTemplateDefinition[] {
   const greeting = getLeadGreeting(lead.name);
@@ -28,7 +41,8 @@ export function getLeadReplyTemplates(
   return [
     {
       description: "Acknowledge the request and set expectations for next steps.",
-      key: "acknowledgement",
+      key: "builtin:acknowledgement",
+      kind: "built-in",
       label: "Acknowledgement",
       message: [
         greeting,
@@ -40,11 +54,13 @@ export function getLeadReplyTemplates(
         "Regards,",
         "iPay Team",
       ].join("\n"),
+      sourceTemplateKey: null,
       subject: "Thank you for your proposal request",
     },
     {
       description: "Request clarifications or missing information before quoting.",
-      key: "follow-up-details",
+      key: "builtin:follow-up-details",
+      kind: "built-in",
       label: "Need More Details",
       message: [
         greeting,
@@ -56,11 +72,13 @@ export function getLeadReplyTemplates(
         "Regards,",
         "iPay Team",
       ].join("\n"),
+      sourceTemplateKey: null,
       subject: "Additional details for your proposal request",
     },
     {
       description: "Share documents or files alongside a formal follow-up.",
-      key: "proposal-documents",
+      key: "builtin:proposal-documents",
+      kind: "built-in",
       label: "Send Documents",
       message: [
         greeting,
@@ -72,7 +90,55 @@ export function getLeadReplyTemplates(
         "Regards,",
         "iPay Team",
       ].join("\n"),
+      sourceTemplateKey: null,
       subject: "Requested documents from iPay",
     },
   ];
+}
+
+function getBuiltInTemplateLabelByKey(
+  builtInTemplates: LeadReplyTemplateDefinition[],
+  sourceTemplateKey: string | null | undefined
+) {
+  if (!sourceTemplateKey) {
+    return null;
+  }
+
+  return (
+    builtInTemplates.find((template) => template.key === sourceTemplateKey)?.label ?? null
+  );
+}
+
+export function mapCustomLeadReplyTemplate(
+  record: LeadReplyTemplateRecord,
+  builtInTemplates: LeadReplyTemplateDefinition[]
+): LeadReplyTemplateDefinition {
+  const sourceLabel = getBuiltInTemplateLabelByKey(
+    builtInTemplates,
+    record.source_template_key
+  );
+
+  return {
+    description: sourceLabel
+      ? `Saved by you from ${sourceLabel}.`
+      : "Saved by you for future replies.",
+    key: `custom:${record.id}`,
+    kind: "custom",
+    label: record.label,
+    message: record.message_text,
+    sourceTemplateKey: record.source_template_key ?? null,
+    subject: record.subject,
+  };
+}
+
+export function getLeadReplyTemplates(
+  lead: LeadTemplateLead,
+  customTemplates: LeadReplyTemplateRecord[] = []
+): LeadReplyTemplateDefinition[] {
+  const builtInTemplates = getBuiltInLeadReplyTemplates(lead);
+  const mappedCustomTemplates = customTemplates.map((template) =>
+    mapCustomLeadReplyTemplate(template, builtInTemplates)
+  );
+
+  return [...builtInTemplates, ...mappedCustomTemplates];
 }

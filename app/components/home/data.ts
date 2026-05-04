@@ -9,11 +9,12 @@ import type {
 } from "@/app/components/home/types";
 
 export const navigation: NavItem[] = [
-  { label: "Home", sectionId: "home" },
-  { label: "Who We Serve", sectionId: "who-we-serve" },
-  { label: "Services", sectionId: "services" },
-  { label: "How It Works", sectionId: "how-it-works" },
-  { label: "Partners", sectionId: "partners" },
+  { label: "Home", kind: "section", sectionId: "home" },
+  { label: "Who We Serve", kind: "section", sectionId: "who-we-serve" },
+  { label: "Services", kind: "section", sectionId: "services" },
+  { label: "How It Works", kind: "section", sectionId: "how-it-works" },
+  { label: "Partners", kind: "section", sectionId: "partners" },
+  { label: "News & Media", kind: "route", href: "/news-media" },
 ];
 
 export const segments: Segment[] = [

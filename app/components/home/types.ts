@@ -1,4 +1,6 @@
-export type NavItem = { label: string; sectionId: string };
+export type NavItem =
+  | { label: string; kind: "section"; sectionId: string }
+  | { label: string; kind: "route"; href: string };
 
 export type Segment = {
   eyebrow: string;

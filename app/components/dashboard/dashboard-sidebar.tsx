@@ -26,6 +26,18 @@ const sidebarItems = [
       </svg>
     ),
   },
+  {
+    label: "News CMS",
+    href: "/dashboard/news-media",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+        <path d="M4.5 4.5h11a1.5 1.5 0 011.5 1.5v8A1.5 1.5 0 0115.5 15.5h-11A1.5 1.5 0 013 14V6a1.5 1.5 0 011.5-1.5z" />
+        <path d="M6 7.5h8" />
+        <path d="M6 10h8" />
+        <path d="M6 12.5h4.5" />
+      </svg>
+    ),
+  },
 ];
 
 export function DashboardSidebar({

@@ -1,4 +1,4 @@
-export type NewsArticleStatus = "draft" | "scheduled" | "published";
+export type NewsArticleStatus = "draft" | "published";
 
 export type NewsArticle = {
   id: string;
@@ -9,6 +9,7 @@ export type NewsArticle = {
   coverImage: string;
   publishDate: string;
   status: NewsArticleStatus;
+  views: number;
   body: string;
 };
 
@@ -27,7 +28,6 @@ export const newsStatusOptions: Array<{
   value: NewsArticleStatus;
 }> = [
   { label: "Draft", value: "draft" },
-  { label: "Scheduled", value: "scheduled" },
   { label: "Published", value: "published" },
 ];
 
@@ -42,6 +42,7 @@ export const newsSeedArticles: NewsArticle[] = [
     coverImage: "/img/main-hero.jpg",
     publishDate: "2026-05-01",
     status: "published",
+    views: 1840,
     body: `iPay continues to refine how merchants handle day-to-day collections across branches, counters, and digital payment touchpoints. The latest rollout focuses on giving operations and finance teams a cleaner view of incoming transactions without adding extra dashboards to monitor.
 
 For merchant teams managing multiple outlets, consistency matters as much as speed. The updated workflow is designed to reduce handoff friction between front-line staff, reconcilers, and finance reviewers so branch activity can be monitored with less manual follow-up.
@@ -58,6 +59,7 @@ This direction reflects iPay's broader goal: making enterprise-grade payment inf
     coverImage: "/img/services-bg.jpg",
     publishDate: "2026-04-24",
     status: "published",
+    views: 1265,
     body: `Finance teams often need to answer the same questions quickly: what settled, what is still moving, and what needs review. iPay's updated monitoring approach is built to make that interpretation more immediate.
 
 The public-facing news stream highlights this product direction through a simpler story: less time searching through fragmented updates, and more confidence in the status of day-to-day collections activity.
@@ -74,19 +76,44 @@ As the newsroom grows, this category will be used for future platform updates, r
     coverImage: "/img/ipay-sol.jpg",
     publishDate: "2026-04-15",
     status: "published",
+    views: 930,
     body: `Institutional rollouts and platform deployments usually require more than a working payment flow. Teams also need documentation, accountability, and a dependable rhythm for operational coordination.
 
 This update represents iPay's commitment to partner readiness: aligning implementation expectations, clarifying milestones, and improving how updates are communicated to the organizations that rely on the platform.
 
 The CMS workspace planned for the dashboard is intended to support that same direction by giving the internal team a cleaner place to prepare public-facing announcements before backend publishing is introduced.`,
   },
-];
+  {
+    id: "draft-qr-campaign-story",
+    title: "iPay prepares a broader QR payment story for merchant campaign rollout",
+    slug: "ipay-prepares-broader-qr-payment-story",
+    category: "Campaign Update",
+    excerpt:
+      "A draft newsroom entry focused on merchant rollout messaging, payment acceptance clarity, and supporting launch materials.",
+    coverImage: "/img/requestproposal.jpg",
+    publishDate: "2026-05-08",
+    status: "draft",
+    views: 0,
+    body: `This draft is being prepared to support a broader campaign around merchant QR payment readiness, simple customer communication, and clearer rollout references for the business team.
 
-export const newsEditorSampleArticle: NewsArticle = {
-  ...newsSeedArticles[0],
-  id: "sample-editor-article",
-  status: "draft",
-};
+The working version is intentionally concise while the final message, imagery, and public timing are still being aligned across marketing and partnerships.`,
+  },
+  {
+    id: "draft-client-portal-update",
+    title: "Client communications draft for the upcoming settlement portal update",
+    slug: "client-communications-settlement-portal-update",
+    category: "Product Update",
+    excerpt:
+      "An internal draft for a future public update covering visibility improvements, reporting guidance, and support readiness.",
+    coverImage: "/img/report-recon.jpg",
+    publishDate: "2026-05-06",
+    status: "draft",
+    views: 0,
+    body: `This draft is reserved for the next settlement portal messaging cycle and focuses on what finance and operations teams need to know before the update is announced publicly.
+
+The article body will later be expanded with screenshots, release timing, and operational guidance once the final rollout date is approved.`,
+  },
+];
 
 export const newsExternalCoverage: NewsroomLinkItem[] = [
   {
@@ -146,7 +173,7 @@ export const newsFeaturedVideos: NewsroomLinkItem[] = [
 
 export function createEmptyNewsArticle(): NewsArticle {
   return {
-    id: "local-draft",
+    id: "new-post",
     title: "",
     slug: "",
     category: "Company Update",
@@ -154,6 +181,7 @@ export function createEmptyNewsArticle(): NewsArticle {
     coverImage: "/img/requestproposal.jpg",
     publishDate: "2026-05-10",
     status: "draft",
+    views: 0,
     body: "",
   };
 }
@@ -194,6 +222,21 @@ export function getPublishedNewsArticles(articles: NewsArticle[]) {
     );
 }
 
+export function getManagedNewsArticles(articles: NewsArticle[]) {
+  return [...articles].sort(
+    (left, right) =>
+      parseNewsDate(right.publishDate).getTime() -
+      parseNewsDate(left.publishDate).getTime()
+  );
+}
+
+export function getNewsArticleById(
+  articles: NewsArticle[],
+  articleId: string
+) {
+  return articles.find((article) => article.id === articleId);
+}
+
 export function getNewsBodyParagraphs(body: string) {
   return body
     .split(/\n\s*\n/)
@@ -207,10 +250,6 @@ export function estimateNewsReadingMinutes(body: string) {
 }
 
 export function getNewsStatusLabel(status: NewsArticleStatus) {
-  if (status === "scheduled") {
-    return "Scheduled";
-  }
-
   if (status === "published") {
     return "Published";
   }
@@ -219,10 +258,6 @@ export function getNewsStatusLabel(status: NewsArticleStatus) {
 }
 
 export function getNewsStatusClassName(status: NewsArticleStatus) {
-  if (status === "scheduled") {
-    return "border-[var(--tone-blue)]/20 bg-[var(--tone-blue-soft)] text-[var(--tone-blue)]";
-  }
-
   if (status === "published") {
     return "border-[var(--tone-green)]/20 bg-[var(--tone-green-soft)] text-[var(--tone-green)]";
   }

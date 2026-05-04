@@ -27,7 +27,7 @@ const sidebarItems = [
     ),
   },
   {
-    label: "News CMS",
+    label: "News & Media",
     href: "/dashboard/news-media",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">

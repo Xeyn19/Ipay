@@ -1,17 +1,33 @@
-'use client';
+"use client";
 
-import Link from "next/link";
-import { Search } from "lucide-react";
-import { useDeferredValue, useState } from "react";
+import { Search, ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
+import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import {
-  getNewsStatusClassName,
-  getNewsStatusLabel,
-  type NewsArticle,
-  type NewsArticleStatus,
-} from "@/app/lib/news-media";
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type ColumnFiltersState,
+  type PaginationState,
+  type SortingState,
+} from "@tanstack/react-table";
+import type { NewsArticle, NewsArticleStatus } from "@/app/lib/news-media";
+import { newsMediaColumns } from "./news-media-columns";
 
-const buttonClassName =
-  "inline-flex h-10 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-[var(--border-light)] disabled:hover:bg-[var(--bg-elevated)] disabled:hover:text-[var(--text-secondary)]";
+const pageSize = 5;
+
+const searchButtonClassName =
+  "inline-flex items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-[var(--border-light)] disabled:hover:bg-[var(--bg-elevated)] disabled:hover:text-[var(--text-secondary)] sm:self-stretch";
+
+const columnClassNames: Record<string, string> = {
+  actions: "w-[9.5rem]",
+  excerpt: "w-[26rem]",
+  status: "w-[7.5rem]",
+  title: "w-[18rem]",
+  views: "w-[6.5rem]",
+};
 
 function matchesSearch(article: NewsArticle, query: string) {
   if (!query) {
@@ -65,26 +81,105 @@ function FilterPill({
   );
 }
 
+function getSortLabel(sortState: false | "asc" | "desc", header: string) {
+  if (sortState === "asc") {
+    return `${header}, sorted ascending. Click to sort descending.`;
+  }
+
+  if (sortState === "desc") {
+    return `${header}, sorted descending. Click to clear sorting.`;
+  }
+
+  return `${header}, not sorted. Click to sort ascending.`;
+}
+
+function SortIcon({ sortState }: { sortState: false | "asc" | "desc" }) {
+  if (sortState === "asc") {
+    return <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />;
+  }
+
+  if (sortState === "desc") {
+    return <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />;
+  }
+
+  return <ChevronsUpDown className="h-3.5 w-3.5" aria-hidden="true" />;
+}
+
 export function NewsMediaManageTable({
-  articles,
+  data,
+  isLoading,
 }: {
-  articles: NewsArticle[];
+  data: NewsArticle[];
+  isLoading: boolean;
 }) {
   const [activeFilter, setActiveFilter] = useState<NewsArticleStatus | null>(
-    null
+    null,
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortingState>([]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize,
+  });
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const normalizedSearchQuery = deferredSearchQuery.trim().toLowerCase();
-  const draftCount = articles.filter((article) => article.status === "draft").length;
-  const publishedCount = articles.filter(
-    (article) => article.status === "published"
+  const columnFilters: ColumnFiltersState = useMemo(
+    () => (activeFilter ? [{ id: "status", value: activeFilter }] : []),
+    [activeFilter],
+  );
+  const draftCount = data.filter(
+    (article) => article.status === "draft",
   ).length;
-  const filteredArticles = articles
-    .filter((article) =>
-      activeFilter ? article.status === activeFilter : true
-    )
-    .filter((article) => matchesSearch(article, normalizedSearchQuery));
+  const publishedCount = data.filter(
+    (article) => article.status === "published",
+  ).length;
+  const resetToFirstPage = useCallback(() => {
+    setPagination((current) =>
+      current.pageIndex === 0 ? current : { ...current, pageIndex: 0 },
+    );
+  }, []);
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchQuery(value);
+      resetToFirstPage();
+    },
+    [resetToFirstPage],
+  );
+  const toggleFilter = useCallback(
+    (status: NewsArticleStatus) => {
+      setActiveFilter((current) => (current === status ? null : status));
+      resetToFirstPage();
+    },
+    [resetToFirstPage],
+  );
+  const globalFilterFn = useCallback(
+    (row: { original: NewsArticle }, _columnId: string, value: unknown) =>
+      matchesSearch(row.original, String(value).trim().toLowerCase()),
+    [],
+  );
+
+  // TanStack Table exposes function-heavy instances that React Compiler cannot memoize safely.
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const table = useReactTable({
+    columns: newsMediaColumns,
+    data,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    globalFilterFn,
+    onPaginationChange: setPagination,
+    onSortingChange: setSortBy,
+    state: {
+      columnFilters,
+      globalFilter: normalizedSearchQuery,
+      pagination,
+      sorting: sortBy,
+    },
+  });
+
+  const pageCount = Math.max(table.getPageCount(), 1);
+  const rows = table.getRowModel().rows;
 
   return (
     <div className="space-y-4">
@@ -93,25 +188,19 @@ export function NewsMediaManageTable({
           count={draftCount}
           isActive={activeFilter === "draft"}
           label="Draft"
-          onClick={() =>
-            setActiveFilter((current) => (current === "draft" ? null : "draft"))
-          }
+          onClick={() => toggleFilter("draft")}
         />
         <FilterPill
           count={publishedCount}
           isActive={activeFilter === "published"}
           label="Published"
-          onClick={() =>
-            setActiveFilter((current) =>
-              current === "published" ? null : "published"
-            )
-          }
+          onClick={() => toggleFilter("published")}
         />
       </div>
 
       <form
         onSubmit={(event) => event.preventDefault()}
-        className="flex flex-col gap-3 sm:flex-row"
+        className="flex flex-col gap-3 sm:flex-row sm:items-stretch"
       >
         <label className="relative flex-1">
           <span className="sr-only">Search posts</span>
@@ -122,33 +211,24 @@ export function NewsMediaManageTable({
           <input
             type="search"
             value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
+            onChange={(event) => handleSearchChange(event.target.value)}
             placeholder="Search posts"
             className="h-11 w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-elevated)] pl-10 pr-4 text-sm text-[var(--text-primary)] shadow-sm outline-none transition focus:border-[var(--border-orange)] focus:ring-2 focus:ring-[color:var(--brand)]/15"
           />
         </label>
-        <button type="submit" className={buttonClassName}>
+        <button type="submit" className={searchButtonClassName}>
           Search
         </button>
       </form>
 
-      <section className="overflow-hidden rounded-[28px] border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
-        <div className="flex flex-col gap-2 border-b border-[var(--border-light)] bg-[var(--bg-subtle)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-heading text-lg font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
-              All posts
-            </h2>
-            <p className="mt-1 text-sm text-[var(--text-muted)]">
-              Manage static newsroom entries while persistence is still being
-              prepared.
+      <section className="overflow-hidden rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
+        {isLoading ? (
+          <div className="px-6 py-14 text-center">
+            <p className="text-sm font-medium text-[var(--text-primary)]">
+              Loading posts...
             </p>
           </div>
-          <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-            {filteredArticles.length} shown
-          </span>
-        </div>
-
-        {filteredArticles.length === 0 ? (
+        ) : rows.length === 0 ? (
           <div className="px-6 py-14 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--border-light)] bg-[var(--bg-subtle)]">
               <Search
@@ -164,68 +244,103 @@ export function NewsMediaManageTable({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full table-fixed">
-              <thead>
-                <tr className="text-left text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                  <th className="w-[20rem] px-5 py-3">Post Name</th>
-                  <th className="w-[30rem] px-5 py-3">Excerpt</th>
-                  <th className="w-[9rem] px-5 py-3">Status</th>
-                  <th className="w-[8rem] px-5 py-3">Views</th>
-                  <th className="w-[14rem] px-5 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-light)]">
-                {filteredArticles.map((article) => (
-                  <tr key={article.id} className="align-top">
-                    <td className="px-5 py-4">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
-                          {article.title}
-                        </p>
-                        <p className="mt-1 truncate text-xs text-[var(--text-faint)]">
-                          /{article.slug}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <p className="max-w-[30rem] text-sm leading-6 text-[var(--text-secondary)]">
-                        {article.excerpt}
-                      </p>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span
-                        className={`inline-flex min-w-[6rem] items-center justify-center rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] ${getNewsStatusClassName(
-                          article.status
-                        )}`}
-                      >
-                        {getNewsStatusLabel(article.status)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-sm font-medium text-[var(--text-secondary)]">
-                      {article.views.toLocaleString()}
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex flex-wrap gap-2">
-                        <button type="button" disabled className={buttonClassName}>
-                          View
-                        </button>
-                        <Link
-                          href={`/dashboard/news-media/${article.id}`}
-                          className="inline-flex h-10 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white shadow-[var(--shadow-button)] transition hover:bg-[var(--brand-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[68rem] table-fixed">
+                <thead>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr
+                      key={headerGroup.id}
+                      className="text-left text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]"
+                    >
+                      {headerGroup.headers.map((header) => {
+                        const columnId = header.column.id;
+                        const sortState = header.column.getIsSorted();
+                        const headerText =
+                          typeof header.column.columnDef.header === "string"
+                            ? header.column.columnDef.header
+                            : header.id;
+
+                        return (
+                          <th
+                            key={header.id}
+                            className={`${columnClassNames[columnId] ?? ""} px-3 py-3`}
+                          >
+                            {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                              <button
+                                type="button"
+                                onClick={header.column.getToggleSortingHandler()}
+                                aria-label={getSortLabel(sortState, headerText)}
+                                className="inline-flex max-w-full items-center gap-1.5 text-left transition-colors hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+                              >
+                                <span className="truncate">
+                                  {flexRender(
+                                    header.column.columnDef.header,
+                                    header.getContext(),
+                                  )}
+                                </span>
+                                <SortIcon sortState={sortState} />
+                              </button>
+                            ) : (
+                              <span className="block truncate">
+                                {flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext(),
+                                )}
+                              </span>
+                            )}
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </thead>
+                <tbody className="divide-y divide-[var(--border-light)]">
+                  {rows.map((row) => (
+                    <tr key={row.id} className="align-middle">
+                      {row.getVisibleCells().map((cell) => (
+                        <td
+                          key={cell.id}
+                          className={`${columnClassNames[cell.column.id] ?? ""} min-w-0 px-3 py-4`}
                         >
-                          Edit
-                        </Link>
-                        <button type="button" disabled className={buttonClassName}>
-                          Archive
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                          <div className="min-w-0">
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                          </div>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-[var(--border-light)] px-5 py-4 text-sm text-[var(--text-secondary)] sm:flex-row sm:items-center sm:justify-between">
+              <p className="font-medium">
+                Page {pagination.pageIndex + 1} of {pageCount}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-3 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-3 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </section>
     </div>

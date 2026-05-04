@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Archive } from "lucide-react";
 import { DashboardPageHeader } from "@/app/components/dashboard/dashboard-page-header";
-import { getManagedNewsArticles, newsSeedArticles } from "@/app/lib/news-media";
-import { NewsMediaManageTable } from "./news-media-manage-table";
+import { NewsMediaManageClient } from "./news-media-manage-client";
 
 export const metadata: Metadata = {
   title: "News & Media | iPay Dashboard",
@@ -11,8 +11,6 @@ export const metadata: Metadata = {
 };
 
 export default function DashboardNewsMediaPage() {
-  const articles = getManagedNewsArticles(newsSeedArticles);
-
   return (
     <div className="space-y-6">
       <DashboardPageHeader
@@ -24,9 +22,11 @@ export default function DashboardNewsMediaPage() {
             <button
               type="button"
               disabled
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-medium text-[var(--text-secondary)] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label="Archive selected posts"
+              title="Archive selected posts"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Archive
+              <Archive className="h-4 w-4" aria-hidden="true" />
             </button>
             <Link
               href="/dashboard/news-media/new"
@@ -38,7 +38,7 @@ export default function DashboardNewsMediaPage() {
         }
       />
 
-      <NewsMediaManageTable articles={articles} />
+      <NewsMediaManageClient />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import type { NavItem } from "@/app/components/home/types";
 import type { Theme } from "@/app/lib/theme";
 import ThemeToggle from "@/app/components/theme-toggle";
 import { BrandLogo } from "@/app/components/home/brand-logo";
@@ -17,7 +18,7 @@ export function Navbar({
   const pathname = usePathname();
   const isHomePage = pathname === "/";
   const [isOpen, setIsOpen] = useState(false);
-  const [activeHref, setActiveHref] = useState("#home");
+  const [activeHref, setActiveHref] = useState("/");
   const [showProposalButton, setShowProposalButton] = useState(false);
 
   useEffect(() => {
@@ -43,7 +44,7 @@ export function Navbar({
         return;
       }
 
-      setActiveHref(window.location.hash || "#home");
+      setActiveHref(window.location.hash || "/");
     };
 
     syncActiveHref();
@@ -85,39 +86,55 @@ export function Navbar({
     };
   }, [isHomePage]);
 
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
-    setActiveHref(sectionId === "home" ? "#home" : `#${sectionId}`);
-    setIsOpen(false);
-
-    if (isHomePage) {
-      e.preventDefault();
-      
-      // Update the URL without jumping instantly
-      const url = sectionId === "home" ? "/" : `/#${sectionId}`;
-      window.history.pushState({}, "", url);
-
-      if (sectionId === "home") {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } else {
-        const element = document.getElementById(sectionId);
-        if (element) {
-          const navHeight = 80; // 5rem nav height offset
-          const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-          window.scrollTo({
-            top: elementPosition - navHeight,
-            behavior: "smooth"
-          });
-        }
-      }
+  const getNavHref = (item: NavItem) => {
+    if (item.kind === "route") {
+      return item.href;
     }
-  };
 
-  const getNavHref = (sectionId: string) => {
-    if (sectionId === "home") {
+    if (item.sectionId === "home") {
       return "/";
     }
 
-    return isHomePage ? `#${sectionId}` : `/#${sectionId}`;
+    return isHomePage ? `#${item.sectionId}` : `/#${item.sectionId}`;
+  };
+
+  const getNavKey = (item: NavItem) => {
+    if (item.kind === "route") {
+      return item.href;
+    }
+
+    return item.sectionId === "home" ? "/" : `#${item.sectionId}`;
+  };
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, item: NavItem) => {
+    const navKey = getNavKey(item);
+    setActiveHref(navKey);
+    setIsOpen(false);
+
+    if (!isHomePage || item.kind === "route") {
+      return;
+    }
+
+    e.preventDefault();
+
+    // Update the URL without jumping instantly for home-page sections.
+    const url = item.sectionId === "home" ? "/" : `/#${item.sectionId}`;
+    window.history.pushState({}, "", url);
+
+    if (item.sectionId === "home") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    const element = document.getElementById(item.sectionId);
+    if (element) {
+      const navHeight = 80; // 5rem nav height offset
+      const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+      window.scrollTo({
+        top: elementPosition - navHeight,
+        behavior: "smooth",
+      });
+    }
   };
 
   return (
@@ -126,7 +143,7 @@ export function Navbar({
         <Link
           href="/"
           className="flex items-center"
-          onClick={(e) => handleNavClick(e, "home")}
+          onClick={(e) => handleNavClick(e, navigation[0])}
         >
           <BrandLogo initialTheme={initialTheme} priority />
         </Link>
@@ -135,11 +152,11 @@ export function Navbar({
           {navigation.map((item) => (
             <Link
               key={item.label}
-              href={getNavHref(item.sectionId)}
-              onClick={(e) => handleNavClick(e, item.sectionId)}
-              aria-current={activeHref === `#${item.sectionId}` ? "page" : undefined}
+              href={getNavHref(item)}
+              onClick={(e) => handleNavClick(e, item)}
+              aria-current={activeHref === getNavKey(item) ? "page" : undefined}
               className={`inline-flex h-20 items-center text-sm font-medium transition-colors duration-200 ease-out focus:outline-none ${
-                activeHref === `#${item.sectionId}`
+                activeHref === getNavKey(item)
                   ? "text-[var(--text-primary)]"
                   : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               }`}
@@ -149,7 +166,7 @@ export function Navbar({
                 <span
                   aria-hidden="true"
                   className={`absolute -bottom-0.5 left-0 h-[3px] w-full origin-center rounded-full bg-[var(--brand)] transition-transform duration-300 ease-out ${
-                    activeHref === `#${item.sectionId}` ? "scale-x-100" : "scale-x-0"
+                    activeHref === getNavKey(item) ? "scale-x-100" : "scale-x-0"
                   }`}
                 />
               </span>
@@ -219,11 +236,11 @@ export function Navbar({
               {navigation.map((item) => (
                 <Link
                   key={item.label}
-                  href={getNavHref(item.sectionId)}
-                  onClick={(e) => handleNavClick(e, item.sectionId)}
-                  aria-current={activeHref === `#${item.sectionId}` ? "page" : undefined}
+                  href={getNavHref(item)}
+                  onClick={(e) => handleNavClick(e, item)}
+                  aria-current={activeHref === getNavKey(item) ? "page" : undefined}
                   className={`flex items-center justify-between rounded-[16px] border px-4 py-3 text-sm font-semibold transition-all duration-200 ease-out ${
-                    activeHref === `#${item.sectionId}`
+                    activeHref === getNavKey(item)
                       ? "border-[var(--border-orange)] bg-[var(--bg-elevated-muted)] text-[var(--brand)]"
                       : "border-transparent bg-[var(--bg-base)]/72 text-[var(--text-primary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-elevated-muted)]"
                   }`}

@@ -38,6 +38,15 @@ I developed in the iPay International website a more complete request-management
   - confirmation modals before state-changing actions
   - dedicated reply page with built-in templates, user-saved custom templates, editable template-save modal, file attachments, and nodemailer sending
   - 30-day archive retention support when the database cleanup job is configured
+- Public `/news-media` newsroom page with:
+  - newsroom-style hero and featured story layout
+  - press releases, external coverage, additional story cards, and featured media sections
+  - local mock content sourced from shared newsroom helpers
+- `/dashboard/news-media` CMS workspace with:
+  - newsroom-oriented editor and live preview
+  - local-only draft state
+  - sample article loading and reset actions
+  - no Supabase or server persistence yet
 
 ## Project Structure
 
@@ -48,11 +57,14 @@ app/
     home/               # Landing page sections and shared marketing UI
   dashboard/
     leads/              # Leads table, reply page, message modal, and lead actions
+    news-media/         # Newsroom CMS page and editor UI
   lib/
     lead-auto-reply.ts  # Shared auto-reply builder and send logic
     mailer.ts           # SMTP transport and outbound email send
+    news-media.ts       # Shared newsroom types, helpers, and local mock data
     proposal-rate-limit.ts
     supabase-*.ts       # SSR and admin Supabase clients
+  news-media/           # Public newsroom page
   login/
   privacy-policy/
   request-proposal/
@@ -220,6 +232,15 @@ Without that cleanup job, archive, restore, and manual permanent delete will sti
 - The dedicated reply page supports built-in templates, user-saved custom templates, editable save-template modal fields, attachments, and SMTP-based manual replies.
 - Confirmation modals are shown before archive, restore, delete, and mark-as-unread actions.
 
+## Newsroom CMS Workflow
+
+- The public newsroom lives at `/news-media`.
+- The dashboard CMS lives at `/dashboard/news-media`.
+- Shared newsroom data currently comes from `app/lib/news-media.ts`.
+- The dashboard CMS is preview-only and does not persist changes yet.
+- Published newsroom cards on the public page currently come from local mock arrays, not Supabase.
+- External coverage and featured video sections also use local mock newsroom items.
+
 ## Important Files
 
 - [app/request-proposal/actions.ts](app/request-proposal/actions.ts): proposal validation, rate limiting, lead insert, and public auto-reply send.
@@ -230,6 +251,11 @@ Without that cleanup job, archive, restore, and manual permanent delete will sti
 - [app/dashboard/leads/leads-table.tsx](app/dashboard/leads/leads-table.tsx): filters, table UX, archive actions, message modal, and confirmation modal.
 - [app/dashboard/leads/lead-reply-form.tsx](app/dashboard/leads/lead-reply-form.tsx): reusable reply composer with templates and attachments.
 - [app/dashboard/leads/actions.ts](app/dashboard/leads/actions.ts): read, archive, restore, delete, manual reply, saved-template creation, and dashboard auto-reply actions.
+- [app/news-media/page.tsx](app/news-media/page.tsx): public newsroom page.
+- [app/dashboard/news-media/page.tsx](app/dashboard/news-media/page.tsx): dashboard newsroom CMS landing page.
+- [app/dashboard/news-media/news-media-editor.tsx](app/dashboard/news-media/news-media-editor.tsx): newsroom editor and live preview.
+- [app/lib/news-media.ts](app/lib/news-media.ts): newsroom types, helpers, and local content arrays.
+- [news-media-cms.md](news-media-cms.md): newsroom CMS implementation and usage guide.
 
 ## Verification
 

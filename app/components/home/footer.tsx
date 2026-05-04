@@ -2,9 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { BrandLogo } from "@/app/components/home/brand-logo";
 import { footerServices, navigation, trustItems } from "@/app/components/home/data";
+import type { NavItem } from "@/app/components/home/types";
 
-function getSectionHref(sectionId: string) {
-  return sectionId === "home" ? "/" : `/#${sectionId}`;
+function getNavigationHref(item: NavItem) {
+  if (item.kind === "route") {
+    return item.href;
+  }
+
+  return item.sectionId === "home" ? "/" : `/#${item.sectionId}`;
 }
 
 const googlePlayUrl =
@@ -97,7 +102,7 @@ export function Footer() {
               {navigation.map((item) => (
                 <Link
                   key={item.label}
-                  href={getSectionHref(item.sectionId)}
+                  href={getNavigationHref(item)}
                   className="inline-block text-[0.92rem] leading-none text-white/64 transition duration-200 ease-out hover:translate-x-[3px] hover:text-white"
                 >
                   {item.label}

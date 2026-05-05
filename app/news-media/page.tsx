@@ -5,14 +5,14 @@ import { BackToTop } from "@/app/components/home/back-to-top";
 import { Footer } from "@/app/components/home/footer";
 import { Navbar } from "@/app/components/home/navbar";
 import { Button } from "@/app/components/home/ui";
+import { fetchPublishedNewsArticles } from "@/app/lib/news-posts";
+import { createClient } from "@/app/lib/supabase-server";
 import {
   estimateNewsReadingMinutes,
   formatNewsDate,
   getNewsBodyParagraphs,
-  getPublishedNewsArticles,
   newsExternalCoverage,
   newsFeaturedVideos,
-  newsSeedArticles,
 } from "@/app/lib/news-media";
 import { DEFAULT_THEME, THEME_COOKIE_KEY, isTheme } from "@/app/lib/theme";
 
@@ -26,7 +26,8 @@ export default async function NewsMediaPage() {
   const cookieStore = await cookies();
   const cookieTheme = cookieStore.get(THEME_COOKIE_KEY)?.value;
   const initialTheme = isTheme(cookieTheme) ? cookieTheme : DEFAULT_THEME;
-  const publishedArticles = getPublishedNewsArticles(newsSeedArticles);
+  const supabase = await createClient();
+  const publishedArticles = await fetchPublishedNewsArticles(supabase);
   const [featuredArticle, ...otherArticles] = publishedArticles;
   const featuredParagraphs = featuredArticle
     ? getNewsBodyParagraphs(featuredArticle.body).slice(0, 2)

@@ -1,57 +1,84 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createBrowserClient } from "@/app/lib/supabase-browser";
 import {
-  getManagedNewsArticles,
-  newsSeedArticles,
-  type NewsArticle,
-} from "@/app/lib/news-media";
+  fetchNewsPostsPage,
+  fetchNewsPostStatusCounts,
+  type NewsPostStatusCounts,
+  type PostsQueryParams,
+} from "@/app/lib/news-posts";
+import type { NewsArticle } from "@/app/lib/news-media";
 
-type PostsQueryParams = {
-  pageIndex: number;
-  pageSize: number;
-  sortBy: string;
+type UsePostsResult = {
+  data: NewsArticle[];
+  totalCount: number;
+  statusCounts: NewsPostStatusCounts;
 };
 
-async function fetchPosts(_params: PostsQueryParams) {
-  void _params;
-  // TODO: replace with Supabase query
-  return getManagedNewsArticles(newsSeedArticles);
+async function fetchPosts(params: PostsQueryParams): Promise<UsePostsResult> {
+  const supabase = createBrowserClient();
+  const [posts, statusCounts] = await Promise.all([
+    fetchNewsPostsPage(supabase, params),
+    fetchNewsPostStatusCounts(supabase),
+  ]);
+
+  return {
+    data: posts.data,
+    totalCount: posts.totalCount,
+    statusCounts,
+  };
 }
 
-export function usePosts() {
+export function usePosts(params: PostsQueryParams) {
+  const { pageIndex, pageSize, searchQuery, sortBy, status } = params;
   const [data, setData] = useState<NewsArticle[]>([]);
+  const [statusCounts, setStatusCounts] = useState<NewsPostStatusCounts>({
+    draft: 0,
+    published: 0,
+  });
+  const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
+    let isActive = true;
 
     async function loadPosts() {
       setIsLoading(true);
 
       try {
         const posts = await fetchPosts({
-          pageIndex: 0,
-          pageSize: 5,
-          sortBy: "",
+          pageIndex,
+          pageSize,
+          searchQuery,
+          sortBy,
+          status,
         });
 
-        if (isMounted) {
-          setData(posts);
+        if (isActive) {
+          setData(posts.data);
+          setStatusCounts(posts.statusCounts);
+          setTotalCount(posts.totalCount);
         }
       } finally {
-        if (isMounted) {
+        if (isActive) {
           setIsLoading(false);
         }
       }
     }
 
-    loadPosts();
+    void loadPosts();
 
     return () => {
-      isMounted = false;
+      isActive = false;
     };
-  }, []);
+  }, [
+    pageIndex,
+    pageSize,
+    searchQuery,
+    sortBy,
+    status,
+  ]);
 
-  return { data, isLoading };
+  return { data, totalCount, statusCounts, isLoading };
 }

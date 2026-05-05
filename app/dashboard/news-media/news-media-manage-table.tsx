@@ -1,23 +1,17 @@
 "use client";
 
 import { Search, ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
-import { useCallback, useDeferredValue, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import {
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
-  type ColumnFiltersState,
   type PaginationState,
   type SortingState,
 } from "@tanstack/react-table";
 import type { NewsArticle, NewsArticleStatus } from "@/app/lib/news-media";
-import { getNewsBodyText } from "@/app/lib/news-media";
+import type { NewsPostStatusCounts } from "@/app/lib/news-posts";
 import { newsMediaColumns } from "./news-media-columns";
-
-const pageSize = 5;
 
 const searchButtonClassName =
   "inline-flex items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-[var(--border-light)] disabled:hover:bg-[var(--bg-elevated)] disabled:hover:text-[var(--text-secondary)] sm:self-stretch";
@@ -29,23 +23,6 @@ const columnClassNames: Record<string, string> = {
   title: "w-[18rem]",
   views: "w-[6.5rem]",
 };
-
-function matchesSearch(article: NewsArticle, query: string) {
-  if (!query) {
-    return true;
-  }
-
-  const searchableText = [
-    article.title,
-    article.slug,
-    article.excerpt,
-    getNewsBodyText(article.body),
-  ]
-    .join(" ")
-    .toLowerCase();
-
-  return searchableText.includes(query);
-}
 
 function FilterPill({
   count,
@@ -107,75 +84,53 @@ function SortIcon({ sortState }: { sortState: false | "asc" | "desc" }) {
 }
 
 export function NewsMediaManageTable({
+  activeFilter,
   data,
   isLoading,
+  pagination,
+  searchInput,
+  sorting,
+  statusCounts,
+  totalCount,
+  onFilterToggle,
+  onPaginationChange,
+  onSearchInputChange,
+  onSearchSubmit,
+  onSortingChange,
 }: {
+  activeFilter: NewsArticleStatus | null;
   data: NewsArticle[];
   isLoading: boolean;
+  pagination: PaginationState;
+  searchInput: string;
+  sorting: SortingState;
+  statusCounts: NewsPostStatusCounts;
+  totalCount: number;
+  onFilterToggle: (status: NewsArticleStatus) => void;
+  onPaginationChange: (
+    updater: PaginationState | ((current: PaginationState) => PaginationState),
+  ) => void;
+  onSearchInputChange: (value: string) => void;
+  onSearchSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSortingChange: (
+    updater: SortingState | ((current: SortingState) => SortingState),
+  ) => void;
 }) {
-  const [activeFilter, setActiveFilter] = useState<NewsArticleStatus | null>(
-    null,
-  );
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<SortingState>([]);
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize,
-  });
-  const deferredSearchQuery = useDeferredValue(searchQuery);
-  const normalizedSearchQuery = deferredSearchQuery.trim().toLowerCase();
-  const columnFilters: ColumnFiltersState = useMemo(
-    () => (activeFilter ? [{ id: "status", value: activeFilter }] : []),
-    [activeFilter],
-  );
-  const draftCount = data.filter(
-    (article) => article.status === "draft",
-  ).length;
-  const publishedCount = data.filter(
-    (article) => article.status === "published",
-  ).length;
-  const resetToFirstPage = useCallback(() => {
-    setPagination((current) =>
-      current.pageIndex === 0 ? current : { ...current, pageIndex: 0 },
-    );
-  }, []);
-  const handleSearchChange = useCallback(
-    (value: string) => {
-      setSearchQuery(value);
-      resetToFirstPage();
-    },
-    [resetToFirstPage],
-  );
-  const toggleFilter = useCallback(
-    (status: NewsArticleStatus) => {
-      setActiveFilter((current) => (current === status ? null : status));
-      resetToFirstPage();
-    },
-    [resetToFirstPage],
-  );
-  const globalFilterFn = useCallback(
-    (row: { original: NewsArticle }, _columnId: string, value: unknown) =>
-      matchesSearch(row.original, String(value).trim().toLowerCase()),
-    [],
-  );
-
   // TanStack Table exposes function-heavy instances that React Compiler cannot memoize safely.
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     columns: newsMediaColumns,
     data,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    globalFilterFn,
-    onPaginationChange: setPagination,
-    onSortingChange: setSortBy,
+    manualFiltering: true,
+    manualPagination: true,
+    manualSorting: true,
+    onPaginationChange,
+    onSortingChange,
+    pageCount: Math.max(1, Math.ceil(totalCount / pagination.pageSize)),
     state: {
-      columnFilters,
-      globalFilter: normalizedSearchQuery,
       pagination,
-      sorting: sortBy,
+      sorting,
     },
   });
 
@@ -186,21 +141,21 @@ export function NewsMediaManageTable({
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         <FilterPill
-          count={draftCount}
+          count={statusCounts.draft}
           isActive={activeFilter === "draft"}
           label="Draft"
-          onClick={() => toggleFilter("draft")}
+          onClick={() => onFilterToggle("draft")}
         />
         <FilterPill
-          count={publishedCount}
+          count={statusCounts.published}
           isActive={activeFilter === "published"}
           label="Published"
-          onClick={() => toggleFilter("published")}
+          onClick={() => onFilterToggle("published")}
         />
       </div>
 
       <form
-        onSubmit={(event) => event.preventDefault()}
+        onSubmit={onSearchSubmit}
         className="flex flex-col gap-3 sm:flex-row sm:items-stretch"
       >
         <label className="relative flex-1">
@@ -211,8 +166,8 @@ export function NewsMediaManageTable({
           />
           <input
             type="search"
-            value={searchQuery}
-            onChange={(event) => handleSearchChange(event.target.value)}
+            value={searchInput}
+            onChange={(event) => onSearchInputChange(event.target.value)}
             placeholder="Search posts"
             className="h-11 w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-elevated)] pl-10 pr-4 text-sm text-[var(--text-primary)] shadow-sm outline-none transition focus:border-[var(--border-orange)] focus:ring-2 focus:ring-[color:var(--brand)]/15"
           />
@@ -241,7 +196,7 @@ export function NewsMediaManageTable({
               No posts match the current filters
             </p>
             <p className="mt-1 text-xs text-[var(--text-muted)]">
-              Adjust the pills or search term to see other static posts.
+              Adjust the pills or search term to see other posts.
             </p>
           </div>
         ) : (

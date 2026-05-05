@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { supabaseProjectHost } from "./app/lib/supabase-config";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["nodemailer"],
@@ -13,6 +14,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "ipay99.wordpress.com",
         pathname: "/wp-content/uploads/**",
+      },
+      {
+        protocol: "https",
+        hostname: supabaseProjectHost,
+        pathname: "/storage/v1/object/public/news-media/**",
       },
     ],
   },

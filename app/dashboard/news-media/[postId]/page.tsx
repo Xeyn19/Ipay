@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DashboardPageHeader } from "@/app/components/dashboard/dashboard-page-header";
-import {
-  getNewsArticleById,
-  getManagedNewsArticles,
-  newsSeedArticles,
-} from "@/app/lib/news-media";
+import { fetchNewsArticleById } from "@/app/lib/news-posts";
+import { createClient } from "@/app/lib/supabase-server";
 import { NewsPostForm } from "../news-post-form";
 
 export const metadata: Metadata = {
   title: "Edit News Post | iPay Dashboard",
   description:
-    "Edit a News & Media post in the iPay dashboard using local mock content.",
+    "Edit a News & Media post in the iPay dashboard.",
 };
 
 type NewsMediaEditPageProps = {
@@ -25,7 +22,7 @@ function NewsMediaPostState() {
     <div className="space-y-6">
       <DashboardPageHeader
         title="Edit post"
-        subtitle="Return to the manage page and choose another mock post to continue."
+        subtitle="Return to the manage page and choose another post to continue."
         actions={
           <Link
             href="/dashboard/news-media"
@@ -57,8 +54,7 @@ function NewsMediaPostState() {
             Post not found
           </h2>
           <p className="mt-2 text-sm leading-7 text-[var(--text-secondary)]">
-            The selected mock post does not exist in the current static article
-            list.
+            The selected post does not exist or is no longer available.
           </p>
           <Link
             href="/dashboard/news-media"
@@ -76,7 +72,8 @@ export default async function EditNewsMediaPostPage({
   params,
 }: NewsMediaEditPageProps) {
   const { postId } = await params;
-  const article = getNewsArticleById(getManagedNewsArticles(newsSeedArticles), postId);
+  const supabase = await createClient();
+  const article = await fetchNewsArticleById(supabase, postId);
 
   if (!article) {
     return <NewsMediaPostState />;
@@ -86,7 +83,7 @@ export default async function EditNewsMediaPostPage({
     <div className="space-y-6">
       <DashboardPageHeader
         title="Edit post"
-        subtitle="Update the current mock content and review its draft details."
+        subtitle="Update the current post and review its draft details."
         actions={
           <Link
             href="/dashboard/news-media"

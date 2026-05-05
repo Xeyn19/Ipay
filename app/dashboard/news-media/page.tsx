@@ -7,7 +7,7 @@ import { NewsMediaManageClient } from "./news-media-manage-client";
 export const metadata: Metadata = {
   title: "News & Media | iPay Dashboard",
   description:
-    "Manage News & Media posts in the iPay dashboard before backend publishing is connected.",
+    "Manage News & Media posts in the iPay dashboard.",
 };
 
 export default function DashboardNewsMediaPage() {
@@ -15,7 +15,7 @@ export default function DashboardNewsMediaPage() {
     <div className="space-y-6">
       <DashboardPageHeader
         title="News & Media"
-        subtitle="Manage static newsroom posts, drafts, and published content in one place."
+        subtitle="Manage newsroom posts, drafts, and published content in one place."
         actions={
           <>
             <button

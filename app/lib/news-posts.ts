@@ -8,6 +8,7 @@ import type {
 } from "./news-media";
 
 export const NEWS_POSTS_PAGE_SIZE = 5;
+export const PUBLIC_NEWS_POSTS_PAGE_SIZE = 9;
 
 export type NewsPostStatus = NewsArticleStatus | "archived";
 
@@ -40,6 +41,12 @@ export type PostsQueryParams = {
   searchQuery: string;
   sortBy: SortingState;
   status: NewsArticleStatus | null;
+};
+
+export type PublishedNewsPostsPageParams = {
+  categoryId?: string | null;
+  page: number;
+  pageSize: number;
 };
 
 export type NewsPostStatusCounts = {
@@ -116,6 +123,29 @@ function applySorting<TQuery extends OrderableQuery<TQuery>>(
 
 function getSearchPattern(value: string) {
   return `%${value.trim()}%`;
+}
+
+function applyPublishedOrder<TQuery extends OrderableQuery<TQuery>>(query: TQuery) {
+  return query
+    .order("publish_date", {
+      ascending: false,
+      nullsFirst: false,
+    })
+    .order("created_at", { ascending: false });
+}
+
+function applyPublishedFilters<
+  TQuery extends {
+    eq: (column: string, value: string) => TQuery;
+  },
+>(query: TQuery, categoryId?: string | null) {
+  let nextQuery = query.eq("status", "published");
+
+  if (categoryId) {
+    nextQuery = nextQuery.eq("category_id", categoryId);
+  }
+
+  return nextQuery;
 }
 
 function getCategoryName(
@@ -247,12 +277,12 @@ export async function fetchNewsPostStatusCounts(supabase: SupabaseClient) {
 }
 
 export async function fetchPublishedNewsArticles(supabase: SupabaseClient) {
-  const query = supabase
-    .from("news_posts")
-    .select(newsPostSelect)
-    .eq("status", "published")
-    .order("publish_date", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false });
+  const query = applyPublishedOrder(
+    supabase
+      .from("news_posts")
+      .select(newsPostSelect)
+      .eq("status", "published"),
+  );
   const { data, error } = await query;
 
   if (error) {
@@ -260,6 +290,33 @@ export async function fetchPublishedNewsArticles(supabase: SupabaseClient) {
   }
 
   return (data ?? []).map((row) => mapNewsPostRow(row as NewsPostRow, supabase));
+}
+
+export async function fetchPublishedNewsArticlesPage(
+  supabase: SupabaseClient,
+  params: PublishedNewsPostsPageParams,
+) {
+  const safePage = Math.max(1, params.page);
+  const safePageSize = Math.max(1, params.pageSize);
+  const from = (safePage - 1) * safePageSize;
+  const to = from + safePageSize - 1;
+
+  let query = supabase
+    .from("news_posts")
+    .select(newsPostSelect, { count: "exact" })
+    .range(from, to);
+  query = applyPublishedFilters(query, params.categoryId);
+  query = applyPublishedOrder(query);
+  const { data, count, error } = await query;
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    data: (data ?? []).map((row) => mapNewsPostRow(row as NewsPostRow, supabase)),
+    totalCount: count ?? 0,
+  };
 }
 
 export async function fetchNewsArticleById(
@@ -289,4 +346,66 @@ export async function fetchNewsArticleById(
   }
 
   return mapNewsPostRow(data as NewsPostRow, supabase);
+}
+
+export async function fetchPublishedNewsArticleBySlug(
+  supabase: SupabaseClient,
+  slug: string,
+) {
+  const { data, error } = await supabase
+    .from("news_posts")
+    .select(newsPostSelect)
+    .eq("status", "published")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return mapNewsPostRow(data as NewsPostRow, supabase);
+}
+
+export async function fetchMostViewedPublishedNewsArticles(
+  supabase: SupabaseClient,
+  limit: number,
+) {
+  const { data, error } = await supabase
+    .from("news_posts")
+    .select(newsPostSelect)
+    .eq("status", "published")
+    .order("view_count", { ascending: false, nullsFirst: false })
+    .order("publish_date", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(Math.max(1, limit));
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map((row) => mapNewsPostRow(row as NewsPostRow, supabase));
+}
+
+export async function fetchMostRecentPublishedNewsArticles(
+  supabase: SupabaseClient,
+  limit: number,
+) {
+  const query = applyPublishedOrder(
+    supabase
+      .from("news_posts")
+      .select(newsPostSelect)
+      .eq("status", "published")
+      .limit(Math.max(1, limit)),
+  );
+  const { data, error } = await query;
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map((row) => mapNewsPostRow(row as NewsPostRow, supabase));
 }

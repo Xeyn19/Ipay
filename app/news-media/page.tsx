@@ -1,19 +1,21 @@
-import Image from "next/image";
 import { cookies } from "next/headers";
 import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { Newspaper } from "lucide-react";
 import { BackToTop } from "@/app/components/home/back-to-top";
 import { Footer } from "@/app/components/home/footer";
 import { Navbar } from "@/app/components/home/navbar";
-import { Button } from "@/app/components/home/ui";
 import {
-  estimateNewsReadingMinutes,
-  formatNewsDate,
-  getNewsBodyParagraphs,
-  getPublishedNewsArticles,
-  newsExternalCoverage,
-  newsFeaturedVideos,
-  newsSeedArticles,
-} from "@/app/lib/news-media";
+  PUBLIC_NEWS_POSTS_PAGE_SIZE,
+  fetchMostRecentPublishedNewsArticles,
+  fetchMostViewedPublishedNewsArticles,
+  fetchNewsPostCategories,
+  fetchPublishedNewsArticlesPage,
+} from "@/app/lib/news-posts";
+import type { NewsArticle, NewsPostCategory } from "@/app/lib/news-media";
+import { formatNewsDate } from "@/app/lib/news-media";
+import { createClient } from "@/app/lib/supabase-server";
 import { DEFAULT_THEME, THEME_COOKIE_KEY, isTheme } from "@/app/lib/theme";
 
 export const metadata: Metadata = {
@@ -22,393 +24,458 @@ export const metadata: Metadata = {
     "Official iPay announcements, company updates, and media resources for partners, clients, and the press.",
 };
 
-export default async function NewsMediaPage() {
+type NewsMediaPageProps = {
+  searchParams: Promise<{
+    category?: string | string[] | undefined;
+    page?: string | string[] | undefined;
+  }>;
+};
+
+type PaginationItem = number | "ellipsis";
+
+function getQueryValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function parsePageNumber(value: string | undefined) {
+  const parsed = Number.parseInt(value ?? "1", 10);
+
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return 1;
+  }
+
+  return parsed;
+}
+
+function buildNewsMediaHref(params: { categoryId?: string; page?: number }) {
+  const search = new URLSearchParams();
+
+  if (params.categoryId) {
+    search.set("category", params.categoryId);
+  }
+
+  if (params.page && params.page > 1) {
+    search.set("page", String(params.page));
+  }
+
+  const query = search.toString();
+
+  return query ? `/news-media?${query}` : "/news-media";
+}
+
+function getPaginationItems(totalPages: number, currentPage: number): PaginationItem[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const items: PaginationItem[] = [1];
+
+  if (currentPage > 3) {
+    items.push("ellipsis");
+  }
+
+  const start = Math.max(2, currentPage - 1);
+  const end = Math.min(totalPages - 1, currentPage + 1);
+
+  for (let page = start; page <= end; page += 1) {
+    items.push(page);
+  }
+
+  if (currentPage < totalPages - 2) {
+    items.push("ellipsis");
+  }
+
+  items.push(totalPages);
+
+  return items;
+}
+
+function NewsPostCard({ article }: { article: NewsArticle }) {
+  return (
+    <article className="flex h-full flex-col overflow-hidden rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-control)]">
+      <Link href={`/news-media/${article.slug}`} className="relative block aspect-[16/10] w-full overflow-hidden">
+        <Image
+          src={article.coverImage}
+          alt={article.title}
+          fill
+          className="object-cover object-center transition duration-500 hover:scale-[1.03]"
+          sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
+        />
+      </Link>
+
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-faint)]">
+          {formatNewsDate(article.publishDate)}
+        </p>
+
+        <h3 className="font-heading mt-3 text-2xl font-semibold leading-[1.08] tracking-[-0.04em] text-[var(--text-primary)]">
+          <Link href={`/news-media/${article.slug}`} className="transition hover:text-[var(--brand)]">
+            {article.title}
+          </Link>
+        </h3>
+
+        <p className="mt-4 h-20 overflow-hidden text-sm leading-7 text-[var(--text-muted)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:4]">
+          {article.excerpt}
+        </p>
+
+        <Link
+          href={`/news-media/${article.slug}`}
+          className="mt-6 inline-flex text-sm font-semibold text-[var(--brand)] transition hover:text-[var(--brand-dark)]"
+        >
+          Read More &gt;
+        </Link>
+      </div>
+    </article>
+  );
+}
+
+function CategoryPill({
+  category,
+  isActive,
+}: {
+  category: NewsPostCategory | null;
+  isActive: boolean;
+}) {
+  return (
+    <Link
+      href={buildNewsMediaHref({
+        categoryId: category?.id,
+        page: 1,
+      })}
+      className={`inline-flex min-h-11 items-center justify-center rounded-full border px-5 text-sm font-semibold transition ${
+        isActive
+          ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+          : "border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+      }`}
+    >
+      {category?.name ?? "All"}
+    </Link>
+  );
+}
+
+export default async function NewsMediaPage({ searchParams }: NewsMediaPageProps) {
   const cookieStore = await cookies();
   const cookieTheme = cookieStore.get(THEME_COOKIE_KEY)?.value;
   const initialTheme = isTheme(cookieTheme) ? cookieTheme : DEFAULT_THEME;
-  const publishedArticles = getPublishedNewsArticles(newsSeedArticles);
-  const [featuredArticle, ...otherArticles] = publishedArticles;
-  const featuredParagraphs = featuredArticle
-    ? getNewsBodyParagraphs(featuredArticle.body).slice(0, 2)
-    : [];
-  const pressReleaseArticles = publishedArticles.slice(0, 3);
+  const supabase = await createClient();
+  const query = await searchParams;
+  const requestedCategoryId = getQueryValue(query.category);
+  const requestedPage = parsePageNumber(getQueryValue(query.page));
+  const categories = await fetchNewsPostCategories(supabase);
+  const activeCategoryId = categories.some((category) => category.id === requestedCategoryId)
+    ? requestedCategoryId
+    : undefined;
+
+  const [gridResult, mostViewedArticles, mostRecentArticles] = await Promise.all([
+    fetchPublishedNewsArticlesPage(supabase, {
+      categoryId: activeCategoryId,
+      page: requestedPage,
+      pageSize: PUBLIC_NEWS_POSTS_PAGE_SIZE,
+    }),
+    fetchMostViewedPublishedNewsArticles(supabase, 3),
+    fetchMostRecentPublishedNewsArticles(supabase, 5),
+  ]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(gridResult.totalCount / PUBLIC_NEWS_POSTS_PAGE_SIZE),
+  );
+  const currentPage = Math.min(requestedPage, totalPages);
+  const postsPage =
+    currentPage === requestedPage
+      ? gridResult
+      : await fetchPublishedNewsArticlesPage(supabase, {
+          categoryId: activeCategoryId,
+          page: currentPage,
+          pageSize: PUBLIC_NEWS_POSTS_PAGE_SIZE,
+        });
+  const featuredArticle = mostRecentArticles[0] ?? postsPage.data[0] ?? null;
+  const paginationItems = getPaginationItems(totalPages, currentPage);
+  const [primaryMostViewed, ...secondaryMostViewed] = mostViewedArticles;
+  const hasPosts = Boolean(featuredArticle) || postsPage.data.length > 0;
 
   return (
     <main className="overflow-x-hidden bg-[var(--bg-base)] pt-[var(--nav-height)] text-[var(--text-primary)]">
       <Navbar initialTheme={initialTheme} />
 
-      <section className="relative overflow-hidden px-6 py-16 sm:px-10 lg:px-14 lg:py-24">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-0 h-[30rem] w-[30rem] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(245,166,35,0.16)_0%,rgba(245,166,35,0.06)_38%,transparent_74%)] blur-3xl"
-        />
+      {featuredArticle ? (
+        <section className="relative overflow-hidden border-b border-[var(--border-light)] bg-[linear-gradient(180deg,var(--bg-subtle)_0%,var(--bg-base)_100%)]">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(circle_at_top,rgba(245,166,35,0.18),transparent_58%)]"
+          />
 
-        <div className="relative mx-auto max-w-6xl space-y-8">
-          <div className="rounded-[36px] border border-[var(--border-light)] bg-[linear-gradient(180deg,var(--bg-elevated)_0%,var(--bg-subtle)_100%)] p-8 shadow-[var(--shadow-large)] sm:p-12 lg:p-16">
-            <div className="mx-auto max-w-3xl text-center">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">
-                Newsroom
-              </p>
-              <h1 className="font-heading mt-4 text-[clamp(2.5rem,6vw,4.75rem)] font-semibold leading-[0.98] tracking-[-0.05em] text-[var(--text-primary)]">
-                News &amp; Media
-              </h1>
-              <p className="mt-6 text-base leading-8 text-[var(--text-muted)] sm:text-lg">
-                Official iPay updates, product stories, and partner-facing
-                announcements presented in one public news stream.
-              </p>
-            </div>
+          <div className="relative mx-auto max-w-7xl py-10">
+              <article className="overflow-hidden">
+                <div className="grid lg:grid-cols-2">
+                  <Link
+                  href={`/news-media/${featuredArticle.slug}`}
+                  className="relative block min-h-[18rem] lg:h-[20rem]"
+                >
+                  <Image
+                    src={featuredArticle.coverImage}
+                    alt={featuredArticle.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1023px) 100vw, 50vw"
+                    priority
+                  />
+                </Link>
 
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-              <div className="rounded-full border border-[var(--border-light)] bg-[var(--bg-base)]/70 px-4 py-2 text-sm font-medium text-[var(--text-secondary)]">
-                {publishedArticles.length} published stories
-              </div>
-              <div className="rounded-full border border-[var(--border-light)] bg-[var(--bg-base)]/70 px-4 py-2 text-sm font-medium text-[var(--text-secondary)]">
-                Company updates, product direction, and partner news
-              </div>
-            </div>
-          </div>
-
-          <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_22rem]">
-            {featuredArticle ? (
-              <article className="overflow-hidden rounded-[36px] border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-large)]">
-                <div className="grid lg:grid-cols-[1.08fr_0.92fr]">
-                  <div className="relative min-h-[21rem]">
-                    <Image
-                      src={featuredArticle.coverImage}
-                      alt={featuredArticle.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 1024px) 100vw, 52vw"
-                    />
-                    <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,17,29,0.1)_0%,rgba(8,17,29,0.45)_100%)]" />
+                <div className="flex items-center p-6 sm:p-8 lg:p-12">
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">
+                      Featured Post
+                    </p>
+                    <h1 className="font-heading mt-4 text-[clamp(2.2rem,4vw,4.5rem)] font-semibold leading-[1.02] tracking-[-0.06em] text-[var(--text-primary)]">
+                      {featuredArticle.title}
+                    </h1>
+                    <Link
+                      href={`/news-media/${featuredArticle.slug}`}
+                      className="mt-8 inline-flex text-base font-semibold text-[var(--brand)] transition hover:text-[var(--brand-dark)]"
+                    >
+                      Read More &gt;
+                    </Link>
                   </div>
-
-                  <div className="flex flex-col justify-between p-8 sm:p-10">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex rounded-full border border-[var(--border-orange)] bg-[var(--bg-elevated-muted)] px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-[var(--brand)]">
-                          Featured story
-                        </span>
-                        <span className="inline-flex rounded-full border border-[var(--border-light)] bg-[var(--bg-subtle)] px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
-                          {featuredArticle.category}
-                        </span>
-                      </div>
-
-                      <h2 className="font-heading mt-5 text-[clamp(2rem,3vw,3rem)] font-semibold leading-[1.02] tracking-[-0.05em] text-[var(--text-primary)]">
-                        {featuredArticle.title}
-                      </h2>
-
-                      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                        <span>{formatNewsDate(featuredArticle.publishDate)}</span>
-                        <span>/</span>
-                        <span>
-                          {estimateNewsReadingMinutes(featuredArticle.body)} min read
-                        </span>
-                      </div>
-
-                      <p className="mt-5 text-base leading-8 text-[var(--text-muted)]">
-                        {featuredArticle.excerpt}
-                      </p>
-
-                      <div className="mt-6 space-y-4">
-                        {featuredParagraphs.map((paragraph) => (
-                          <p
-                            key={paragraph}
-                            className="text-sm leading-7 text-[var(--text-secondary)]"
-                          >
-                            {paragraph}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mt-8 flex flex-wrap gap-3">
-                      <Button href="/request-proposal">Request Proposal</Button>
-                      <Button href="/" variant="secondary">
-                        Back to Home
-                      </Button>
-                    </div>
                   </div>
                 </div>
               </article>
-            ) : null}
+          </div>
+        </section>
+      ) : null}
 
-            <aside className="rounded-[32px] border border-[var(--border-light)] bg-[linear-gradient(180deg,var(--bg-elevated)_0%,var(--bg-subtle)_100%)] p-6 shadow-[var(--shadow-card)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">
-                Media &amp; Partnerships
-              </p>
-              <h2 className="font-heading mt-3 text-2xl font-semibold tracking-[-0.04em] text-[var(--text-primary)]">
-                Need official iPay information?
-              </h2>
-              <p className="mt-4 text-sm leading-7 text-[var(--text-muted)]">
-                For announcements, media references, and collaboration
-                discussions, connect with the team through the main business
-                channel while the newsroom workflow continues to expand.
-              </p>
-
-              <div className="mt-6 rounded-[24px] border border-[var(--border-light)] bg-[var(--bg-base)]/80 p-5">
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[var(--text-faint)]">
-                  Contact
-                </p>
-                <a
-                  href="mailto:info@ipay.ph"
-                  className="mt-2 inline-flex text-base font-semibold text-[var(--brand)] transition hover:text-[var(--brand-dark)]"
-                >
-                  info@ipay.ph
-                </a>
-                <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">
-                  Use this for partnership conversations, corporate inquiries,
-                  and requests related to public-facing company updates.
-                </p>
-              </div>
-
-              <div className="mt-6 space-y-3">
-                {[
-                  "Press-ready company updates",
-                  "Partnership and ecosystem stories",
-                  "Product direction and rollout highlights",
-                ].map((item) => (
-                  <div
-                    key={item}
-                    className="rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-base)]/72 px-4 py-3 text-sm leading-7 text-[var(--text-secondary)]"
-                  >
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </aside>
+      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
+        <div className="mx-auto max-w-7xl space-y-14">
+          <section>
+            <div className="flex flex-wrap gap-3">
+              <CategoryPill category={null} isActive={!activeCategoryId} />
+              {categories.map((category) => (
+                <CategoryPill
+                  key={category.id}
+                  category={category}
+                  isActive={activeCategoryId === category.id}
+                />
+              ))}
+            </div>
           </section>
 
-          <section className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-            <div className="rounded-[32px] border border-[var(--border-light)] bg-[var(--bg-elevated)] p-8 shadow-[var(--shadow-card)] sm:p-10">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">
-                    Press releases
-                  </p>
-                  <h2 className="font-heading mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--text-primary)]">
-                    Official announcements
-                  </h2>
+          <section>
+            <h2 className="font-heading mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--text-primary)]">
+              Latest Updates
+            </h2>
+            {postsPage.data.length > 0 ? (
+              <>
+                <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                  {postsPage.data.map((article) => (
+                    <NewsPostCard key={article.id} article={article} />
+                  ))}
                 </div>
-                <p className="text-sm text-[var(--text-muted)]">
-                  Structured updates in the same tone as the wider iPay site.
-                </p>
+
+                {gridResult.totalCount > PUBLIC_NEWS_POSTS_PAGE_SIZE ? (
+                  <nav
+                    aria-label="News post pagination"
+                    className="mt-8 flex flex-wrap items-center gap-2"
+                  >
+                    <Link
+                      href={buildNewsMediaHref({
+                        categoryId: activeCategoryId,
+                        page: Math.max(1, currentPage - 1),
+                      })}
+                      aria-disabled={currentPage === 1}
+                      className={`inline-flex min-h-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition ${
+                        currentPage === 1
+                          ? "pointer-events-none border-[var(--border-light)] bg-[var(--bg-subtle)] text-[var(--text-faint)]"
+                          : "border-[var(--border-light)] bg-[var(--bg-base)] text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+                      }`}
+                    >
+                      Previous
+                    </Link>
+
+                    {paginationItems.map((item, index) =>
+                      item === "ellipsis" ? (
+                        <span
+                          key={`ellipsis-${index}`}
+                          className="inline-flex min-h-11 items-center justify-center px-2 text-sm font-semibold text-[var(--text-faint)]"
+                        >
+                          ...
+                        </span>
+                      ) : (
+                        <Link
+                          key={item}
+                          href={buildNewsMediaHref({
+                            categoryId: activeCategoryId,
+                            page: item,
+                          })}
+                          aria-current={item === currentPage ? "page" : undefined}
+                          className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition ${
+                            item === currentPage
+                              ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                              : "border-[var(--border-light)] bg-[var(--bg-base)] text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+                          }`}
+                        >
+                          {item}
+                        </Link>
+                      ),
+                    )}
+
+                    <Link
+                      href={buildNewsMediaHref({
+                        categoryId: activeCategoryId,
+                        page: Math.min(totalPages, currentPage + 1),
+                      })}
+                      aria-disabled={currentPage === totalPages}
+                      className={`inline-flex min-h-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition ${
+                        currentPage === totalPages
+                          ? "pointer-events-none border-[var(--border-light)] bg-[var(--bg-subtle)] text-[var(--text-faint)]"
+                          : "border-[var(--border-light)] bg-[var(--bg-base)] text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+                      }`}
+                    >
+                      Next
+                    </Link>
+                  </nav>
+                ) : null}
+              </>
+            ) : (
+                <div className="h-48 flex flex-col items-center justify-center text-center">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-[var(--border-light)] bg-[var(--bg-elevated)]">
+                    <Newspaper
+                      size={36}
+                      className="text-[var(--text-faint)]"
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <p className="text-base font-medium text-[var(--text-secondary)]">
+                    No posts published yet. Please check back later for updates.
+                  </p>
+                </div>
+            )}
+          </section>
+
+          {hasPosts ? (
+            <section className="grid gap-6 xl:grid-cols-[minmax(0,7fr)_minmax(18rem,3fr)] xl:gap-0">
+            <div className="xl:pr-6">
+              <div>
+                <h2 className="font-heading mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--text-primary)]">
+                  Most Viewed
+                </h2>
+              </div>
+
+                <div className="mt-8">
+                  {primaryMostViewed ? (
+                  <div className="grid gap-5 xl:h-[32rem] xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
+                    <article className="flex h-full flex-col overflow-hidden rounded-[24px] border border-[var(--border-light)] bg-[var(--bg-base)] shadow-[var(--shadow-control)]">
+                      <Link
+                        href={`/news-media/${primaryMostViewed.slug}`}
+                        className="relative block h-56 w-full shrink-0 sm:h-72 xl:h-[18rem]"
+                      >
+                        <Image
+                          src={primaryMostViewed.coverImage}
+                          alt={primaryMostViewed.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 1279px) 100vw, 44vw"
+                        />
+                      </Link>
+
+                      <div className="flex flex-1 flex-col p-5 sm:p-6">
+                        <h3 className="font-heading text-2xl font-semibold leading-[1.08] tracking-[-0.04em] text-[var(--text-primary)] sm:text-3xl">
+                          <Link
+                            href={`/news-media/${primaryMostViewed.slug}`}
+                            className="transition hover:text-[var(--brand)]"
+                          >
+                            {primaryMostViewed.title}
+                          </Link>
+                        </h3>
+                        <p className="mt-4 overflow-hidden text-sm leading-7 text-[var(--text-muted)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] sm:text-base">
+                          {primaryMostViewed.excerpt}
+                        </p>
+                        <Link
+                          href={`/news-media/${primaryMostViewed.slug}`}
+                          className="mt-5 inline-flex text-sm font-semibold text-[var(--brand)] transition hover:text-[var(--brand-dark)] xl:mt-auto"
+                        >
+                          Read More &gt;
+                        </Link>
+                      </div>
+                    </article>
+
+                    <div className="grid gap-5 xl:h-full xl:grid-rows-2">
+                      {secondaryMostViewed.map((article) => (
+                        <article
+                          key={article.id}
+                          className="flex h-full flex-col overflow-hidden rounded-[24px] border border-[var(--border-light)] bg-[var(--bg-base)] shadow-[var(--shadow-control)]"
+                        >
+                          <Link
+                            href={`/news-media/${article.slug}`}
+                            className="relative block h-40 w-full sm:h-48 xl:flex-1"
+                          >
+                            <Image
+                              src={article.coverImage}
+                              alt={article.title}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 1279px) 100vw, 19vw"
+                            />
+                          </Link>
+
+                          <div className="p-5">
+                            <h3 className="font-heading overflow-hidden text-xl font-semibold leading-[1.12] tracking-[-0.03em] text-[var(--text-primary)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+                              <Link
+                                href={`/news-media/${article.slug}`}
+                                className="transition hover:text-[var(--brand)]"
+                              >
+                                {article.title}
+                              </Link>
+                            </h3>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-[24px] border border-dashed border-[var(--border-light)] bg-[var(--bg-subtle)] px-6 py-10 text-center">
+                    <p className="text-sm text-[var(--text-muted)]">
+                      No popular posts to show yet.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <aside className="xl:border-l xl:border-[var(--border-light)] xl:pl-6">
+              <div>
+                <h2 className="font-heading mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--text-primary)]">
+                  Just published
+                </h2>
               </div>
 
               <div className="mt-8 divide-y divide-[var(--border-light)]">
-                {pressReleaseArticles.map((article) => (
-                  <article key={article.id} className="py-5 first:pt-0 last:pb-0">
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                      <span>{formatNewsDate(article.publishDate)}</span>
-                      <span>/</span>
-                      <span>{article.category}</span>
-                    </div>
-                    <h3 className="font-heading mt-3 text-xl font-semibold tracking-[-0.03em] text-[var(--text-primary)]">
-                      {article.title}
-                    </h3>
-                    <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">
-                      {article.excerpt}
-                    </p>
-                  </article>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-[32px] border border-[var(--border-light)] bg-[linear-gradient(135deg,var(--bg-elevated)_0%,var(--bg-subtle)_100%)] p-8 shadow-[var(--shadow-card)] sm:p-10">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">
-                  In the news
-                </p>
-                <h2 className="font-heading mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--text-primary)]">
-                  External coverage
-                </h2>
-                <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">
-                  Coverage-style entries keep the newsroom page feeling active
-                  even before full publishing workflows are connected.
-                </p>
-              </div>
-
-              <div className="mt-8 space-y-4">
-                {newsExternalCoverage.map((item) => (
-                  <article
-                    key={item.id}
-                    className="overflow-hidden rounded-[24px] border border-[var(--border-light)] bg-[var(--bg-base)] shadow-[var(--shadow-control)]"
-                  >
-                    <div className="grid sm:grid-cols-[9rem_minmax(0,1fr)]">
-                      <div className="relative min-h-[9rem]">
-                        <Image
-                          src={item.image}
-                          alt={item.title}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 640px) 100vw, 9rem"
-                        />
-                      </div>
-
-                      <div className="p-5">
-                        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--text-faint)]">
-                          {item.source}
-                        </p>
-                        <h3 className="font-heading mt-2 text-lg font-semibold tracking-[-0.03em] text-[var(--text-primary)]">
-                          {item.title}
-                        </h3>
-                        <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">
-                          {item.summary}
-                        </p>
-                        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                          <span>{formatNewsDate(item.date)}</span>
-                          <span>/</span>
-                          <a
-                            href={item.href}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-[var(--brand)] transition hover:text-[var(--brand-dark)]"
-                          >
-                            Read more
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-[32px] border border-[var(--border-light)] bg-[var(--bg-elevated)] p-8 shadow-[var(--shadow-card)] sm:p-10">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">
-                  More stories
-                </p>
-                <h2 className="font-heading mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--text-primary)]">
-                  Additional newsroom updates
-                </h2>
-              </div>
-              <p className="text-sm text-[var(--text-muted)]">
-                A broader stream of recent items, similar to a newsroom archive.
-              </p>
-            </div>
-
-            <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {otherArticles.map((article) => (
-                <article
-                  key={article.id}
-                  className="overflow-hidden rounded-[26px] border border-[var(--border-light)] bg-[var(--bg-base)] shadow-[var(--shadow-control)]"
-                >
-                  <div className="relative h-52">
-                    <Image
-                      src={article.coverImage}
-                      alt={article.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                    />
-                  </div>
-
-                  <div className="space-y-4 p-5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex rounded-full border border-[var(--border-light)] bg-[var(--bg-subtle)] px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
-                        {article.category}
-                      </span>
-                    </div>
-
-                    <h3 className="font-heading text-xl font-semibold leading-[1.12] tracking-[-0.03em] text-[var(--text-primary)]">
-                      {article.title}
-                    </h3>
-
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                      <span>{formatNewsDate(article.publishDate)}</span>
-                      <span>/</span>
-                      <span>{estimateNewsReadingMinutes(article.body)} min read</span>
-                    </div>
-
-                    <p className="text-sm leading-7 text-[var(--text-muted)]">
-                      {article.excerpt}
+                {mostRecentArticles.length > 0 ? (
+                  mostRecentArticles.map((article) => (
+                    <article key={article.id} className="py-4 first:pt-0 last:pb-0">
+                      <h3 className="text-base font-semibold leading-7 text-[var(--text-primary)]">
+                        <Link
+                          href={`/news-media/${article.slug}`}
+                          className="transition hover:text-[var(--brand)]"
+                        >
+                          {article.title}
+                        </Link>
+                      </h3>
+                      <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-faint)]">
+                        {formatNewsDate(article.publishDate)}
+                      </p>
+                    </article>
+                  ))
+                ) : (
+                  <div className="py-2">
+                    <p className="text-sm text-[var(--text-muted)]">
+                      No recent posts to show yet.
                     </p>
                   </div>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-[32px] border border-[var(--border-light)] bg-[linear-gradient(135deg,var(--bg-elevated)_0%,var(--bg-subtle)_100%)] p-8 shadow-[var(--shadow-card)] sm:p-10">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">
-                  Featured video
-                </p>
-                <h2 className="font-heading mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--text-primary)]">
-                  Interviews and leadership clips
-                </h2>
+                )}
               </div>
-              <p className="text-sm text-[var(--text-muted)]">
-                A final media-style section inspired by newsroom pages that mix
-                announcements with interviews and coverage moments.
-              </p>
-            </div>
-
-            <div className="mt-8 grid gap-5 md:grid-cols-2">
-              {newsFeaturedVideos.map((item) => (
-                <article
-                  key={item.id}
-                  className="overflow-hidden rounded-[26px] border border-[var(--border-light)] bg-[var(--bg-base)] shadow-[var(--shadow-control)]"
-                >
-                  <div className="relative h-56">
-                    <Image
-                      src={item.image}
-                      alt={item.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                    />
-                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,17,29,0.04)_0%,rgba(8,17,29,0.72)_100%)]" />
-                    <div className="absolute bottom-4 left-4 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur">
-                      <svg
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="ml-0.5 h-5 w-5"
-                        aria-hidden="true"
-                      >
-                        <path d="M6.5 5.6a1 1 0 0 1 1.53-.85l6.35 4.4a1 1 0 0 1 0 1.64l-6.35 4.4A1 1 0 0 1 6.5 14.35V5.6Z" />
-                      </svg>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 p-5">
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--text-faint)]">
-                      {item.source}
-                    </p>
-                    <h3 className="font-heading text-xl font-semibold tracking-[-0.03em] text-[var(--text-primary)]">
-                      {item.title}
-                    </h3>
-                    <p className="text-sm leading-7 text-[var(--text-muted)]">
-                      {item.summary}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                      <span>{formatNewsDate(item.date)}</span>
-                      <span>/</span>
-                      <a
-                        href={item.href}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[var(--brand)] transition hover:text-[var(--brand-dark)]"
-                      >
-                        Watch feature
-                      </a>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button href="/request-proposal">Contact iPay</Button>
-              <Button href="/" variant="secondary">
-                Explore homepage
-              </Button>
-            </div>
-          </section>
+            </aside>
+            </section>
+          ) : null}
         </div>
       </section>
 

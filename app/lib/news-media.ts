@@ -1,15 +1,25 @@
-export type NewsArticleStatus = "draft" | "scheduled" | "published";
+import type { JSONContent } from "@tiptap/react";
+
+export type NewsArticleStatus = "draft" | "published" | "archived";
+export type ActiveNewsArticleStatus = Exclude<NewsArticleStatus, "archived">;
+
+export type NewsPostCategory = {
+  id: string;
+  name: string;
+};
 
 export type NewsArticle = {
   id: string;
   title: string;
   slug: string;
-  category: string;
+  categoryId: string;
+  categoryName: string;
   excerpt: string;
   coverImage: string;
   publishDate: string;
   status: NewsArticleStatus;
-  body: string;
+  views: number;
+  body: JSONContent;
 };
 
 export type NewsroomLinkItem = {
@@ -24,69 +34,126 @@ export type NewsroomLinkItem = {
 
 export const newsStatusOptions: Array<{
   label: string;
-  value: NewsArticleStatus;
+  value: ActiveNewsArticleStatus;
 }> = [
   { label: "Draft", value: "draft" },
-  { label: "Scheduled", value: "scheduled" },
   { label: "Published", value: "published" },
 ];
+
+export const EMPTY_NEWS_BODY: JSONContent = {
+  type: "doc",
+  content: [{ type: "paragraph" }],
+};
+
+function createNewsBody(...paragraphs: string[]): JSONContent {
+  const content = paragraphs
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => ({
+      type: "paragraph",
+      content: [{ type: "text", text: paragraph }],
+    }));
+
+  if (content.length === 0) {
+    return EMPTY_NEWS_BODY;
+  }
+
+  return {
+    type: "doc",
+    content,
+  };
+}
 
 export const newsSeedArticles: NewsArticle[] = [
   {
     id: "merchant-collections-scale",
     title: "iPay expands merchant collections support for growing multi-branch teams",
     slug: "ipay-expands-merchant-collections-support",
-    category: "Company Update",
+    categoryId: "company-update",
+    categoryName: "Company Update",
     excerpt:
       "A stronger operations flow for merchants that need faster visibility, cleaner reconciliation, and dependable collection channels across locations.",
     coverImage: "/img/main-hero.jpg",
     publishDate: "2026-05-01",
     status: "published",
-    body: `iPay continues to refine how merchants handle day-to-day collections across branches, counters, and digital payment touchpoints. The latest rollout focuses on giving operations and finance teams a cleaner view of incoming transactions without adding extra dashboards to monitor.
-
-For merchant teams managing multiple outlets, consistency matters as much as speed. The updated workflow is designed to reduce handoff friction between front-line staff, reconcilers, and finance reviewers so branch activity can be monitored with less manual follow-up.
-
-This direction reflects iPay's broader goal: making enterprise-grade payment infrastructure easier to use for teams that need reliability, governance, and faster turnaround in everyday operations.`,
+    views: 1840,
+    body: createNewsBody(
+      "iPay continues to refine how merchants handle day-to-day collections across branches, counters, and digital payment touchpoints. The latest rollout focuses on giving operations and finance teams a cleaner view of incoming transactions without adding extra dashboards to monitor.",
+      "For merchant teams managing multiple outlets, consistency matters as much as speed. The updated workflow is designed to reduce handoff friction between front-line staff, reconcilers, and finance reviewers so branch activity can be monitored with less manual follow-up.",
+      "This direction reflects iPay's broader goal: making enterprise-grade payment infrastructure easier to use for teams that need reliability, governance, and faster turnaround in everyday operations.",
+    ),
   },
   {
     id: "settlement-monitoring-launch",
     title: "iPay introduces a clearer settlement monitoring experience for finance teams",
     slug: "ipay-introduces-settlement-monitoring-experience",
-    category: "Product Update",
+    categoryId: "product-update",
+    categoryName: "Product Update",
     excerpt:
       "A refined view of transaction timing, reporting signals, and settlement progress for teams that need stronger operational clarity.",
     coverImage: "/img/services-bg.jpg",
     publishDate: "2026-04-24",
     status: "published",
-    body: `Finance teams often need to answer the same questions quickly: what settled, what is still moving, and what needs review. iPay's updated monitoring approach is built to make that interpretation more immediate.
-
-The public-facing news stream highlights this product direction through a simpler story: less time searching through fragmented updates, and more confidence in the status of day-to-day collections activity.
-
-As the newsroom grows, this category will be used for future platform updates, release notes, and notable workflow improvements relevant to iPay clients and partners.`,
+    views: 1265,
+    body: createNewsBody(
+      "Finance teams often need to answer the same questions quickly: what settled, what is still moving, and what needs review. iPay's updated monitoring approach is built to make that interpretation more immediate.",
+      "The public-facing news stream highlights this product direction through a simpler story: less time searching through fragmented updates, and more confidence in the status of day-to-day collections activity.",
+      "As the newsroom grows, this category will be used for future platform updates, release notes, and notable workflow improvements relevant to iPay clients and partners.",
+    ),
   },
   {
     id: "partner-enablements",
     title: "iPay strengthens partner enablement for institutions and platform operators",
     slug: "ipay-strengthens-partner-enablement",
-    category: "Partnership",
+    categoryId: "partnership",
+    categoryName: "Partnership",
     excerpt:
       "A continuing focus on structured payment flows, rollout readiness, and clearer partner communications for institutional and platform use cases.",
     coverImage: "/img/ipay-sol.jpg",
     publishDate: "2026-04-15",
     status: "published",
-    body: `Institutional rollouts and platform deployments usually require more than a working payment flow. Teams also need documentation, accountability, and a dependable rhythm for operational coordination.
-
-This update represents iPay's commitment to partner readiness: aligning implementation expectations, clarifying milestones, and improving how updates are communicated to the organizations that rely on the platform.
-
-The CMS workspace planned for the dashboard is intended to support that same direction by giving the internal team a cleaner place to prepare public-facing announcements before backend publishing is introduced.`,
+    views: 930,
+    body: createNewsBody(
+      "Institutional rollouts and platform deployments usually require more than a working payment flow. Teams also need documentation, accountability, and a dependable rhythm for operational coordination.",
+      "This update represents iPay's commitment to partner readiness: aligning implementation expectations, clarifying milestones, and improving how updates are communicated to the organizations that rely on the platform.",
+      "The CMS workspace planned for the dashboard is intended to support that same direction by giving the internal team a cleaner place to prepare public-facing announcements before backend publishing is introduced.",
+    ),
+  },
+  {
+    id: "draft-qr-campaign-story",
+    title: "iPay prepares a broader QR payment story for merchant campaign rollout",
+    slug: "ipay-prepares-broader-qr-payment-story",
+    categoryId: "campaign-update",
+    categoryName: "Campaign Update",
+    excerpt:
+      "A draft newsroom entry focused on merchant rollout messaging, payment acceptance clarity, and supporting launch materials.",
+    coverImage: "/img/requestproposal.jpg",
+    publishDate: "2026-05-08",
+    status: "draft",
+    views: 0,
+    body: createNewsBody(
+      "This draft is being prepared to support a broader campaign around merchant QR payment readiness, simple customer communication, and clearer rollout references for the business team.",
+      "The working version is intentionally concise while the final message, imagery, and public timing are still being aligned across marketing and partnerships.",
+    ),
+  },
+  {
+    id: "draft-client-portal-update",
+    title: "Client communications draft for the upcoming settlement portal update",
+    slug: "client-communications-settlement-portal-update",
+    categoryId: "product-update",
+    categoryName: "Product Update",
+    excerpt:
+      "An internal draft for a future public update covering visibility improvements, reporting guidance, and support readiness.",
+    coverImage: "/img/report-recon.jpg",
+    publishDate: "2026-05-06",
+    status: "draft",
+    views: 0,
+    body: createNewsBody(
+      "This draft is reserved for the next settlement portal messaging cycle and focuses on what finance and operations teams need to know before the update is announced publicly.",
+      "The article body will later be expanded with screenshots, release timing, and operational guidance once the final rollout date is approved.",
+    ),
   },
 ];
-
-export const newsEditorSampleArticle: NewsArticle = {
-  ...newsSeedArticles[0],
-  id: "sample-editor-article",
-  status: "draft",
-};
 
 export const newsExternalCoverage: NewsroomLinkItem[] = [
   {
@@ -146,15 +213,17 @@ export const newsFeaturedVideos: NewsroomLinkItem[] = [
 
 export function createEmptyNewsArticle(): NewsArticle {
   return {
-    id: "local-draft",
+    id: "new-post",
     title: "",
     slug: "",
-    category: "Company Update",
+    categoryId: "",
+    categoryName: "",
     excerpt: "",
-    coverImage: "/img/requestproposal.jpg",
-    publishDate: "2026-05-10",
+    coverImage: "",
+    publishDate: "",
     status: "draft",
-    body: "",
+    views: 0,
+    body: EMPTY_NEWS_BODY,
   };
 }
 
@@ -194,21 +263,70 @@ export function getPublishedNewsArticles(articles: NewsArticle[]) {
     );
 }
 
-export function getNewsBodyParagraphs(body: string) {
-  return body
-    .split(/\n\s*\n/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
+export function getManagedNewsArticles(articles: NewsArticle[]) {
+  return [...articles].sort(
+    (left, right) =>
+      parseNewsDate(right.publishDate).getTime() -
+      parseNewsDate(left.publishDate).getTime()
+  );
 }
 
-export function estimateNewsReadingMinutes(body: string) {
-  const wordCount = body.trim().split(/\s+/).filter(Boolean).length;
+export function getNewsArticleById(
+  articles: NewsArticle[],
+  articleId: string
+) {
+  return articles.find((article) => article.id === articleId);
+}
+
+function getNodeText(node: JSONContent | undefined): string {
+  if (!node) {
+    return "";
+  }
+
+  if (node.type === "text") {
+    return node.text ?? "";
+  }
+
+  if (node.type === "hardBreak") {
+    return " ";
+  }
+
+  return (node.content ?? []).map(getNodeText).join(" ");
+}
+
+function getBlockParagraphs(node: JSONContent | undefined): string[] {
+  if (!node) {
+    return [];
+  }
+
+  if (
+    node.type === "paragraph" ||
+    node.type === "heading" ||
+    node.type === "codeBlock"
+  ) {
+    const text = getNodeText(node).replace(/\s+/g, " ").trim();
+    return text ? [text] : [];
+  }
+
+  return (node.content ?? []).flatMap(getBlockParagraphs);
+}
+
+export function getNewsBodyText(body: JSONContent) {
+  return getNodeText(body).replace(/\s+/g, " ").trim();
+}
+
+export function getNewsBodyParagraphs(body: JSONContent) {
+  return getBlockParagraphs(body);
+}
+
+export function estimateNewsReadingMinutes(body: JSONContent) {
+  const wordCount = getNewsBodyText(body).split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.ceil(wordCount / 180));
 }
 
 export function getNewsStatusLabel(status: NewsArticleStatus) {
-  if (status === "scheduled") {
-    return "Scheduled";
+  if (status === "archived") {
+    return "Archived";
   }
 
   if (status === "published") {
@@ -219,8 +337,8 @@ export function getNewsStatusLabel(status: NewsArticleStatus) {
 }
 
 export function getNewsStatusClassName(status: NewsArticleStatus) {
-  if (status === "scheduled") {
-    return "border-[var(--tone-blue)]/20 bg-[var(--tone-blue-soft)] text-[var(--tone-blue)]";
+  if (status === "archived") {
+    return "border-[var(--border-light)] bg-[var(--bg-subtle)] text-[var(--text-secondary)]";
   }
 
   if (status === "published") {

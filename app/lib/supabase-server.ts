@@ -1,15 +1,13 @@
 // lib/supabase-server.ts
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-
-const supabaseUrl = "https://kkwfnznsxpvdkvwlfglh.supabase.co";
-const supabaseAnonKey = "sb_publishable_O8hbusSHH5PfcjUKRKpvyA_19YvObOq";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { publicSupabaseAnonKey, publicSupabaseUrl } from "./supabase-config";
 
 export async function createClient() {
-    const cookieStore = await cookies()
+    const cookieStore = await cookies();
     return createServerClient(
-        supabaseUrl,
-        supabaseAnonKey,
+        publicSupabaseUrl,
+        publicSupabaseAnonKey,
         {
             cookies: {
                 getAll() { return cookieStore.getAll() },

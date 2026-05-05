@@ -1,14 +1,15 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-
-const supabaseUrl = "https://kkwfnznsxpvdkvwlfglh.supabase.co";
-const supabaseAnonKey = "sb_publishable_O8hbusSHH5PfcjUKRKpvyA_19YvObOq";
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import {
+  publicSupabaseAnonKey,
+  publicSupabaseUrl,
+} from "@/app/lib/supabase-config";
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createServerClient(publicSupabaseUrl, publicSupabaseAnonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll()

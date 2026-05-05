@@ -5,8 +5,11 @@ This document explains how the current `News & Media` implementation works acros
 ## Current Scope
 
 - Public newsroom route: `app/news-media/page.tsx`
-- Dashboard CMS route: `app/dashboard/news-media/page.tsx`
-- Editor UI: `app/dashboard/news-media/news-media-editor.tsx`
+- Dashboard manage route: `app/dashboard/news-media/page.tsx`
+- Dashboard create route: `app/dashboard/news-media/new/page.tsx`
+- Dashboard edit route: `app/dashboard/news-media/[postId]/page.tsx`
+- Shared dashboard form UI: `app/dashboard/news-media/news-post-form.tsx`
+- Manage table UI: `app/dashboard/news-media/news-media-manage-table.tsx`
 - Shared local content/data model: `app/lib/news-media.ts`
 
 The current version is intentionally local-content driven.
@@ -14,7 +17,8 @@ The current version is intentionally local-content driven.
 - No Supabase integration yet
 - No server-side save or publish flow yet
 - No runtime persistence from the dashboard CMS to the public newsroom page
-- Dashboard edits are preview-only and stored in component state for the current browser session
+- Dashboard create/edit actions are still local UI only
+- The save button currently shows a placeholder toast and does not persist data
 
 ## Public Newsroom Layout
 
@@ -38,15 +42,14 @@ The dashboard CMS is the admin-side companion to the public newsroom page.
 
 Current CMS sections:
 
-1. News CMS header
-2. Section chips showing newsroom block types
-3. Summary cards for published stories, coverage items, video items, and current draft status
-4. Article editor form
-5. Live preview card
-6. Newsroom structure notes
-7. Section map for how the public page is organized
+1. Manage page header with `Archive` and `+ New Post`
+2. Draft and published filter pills
+3. Search bar with search button
+4. Static posts table with view, edit, and archive actions
+5. Shared create/edit form route with a two-column layout
+6. Right-column controls for status, featured image, and save
 
-This page is intended to help shape content structure and presentation before backend publishing is connected.
+This feature now models the intended dashboard workflow before backend publishing is connected.
 
 ## Shared Content Model
 
@@ -62,6 +65,7 @@ Current fields:
 - `coverImage`
 - `publishDate`
 - `status`
+- `views`
 - `body`
 
 Related supporting type:
@@ -83,8 +87,9 @@ The public page currently reads these exports from `app/lib/news-media.ts`:
 
 The dashboard CMS currently uses:
 
-- `newsEditorSampleArticle`
 - `createEmptyNewsArticle()`
+- `getManagedNewsArticles()`
+- `getNewsArticleById()`
 - helper functions such as:
   - `buildNewsSlug()`
   - `formatNewsDate()`
@@ -98,15 +103,8 @@ The dashboard CMS currently uses:
 
 ### Slug behavior
 
-- The CMS auto-generates the slug from the title until the user manually edits the slug field.
-- Once the slug field is manually edited, auto-sync from title stops for that draft.
-
-### Preview behavior
-
-- The CMS preview updates immediately as the user types.
-- The preview mirrors the newsroom article card and featured-story presentation style.
-- `Load sample article` fills the editor with the current sample draft.
-- `Reset draft` returns the editor to a blank local article state.
+- The create form auto-generates the slug from the title until the user manually edits the slug field.
+- Edit mode keeps the existing slug stable unless the user changes it directly.
 
 ### Publishing behavior
 
@@ -115,6 +113,8 @@ There is no real publishing flow yet.
 - Changing the dashboard CMS does not update `newsSeedArticles`
 - The public newsroom page only reflects the hardcoded local data exports
 - `status` is currently visual and editorial only
+- `Archive` and `View` are visible but intentionally disabled in this static phase
+- `Save` only shows a toast to indicate persistence is not connected yet
 
 ## How To Update Content Right Now
 
@@ -126,6 +126,7 @@ Typical tasks:
 
 - Update `newsSeedArticles`
 - Keep `status: "published"` if it should appear on the public newsroom page
+- `status: "draft"` will keep the item visible only in the dashboard manage table
 
 ### Add or edit external coverage
 
@@ -135,9 +136,8 @@ Typical tasks:
 
 - Update `newsFeaturedVideos`
 
-### Change editor defaults
+### Change create-form defaults
 
-- Update `newsEditorSampleArticle`
 - Update `createEmptyNewsArticle()`
 
 ## Design Rules
@@ -155,7 +155,7 @@ When extending this feature, keep these constraints:
 When backend work is approved, the next logical step is:
 
 1. Add persistent article storage
-2. Add create/edit/delete draft actions
-3. Add publish scheduling rules
+2. Connect create/edit/archive actions
+3. Add a real public article detail view if needed
 4. Replace mock arrays with database-backed reads
-5. Decide whether to add article detail pages such as `/news-media/[slug]`
+5. Replace the body textarea with the chosen rich text editor

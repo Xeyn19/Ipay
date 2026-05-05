@@ -27,6 +27,7 @@ export default function NewNewsMediaPostPage() {
       />
 
       <NewsPostForm
+        key="new-post"
         initialArticle={createEmptyNewsArticle()}
         mode="create"
       />

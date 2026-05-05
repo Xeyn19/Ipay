@@ -95,6 +95,7 @@ export default async function EditNewsMediaPostPage({
       />
 
       <NewsPostForm
+        key={article.id}
         initialArticle={article}
         mode="edit"
       />

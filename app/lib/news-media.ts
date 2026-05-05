@@ -3,11 +3,17 @@ import type { JSONContent } from "@tiptap/react";
 export type NewsArticleStatus = "draft" | "published" | "archived";
 export type ActiveNewsArticleStatus = Exclude<NewsArticleStatus, "archived">;
 
+export type NewsPostCategory = {
+  id: string;
+  name: string;
+};
+
 export type NewsArticle = {
   id: string;
   title: string;
   slug: string;
-  category: string;
+  categoryId: string;
+  categoryName: string;
   excerpt: string;
   coverImage: string;
   publishDate: string;
@@ -63,7 +69,8 @@ export const newsSeedArticles: NewsArticle[] = [
     id: "merchant-collections-scale",
     title: "iPay expands merchant collections support for growing multi-branch teams",
     slug: "ipay-expands-merchant-collections-support",
-    category: "Company Update",
+    categoryId: "company-update",
+    categoryName: "Company Update",
     excerpt:
       "A stronger operations flow for merchants that need faster visibility, cleaner reconciliation, and dependable collection channels across locations.",
     coverImage: "/img/main-hero.jpg",
@@ -80,7 +87,8 @@ export const newsSeedArticles: NewsArticle[] = [
     id: "settlement-monitoring-launch",
     title: "iPay introduces a clearer settlement monitoring experience for finance teams",
     slug: "ipay-introduces-settlement-monitoring-experience",
-    category: "Product Update",
+    categoryId: "product-update",
+    categoryName: "Product Update",
     excerpt:
       "A refined view of transaction timing, reporting signals, and settlement progress for teams that need stronger operational clarity.",
     coverImage: "/img/services-bg.jpg",
@@ -97,7 +105,8 @@ export const newsSeedArticles: NewsArticle[] = [
     id: "partner-enablements",
     title: "iPay strengthens partner enablement for institutions and platform operators",
     slug: "ipay-strengthens-partner-enablement",
-    category: "Partnership",
+    categoryId: "partnership",
+    categoryName: "Partnership",
     excerpt:
       "A continuing focus on structured payment flows, rollout readiness, and clearer partner communications for institutional and platform use cases.",
     coverImage: "/img/ipay-sol.jpg",
@@ -114,7 +123,8 @@ export const newsSeedArticles: NewsArticle[] = [
     id: "draft-qr-campaign-story",
     title: "iPay prepares a broader QR payment story for merchant campaign rollout",
     slug: "ipay-prepares-broader-qr-payment-story",
-    category: "Campaign Update",
+    categoryId: "campaign-update",
+    categoryName: "Campaign Update",
     excerpt:
       "A draft newsroom entry focused on merchant rollout messaging, payment acceptance clarity, and supporting launch materials.",
     coverImage: "/img/requestproposal.jpg",
@@ -130,7 +140,8 @@ export const newsSeedArticles: NewsArticle[] = [
     id: "draft-client-portal-update",
     title: "Client communications draft for the upcoming settlement portal update",
     slug: "client-communications-settlement-portal-update",
-    category: "Product Update",
+    categoryId: "product-update",
+    categoryName: "Product Update",
     excerpt:
       "An internal draft for a future public update covering visibility improvements, reporting guidance, and support readiness.",
     coverImage: "/img/report-recon.jpg",
@@ -205,7 +216,8 @@ export function createEmptyNewsArticle(): NewsArticle {
     id: "new-post",
     title: "",
     slug: "",
-    category: "",
+    categoryId: "",
+    categoryName: "",
     excerpt: "",
     coverImage: "",
     publishDate: "",

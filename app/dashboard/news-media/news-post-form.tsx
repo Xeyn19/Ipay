@@ -1,7 +1,7 @@
 'use client';
 
 import Image from "next/image";
-import { Expand, Pencil, X } from "lucide-react";
+import { Expand, Pencil, Plus, X } from "lucide-react";
 import {
   useActionState,
   useEffect,
@@ -11,14 +11,18 @@ import {
   type ChangeEvent,
   type MouseEvent,
 } from "react";
+import toast from "react-hot-toast";
 import {
   createNewsPost,
+  createNewsPostCategory,
   updateNewsPost,
+  type NewsPostCategoryFormState,
 } from "@/app/dashboard/news-media/actions";
 import {
   buildNewsSlug,
   formatNewsDate,
   type NewsArticle,
+  type NewsPostCategory,
 } from "@/app/lib/news-media";
 import { NewsBodyEditor } from "./news-body-editor";
 
@@ -29,6 +33,14 @@ const initialFormState = {
   fieldErrors: {},
   message: "",
   status: "idle" as const,
+  submittedAt: null,
+};
+
+const initialCategoryFormState: NewsPostCategoryFormState = {
+  createdCategory: null,
+  fieldErrors: {},
+  message: "",
+  status: "idle",
   submittedAt: null,
 };
 
@@ -44,11 +56,147 @@ function FieldError({ message }: { message?: string }) {
   );
 }
 
+function sortCategories(categories: NewsPostCategory[]) {
+  return [...categories].sort((left, right) =>
+    left.name.localeCompare(right.name, undefined, { sensitivity: "base" }),
+  );
+}
+
+function NewsPostCategoryModal({
+  onCategoryCreated,
+  onClose,
+}: {
+  onCategoryCreated: (category: NewsPostCategory) => void;
+  onClose: () => void;
+}) {
+  const [formState, formAction, isPending] = useActionState(
+    createNewsPostCategory,
+    initialCategoryFormState,
+  );
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const titleId = useId();
+  const descriptionId = useId();
+
+  useEffect(() => {
+    const originalBodyOverflow = document.body.style.overflow;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !isPending) {
+        onClose();
+      }
+    }
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPending, onClose]);
+
+  useEffect(() => {
+    if (!formState.submittedAt || !formState.message) {
+      return;
+    }
+
+    if (formState.status === "success") {
+      toast.success(formState.message);
+      return;
+    }
+
+    if (formState.status === "error") {
+      toast.error(formState.message);
+    }
+  }, [formState.message, formState.status, formState.submittedAt]);
+
+  useEffect(() => {
+    if (formState.status !== "success" || !formState.createdCategory) {
+      return;
+    }
+
+    onCategoryCreated(formState.createdCategory);
+    formRef.current?.reset();
+    onClose();
+  }, [formState.createdCategory, formState.status, onCategoryCreated, onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center px-4 py-6 sm:px-6">
+      <button
+        type="button"
+        aria-label="Close category dialog"
+        onClick={() => {
+          if (!isPending) {
+            onClose();
+          }
+        }}
+        className="absolute inset-0 bg-black/40 backdrop-blur-[3px]"
+      />
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+        className="relative flex w-full max-w-md flex-col overflow-hidden rounded-[24px] border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-large)]"
+      >
+        <div className="border-b border-[var(--border-light)] bg-[linear-gradient(180deg,var(--bg-subtle)_0%,var(--bg-elevated)_100%)] px-5 py-4 sm:px-6">
+          <p
+            id={titleId}
+            className="font-heading text-base font-bold tracking-[-0.02em] text-[var(--text-primary)]"
+          >
+            Create category
+          </p>
+        </div>
+
+        <form
+          ref={formRef}
+          action={formAction}
+          className="space-y-4 px-5 py-5 sm:px-6"
+        >
+          <label>
+            <span className="text-sm font-medium text-[var(--text-primary)]">
+              Category Name
+            </span>
+            <input
+              autoFocus
+              type="text"
+              name="name"
+              placeholder="Product Update"
+              className={inputClassName}
+            />
+            <FieldError message={formState.fieldErrors.name} />
+          </label>
+
+          <div className="flex flex-col-reverse gap-2 border-t border-[var(--border-light)] pt-4 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isPending}
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-medium text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isPending}
+              className="inline-flex h-10 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white shadow-[var(--shadow-button)] transition hover:bg-[var(--brand-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isPending ? "Saving..." : "Save category"}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
+
 export function NewsPostForm({
   initialArticle,
+  initialCategories,
   mode,
 }: {
   initialArticle: NewsArticle;
+  initialCategories: NewsPostCategory[];
   mode: "create" | "edit";
 }) {
   const updateAction = updateNewsPost.bind(null, initialArticle.id);
@@ -58,8 +206,12 @@ export function NewsPostForm({
   );
   const fieldErrors = formState.fieldErrors ?? {};
   const [article, setArticle] = useState<NewsArticle>(initialArticle);
+  const [categories, setCategories] = useState<NewsPostCategory[]>(
+    sortCategories(initialCategories),
+  );
   const [bodyContent, setBodyContent] = useState(initialArticle.body);
   const [hasCustomSlug, setHasCustomSlug] = useState(mode === "edit");
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImageName, setSelectedImageName] = useState("");
   const [imagePreviewSrc, setImagePreviewSrc] = useState(initialArticle.coverImage);
@@ -87,6 +239,21 @@ export function NewsPostForm({
       : isPending
         ? "Saving..."
         : "Save";
+
+  useEffect(() => {
+    if (!formState.submittedAt || !formState.message) {
+      return;
+    }
+
+    if (formState.status === "success") {
+      toast.success(formState.message);
+      return;
+    }
+
+    if (formState.status === "error") {
+      toast.error(formState.message);
+    }
+  }, [formState.message, formState.status, formState.submittedAt]);
 
   function clearPreviewObjectUrl() {
     if (!previewObjectUrlRef.current) {
@@ -138,13 +305,37 @@ export function NewsPostForm({
     }));
   }
 
-  function handleFieldChange<Field extends "category" | "excerpt" | "publishDate">(
+  function handleFieldChange<Field extends "excerpt" | "publishDate">(
     field: Field,
     value: NewsArticle[Field],
   ) {
     setArticle((current) => ({
       ...current,
       [field]: value,
+    }));
+  }
+
+  function handleCategoryChange(categoryId: string) {
+    const selectedCategory = categories.find((category) => category.id === categoryId);
+
+    setArticle((current) => ({
+      ...current,
+      categoryId,
+      categoryName: selectedCategory?.name ?? "",
+    }));
+  }
+
+  function handleCategoryCreated(category: NewsPostCategory) {
+    setCategories((current) =>
+      sortCategories([
+        ...current.filter((existingCategory) => existingCategory.id !== category.id),
+        category,
+      ]),
+    );
+    setArticle((current) => ({
+      ...current,
+      categoryId: category.id,
+      categoryName: category.name,
     }));
   }
 
@@ -211,18 +402,6 @@ export function NewsPostForm({
 
         <section className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
           <div className="flex flex-col gap-4 p-6">
-            {formState.message ? (
-              <div
-                className={`rounded-2xl border px-4 py-3 text-sm ${
-                  formState.status === "success"
-                    ? "border-[var(--tone-green)]/25 bg-[var(--tone-green-soft)] text-[var(--tone-green)]"
-                    : "border-[#fecaca] bg-[#fef2f2] text-[#b91c1c]"
-                }`}
-              >
-                {formState.message}
-              </div>
-            ) : null}
-
             <label>
               <span className="text-sm font-medium text-[var(--text-primary)]">
                 Title
@@ -258,14 +437,39 @@ export function NewsPostForm({
                 <span className="text-sm font-medium text-[var(--text-primary)]">
                   Category
                 </span>
-                <input
-                  type="text"
-                  name="category"
-                  value={article.category}
-                  onChange={(event) => handleFieldChange("category", event.target.value)}
-                  placeholder="Company Update"
-                  className={inputClassName}
-                />
+                <div className="flex items-end gap-2">
+                  <select
+                    name="categoryId"
+                    value={article.categoryId}
+                    onChange={(event) => handleCategoryChange(event.target.value)}
+                    className={`${inputClassName} mt-0`}
+                  >
+                    <option value="">
+                      {categories.length > 0
+                        ? "Select a category"
+                        : "No categories available"}
+                    </option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    aria-label="Create category"
+                    title="Create category"
+                    onClick={() => setIsCategoryModalOpen(true)}
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] transition hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+                  >
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
+                {categories.length === 0 ? (
+                  <p className="mt-2 text-xs text-[var(--text-muted)]">
+                    Create the first category before saving this post.
+                  </p>
+                ) : null}
                 <FieldError message={fieldErrors.category} />
               </label>
             </div>
@@ -501,6 +705,13 @@ export function NewsPostForm({
             </div>
           </section>
         </div>
+      ) : null}
+
+      {isCategoryModalOpen ? (
+        <NewsPostCategoryModal
+          onCategoryCreated={handleCategoryCreated}
+          onClose={() => setIsCategoryModalOpen(false)}
+        />
       ) : null}
     </>
   );

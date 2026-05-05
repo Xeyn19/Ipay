@@ -68,7 +68,7 @@ export default async function NewsMediaPage() {
                           Featured story
                         </span>
                         <span className="inline-flex rounded-full border border-[var(--border-light)] bg-[var(--bg-subtle)] px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
-                          {featuredArticle.category}
+                          {featuredArticle.categoryName}
                         </span>
                       </div>
 
@@ -179,7 +179,7 @@ export default async function NewsMediaPage() {
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium uppercase tracking-[0.08em] text-[var(--text-faint)]">
                       <span>{formatNewsDate(article.publishDate)}</span>
                       <span>/</span>
-                      <span>{article.category}</span>
+                      <span>{article.categoryName}</span>
                     </div>
                     <h3 className="font-heading mt-3 text-xl font-semibold tracking-[-0.03em] text-[var(--text-primary)]">
                       {article.title}
@@ -287,7 +287,7 @@ export default async function NewsMediaPage() {
                   <div className="space-y-4 p-5">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="inline-flex rounded-full border border-[var(--border-light)] bg-[var(--bg-subtle)] px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
-                        {article.category}
+                        {article.categoryName}
                       </span>
                     </div>
 

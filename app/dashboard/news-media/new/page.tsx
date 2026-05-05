@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DashboardPageHeader } from "@/app/components/dashboard/dashboard-page-header";
 import { createEmptyNewsArticle } from "@/app/lib/news-media";
+import { fetchNewsPostCategories } from "@/app/lib/news-posts";
+import { createClient } from "@/app/lib/supabase-server";
 import { NewsPostForm } from "../news-post-form";
 
 export const metadata: Metadata = {
@@ -10,7 +12,10 @@ export const metadata: Metadata = {
     "Draft a new News & Media post in the iPay dashboard.",
 };
 
-export default function NewNewsMediaPostPage() {
+export default async function NewNewsMediaPostPage() {
+  const supabase = await createClient();
+  const categories = await fetchNewsPostCategories(supabase);
+
   return (
     <div className="space-y-6">
       <DashboardPageHeader
@@ -29,6 +34,7 @@ export default function NewNewsMediaPostPage() {
       <NewsPostForm
         key="new-post"
         initialArticle={createEmptyNewsArticle()}
+        initialCategories={categories}
         mode="create"
       />
     </div>

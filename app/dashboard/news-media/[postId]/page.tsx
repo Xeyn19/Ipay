@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DashboardPageHeader } from "@/app/components/dashboard/dashboard-page-header";
-import { fetchNewsArticleById } from "@/app/lib/news-posts";
+import {
+  fetchNewsArticleById,
+  fetchNewsPostCategories,
+} from "@/app/lib/news-posts";
 import { createClient } from "@/app/lib/supabase-server";
 import { NewsPostForm } from "../news-post-form";
 
@@ -73,9 +76,12 @@ export default async function EditNewsMediaPostPage({
 }: NewsMediaEditPageProps) {
   const { postId } = await params;
   const supabase = await createClient();
-  const article = await fetchNewsArticleById(supabase, postId, {
-    includeArchived: true,
-  });
+  const [article, categories] = await Promise.all([
+    fetchNewsArticleById(supabase, postId, {
+      includeArchived: true,
+    }),
+    fetchNewsPostCategories(supabase),
+  ]);
 
   if (!article) {
     return <NewsMediaPostState />;
@@ -99,6 +105,7 @@ export default async function EditNewsMediaPostPage({
       <NewsPostForm
         key={article.id}
         initialArticle={article}
+        initialCategories={categories}
         mode="edit"
       />
     </div>

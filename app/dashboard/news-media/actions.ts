@@ -4,7 +4,11 @@ import { Buffer } from "node:buffer";
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import type { JSONContent } from "@tiptap/react";
-import { buildNewsSlug, type NewsArticleStatus } from "@/app/lib/news-media";
+import {
+  buildNewsSlug,
+  type NewsArticleStatus,
+  type NewsPostCategory,
+} from "@/app/lib/news-media";
 import { createAdminClient } from "@/app/lib/supabase-admin";
 import { createClient } from "@/app/lib/supabase-server";
 
@@ -28,6 +32,8 @@ type NewsPostFieldErrorKey =
 
 type NewsPostFieldErrors = Partial<Record<NewsPostFieldErrorKey, string>>;
 
+type NewsPostCategoryFieldErrors = Partial<Record<"name", string>>;
+
 export type NewsPostFormState = {
   fieldErrors: NewsPostFieldErrors;
   message: string;
@@ -40,6 +46,14 @@ export type NewsPostMutationResult = {
   status: "error" | "success";
 };
 
+export type NewsPostCategoryFormState = {
+  createdCategory: NewsPostCategory | null;
+  fieldErrors: NewsPostCategoryFieldErrors;
+  message: string;
+  status: "error" | "idle" | "success";
+  submittedAt: number | null;
+};
+
 type NewsPostRecord = {
   featured_image_path: string | null;
   id: string;
@@ -49,7 +63,7 @@ type NewsPostRecord = {
 
 type ValidatedNewsPostPayload = {
   body: JSONContent;
-  category: string;
+  categoryId: string;
   excerpt: string;
   publishDate: string;
   slug: string;
@@ -58,6 +72,14 @@ type ValidatedNewsPostPayload = {
 };
 
 const NEWS_POST_FORM_INITIAL_STATE: NewsPostFormState = {
+  fieldErrors: {},
+  message: "",
+  status: "idle",
+  submittedAt: null,
+};
+
+const NEWS_POST_CATEGORY_FORM_INITIAL_STATE: NewsPostCategoryFormState = {
+  createdCategory: null,
   fieldErrors: {},
   message: "",
   status: "idle",
@@ -75,9 +97,25 @@ function buildActionState(
   };
 }
 
+function buildCategoryActionState(
+  overrides: Partial<NewsPostCategoryFormState>,
+): NewsPostCategoryFormState {
+  return {
+    ...NEWS_POST_CATEGORY_FORM_INITIAL_STATE,
+    ...overrides,
+    createdCategory: overrides.createdCategory ?? null,
+    fieldErrors: overrides.fieldErrors ?? {},
+    submittedAt: overrides.submittedAt ?? Date.now(),
+  };
+}
+
 function getFormValue(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeCategoryName(value: string) {
+  return value.trim().replace(/\s+/g, " ");
 }
 
 function isValidPublishDate(value: string) {
@@ -205,6 +243,11 @@ function revalidateNewsPaths(postId?: string) {
   }
 }
 
+function revalidateNewsCategoryPaths() {
+  revalidatePath("/dashboard/news-media/new");
+  revalidatePath("/dashboard/news-media/[postId]", "page");
+}
+
 function validateNewsPostPayload(
   formData: FormData,
   options?: {
@@ -224,7 +267,7 @@ function validateNewsPostPayload(
   const title = getFormValue(formData, "title");
   const slugInput = getFormValue(formData, "slug");
   const slug = buildNewsSlug(slugInput || title);
-  const category = getFormValue(formData, "category");
+  const categoryId = getFormValue(formData, "categoryId");
   const excerpt = getFormValue(formData, "excerpt");
   const publishDate = getFormValue(formData, "publishDate");
   const bodyValue = getFormValue(formData, "body");
@@ -242,8 +285,8 @@ function validateNewsPostPayload(
     fieldErrors.slug = "Enter a URL slug.";
   }
 
-  if (!category) {
-    fieldErrors.category = "Enter a category.";
+  if (!categoryId) {
+    fieldErrors.category = "Choose a category.";
   }
 
   if (!excerpt) {
@@ -270,7 +313,7 @@ function validateNewsPostPayload(
     fieldErrors,
     payload: {
       body,
-      category,
+      categoryId,
       excerpt,
       publishDate,
       slug,
@@ -295,6 +338,21 @@ async function ensureUniqueSlug(slug: string, postId?: string) {
   }
 
   return !data;
+}
+
+async function ensureNewsPostCategoryExists(categoryId: string) {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("news_post_categories")
+    .select("id")
+    .eq("id", categoryId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data);
 }
 
 async function getNewsPostRecord(postId: string) {
@@ -379,6 +437,9 @@ export async function createNewsPost(
   try {
     const userId = await getAuthenticatedUserId();
     const isSlugAvailable = await ensureUniqueSlug(validation.payload.slug);
+    const categoryExists = await ensureNewsPostCategoryExists(
+      validation.payload.categoryId,
+    );
 
     if (!isSlugAvailable) {
       return buildActionState({
@@ -386,6 +447,16 @@ export async function createNewsPost(
           slug: "That slug is already in use.",
         },
         message: "Choose a different slug before saving.",
+        status: "error",
+      });
+    }
+
+    if (!categoryExists) {
+      return buildActionState({
+        fieldErrors: {
+          category: "Choose a valid category.",
+        },
+        message: "Please review the post details and try again.",
         status: "error",
       });
     }
@@ -405,7 +476,7 @@ export async function createNewsPost(
     const admin = createAdminClient();
     const { error } = await admin.from("news_posts").insert({
       body: validation.payload.body,
-      category: validation.payload.category,
+      category_id: validation.payload.categoryId,
       created_by: userId,
       excerpt: validation.payload.excerpt,
       featured_image_path: uploadedImagePath,
@@ -489,6 +560,9 @@ export async function updateNewsPost(
 
     const userId = await getAuthenticatedUserId();
     const isSlugAvailable = await ensureUniqueSlug(validation.payload.slug, postId);
+    const categoryExists = await ensureNewsPostCategoryExists(
+      validation.payload.categoryId,
+    );
 
     if (!isSlugAvailable) {
       return buildActionState({
@@ -496,6 +570,16 @@ export async function updateNewsPost(
           slug: "That slug is already in use.",
         },
         message: "Choose a different slug before saving.",
+        status: "error",
+      });
+    }
+
+    if (!categoryExists) {
+      return buildActionState({
+        fieldErrors: {
+          category: "Choose a valid category.",
+        },
+        message: "Please review the post details and try again.",
         status: "error",
       });
     }
@@ -519,7 +603,7 @@ export async function updateNewsPost(
       .from("news_posts")
       .update({
         body: validation.payload.body,
-        category: validation.payload.category,
+        category_id: validation.payload.categoryId,
         excerpt: validation.payload.excerpt,
         featured_image_path:
           uploadedImagePath ?? existingPost.featured_image_path,
@@ -563,6 +647,72 @@ export async function updateNewsPost(
           : error instanceof Error && error.message
             ? error.message
             : "The post could not be updated.",
+      status: "error",
+    });
+  }
+}
+
+export async function createNewsPostCategory(
+  _prevState: NewsPostCategoryFormState,
+  formData: FormData,
+): Promise<NewsPostCategoryFormState> {
+  const name = normalizeCategoryName(getFormValue(formData, "name"));
+
+  if (!name) {
+    return buildCategoryActionState({
+      fieldErrors: {
+        name: "Enter a category name.",
+      },
+      message: "Please review the category details and try again.",
+      status: "error",
+    });
+  }
+
+  try {
+    await getAuthenticatedUserId();
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("news_post_categories")
+      .insert({
+        name,
+      })
+      .select("id, name")
+      .single();
+
+    if (error) {
+      if (error.code === "23505") {
+        return buildCategoryActionState({
+          fieldErrors: {
+            name: "That category already exists.",
+          },
+          message: "Choose a different category name.",
+          status: "error",
+        });
+      }
+
+      return buildCategoryActionState({
+        message: error.message ?? "The category could not be created.",
+        status: "error",
+      });
+    }
+
+    revalidateNewsCategoryPaths();
+
+    return buildCategoryActionState({
+      createdCategory: data as NewsPostCategory,
+      message: "Category created.",
+      status: "success",
+    });
+  } catch (error) {
+    unstable_rethrow(error);
+
+    return buildCategoryActionState({
+      message:
+        error instanceof Error && error.message === "Unauthorized"
+          ? "You must be signed in to create categories."
+          : error instanceof Error && error.message
+            ? error.message
+            : "The category could not be created.",
       status: "error",
     });
   }

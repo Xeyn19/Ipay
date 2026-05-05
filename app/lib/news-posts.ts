@@ -1,7 +1,11 @@
 import type { JSONContent } from "@tiptap/react";
 import type { SortingState } from "@tanstack/react-table";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { NewsArticle, NewsArticleStatus } from "./news-media";
+import type {
+  NewsArticle,
+  NewsArticleStatus,
+  NewsPostCategory,
+} from "./news-media";
 
 export const NEWS_POSTS_PAGE_SIZE = 5;
 
@@ -11,7 +15,15 @@ export type NewsPostRow = {
   id: string;
   title: string;
   slug: string;
-  category: string | null;
+  category_id: string;
+  news_post_categories:
+    | {
+        name: string | null;
+      }
+    | Array<{
+        name: string | null;
+      }>
+    | null;
   excerpt: string;
   body: JSONContent;
   status: NewsPostStatus;
@@ -37,7 +49,7 @@ export type NewsPostStatusCounts = {
 };
 
 export const newsPostSelect =
-  "id,title,slug,category,excerpt,body,status,featured_image_path,publish_date,published_at,created_at,view_count";
+  "id,title,slug,category_id,news_post_categories(name),excerpt,body,status,featured_image_path,publish_date,published_at,created_at,view_count";
 
 const newsPostSortColumnMap: Record<string, string> = {
   excerpt: "excerpt",
@@ -106,6 +118,22 @@ function getSearchPattern(value: string) {
   return `%${value.trim()}%`;
 }
 
+function getCategoryName(
+  category:
+    | NewsPostRow["news_post_categories"]
+    | null
+) {
+  if (!category) {
+    return "";
+  }
+
+  if (Array.isArray(category)) {
+    return category[0]?.name ?? "";
+  }
+
+  return category.name ?? "";
+}
+
 export function mapNewsPostRow(
   row: NewsPostRow,
   supabase: Pick<SupabaseClient, "storage">,
@@ -114,7 +142,8 @@ export function mapNewsPostRow(
     id: row.id,
     title: row.title,
     slug: row.slug,
-    category: row.category ?? "Company Update",
+    categoryId: row.category_id,
+    categoryName: getCategoryName(row.news_post_categories),
     excerpt: row.excerpt,
     body: row.body,
     coverImage: getPublicImageUrl(supabase, row.featured_image_path),
@@ -122,6 +151,21 @@ export function mapNewsPostRow(
     status: row.status,
     views: row.view_count ?? 0,
   };
+}
+
+export async function fetchNewsPostCategories(
+  supabase: SupabaseClient,
+) {
+  const { data, error } = await supabase
+    .from("news_post_categories")
+    .select("id, name")
+    .order("name", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as NewsPostCategory[];
 }
 
 export async function fetchNewsPostsPage(

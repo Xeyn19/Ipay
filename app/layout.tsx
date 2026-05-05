@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import Script from "next/script";
 import { Suspense } from "react";
 import { Toaster } from "react-hot-toast";
 import { AuthToastListener } from "@/app/components/auth-toast-listener";
@@ -107,10 +106,15 @@ export default async function RootLayout({
       data-theme={initialTheme}
       suppressHydrationWarning
     >
+      <head>
+        <script
+          id="theme-init"
+          dangerouslySetInnerHTML={{
+            __html: getThemeInitScript(initialTheme),
+          }}
+        />
+      </head>
       <body className="min-h-full bg-[var(--bg-base)] font-sans antialiased transition-colors duration-300">
-        <Script id="theme-init" strategy="beforeInteractive">
-          {getThemeInitScript(initialTheme)}
-        </Script>
         {children}
         <Suspense fallback={null}>
           <AuthToastListener />
@@ -141,8 +145,12 @@ export default async function RootLayout({
               },
             },
             error: {
+              style: {
+                background: '#dc2626',
+                color: '#ffffff',
+              },
               iconTheme: {
-                primary: '#ef4444',
+                primary: '#ffffff',
                 secondary: '#ffffff',
               },
             },

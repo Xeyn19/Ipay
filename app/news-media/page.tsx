@@ -207,7 +207,7 @@ export default async function NewsMediaPage({ searchParams }: NewsMediaPageProps
 
           <div className="relative mx-auto max-w-7xl py-10">
               <article className="overflow-hidden">
-                <div className="grid lg:grid-cols-2">
+                <div className="grid lg:grid-cols-2 items-center">
                   <Link
                   href={`/news-media/${featuredArticle.slug}`}
                   className="relative block min-h-[18rem] lg:h-[20rem]"

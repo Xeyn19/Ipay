@@ -45,29 +45,6 @@ export default async function NewsMediaPage() {
         />
 
         <div className="relative mx-auto max-w-6xl space-y-8">
-          <div className="rounded-[36px] border border-[var(--border-light)] bg-[linear-gradient(180deg,var(--bg-elevated)_0%,var(--bg-subtle)_100%)] p-8 shadow-[var(--shadow-large)] sm:p-12 lg:p-16">
-            <div className="mx-auto max-w-3xl text-center">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">
-                Newsroom
-              </p>
-              <h1 className="font-heading mt-4 text-[clamp(2.5rem,6vw,4.75rem)] font-semibold leading-[0.98] tracking-[-0.05em] text-[var(--text-primary)]">
-                News &amp; Media
-              </h1>
-              <p className="mt-6 text-base leading-8 text-[var(--text-muted)] sm:text-lg">
-                Official iPay updates, product stories, and partner-facing
-                announcements presented in one public news stream.
-              </p>
-            </div>
-
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-              <div className="rounded-full border border-[var(--border-light)] bg-[var(--bg-base)]/70 px-4 py-2 text-sm font-medium text-[var(--text-secondary)]">
-                {publishedArticles.length} published stories
-              </div>
-              <div className="rounded-full border border-[var(--border-light)] bg-[var(--bg-base)]/70 px-4 py-2 text-sm font-medium text-[var(--text-secondary)]">
-                Company updates, product direction, and partner news
-              </div>
-            </div>
-          </div>
 
           <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_22rem]">
             {featuredArticle ? (

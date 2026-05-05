@@ -68,14 +68,17 @@ export function NewsPostForm({
   const imageModalTitleId = useId();
   const imageModalDescriptionId = useId();
   const isArchived = article.status === "archived";
+  const hasImagePreview = imagePreviewSrc.length > 0;
   const isObjectUrlPreview = imagePreviewSrc.startsWith("blob:");
   const imagePreviewLabel =
     selectedImageName ||
-    (initialArticle.coverImage !== "/img/requestproposal.jpg"
+    (hasImagePreview
       ? "Current featured image"
       : "Choose an image file");
   const imageModalTitle = article.title.trim() || "Untitled post";
-  const imageModalDate = formatNewsDate(article.publishDate);
+  const imageModalDate = article.publishDate
+    ? formatNewsDate(article.publishDate)
+    : "No publish date selected";
   const saveButtonLabel =
     mode === "create"
       ? isPending
@@ -172,6 +175,11 @@ export function NewsPostForm({
   function openImageModal(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
     event.stopPropagation();
+
+    if (!hasImagePreview) {
+      return;
+    }
+
     setIsImageModalOpen(true);
   }
 
@@ -364,41 +372,63 @@ export function NewsPostForm({
                 className="sr-only"
               />
               <div className="relative min-h-40 overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-subtle)] transition-colors group-hover:border-[var(--border-orange)] group-focus-within:border-[var(--border-orange)]">
-                <Image
-                  src={imagePreviewSrc}
-                  alt={article.title || "Featured image preview"}
-                  fill
-                  sizes="(max-width: 1279px) 100vw, 24rem"
-                  className="object-cover transition duration-200 group-hover:scale-[1.02] group-hover:brightness-75 group-focus-within:scale-[1.02] group-focus-within:brightness-75"
-                  unoptimized={isObjectUrlPreview}
-                />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,17,29,0.04)_0%,rgba(8,17,29,0.16)_45%,rgba(8,17,29,0.7)_100%)] transition group-hover:bg-[linear-gradient(180deg,rgba(8,17,29,0.16)_0%,rgba(8,17,29,0.3)_45%,rgba(8,17,29,0.78)_100%)] group-focus-within:bg-[linear-gradient(180deg,rgba(8,17,29,0.16)_0%,rgba(8,17,29,0.3)_45%,rgba(8,17,29,0.78)_100%)]" />
-                <div className="absolute right-4 top-4 z-10 flex items-center gap-2 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
-                  <button
-                    type="button"
-                    aria-label="View featured image fullscreen"
-                    onClick={openImageModal}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/14 text-white shadow-sm backdrop-blur-sm transition hover:bg-white/22 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-                  >
-                    <Expand className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Edit featured image"
-                    onClick={openImagePicker}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/14 text-white shadow-sm backdrop-blur-sm transition hover:bg-white/22 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-                  >
-                    <Pencil className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                </div>
-                <div className="absolute inset-x-0 bottom-0 p-4">
-                  <p className="text-sm font-semibold text-white">
-                    {imagePreviewLabel}
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-white/78">
-                    JPG, PNG, or WEBP up to 5 MB.
-                  </p>
-                </div>
+                {hasImagePreview ? (
+                  <>
+                    <Image
+                      src={imagePreviewSrc}
+                      alt={article.title || "Featured image preview"}
+                      fill
+                      sizes="(max-width: 1279px) 100vw, 24rem"
+                      className="object-cover transition duration-200 group-hover:scale-[1.02] group-hover:brightness-75 group-focus-within:scale-[1.02] group-focus-within:brightness-75"
+                      unoptimized={isObjectUrlPreview}
+                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,17,29,0.04)_0%,rgba(8,17,29,0.16)_45%,rgba(8,17,29,0.7)_100%)] transition group-hover:bg-[linear-gradient(180deg,rgba(8,17,29,0.16)_0%,rgba(8,17,29,0.3)_45%,rgba(8,17,29,0.78)_100%)] group-focus-within:bg-[linear-gradient(180deg,rgba(8,17,29,0.16)_0%,rgba(8,17,29,0.3)_45%,rgba(8,17,29,0.78)_100%)]" />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)]">
+                      <Pencil className="h-4 w-4" aria-hidden="true" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-[var(--text-primary)]">
+                        Add a featured image
+                      </p>
+                      <p className="text-xs leading-5 text-[var(--text-muted)]">
+                        Upload a JPG, PNG, or WEBP image up to 5 MB.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {hasImagePreview ? (
+                  <div className="absolute right-4 top-4 z-10 flex items-center gap-2 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+                    <button
+                      type="button"
+                      aria-label="View featured image fullscreen"
+                      onClick={openImageModal}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/14 text-white shadow-sm backdrop-blur-sm transition hover:bg-white/22 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                    >
+                      <Expand className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Edit featured image"
+                      onClick={openImagePicker}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/14 text-white shadow-sm backdrop-blur-sm transition hover:bg-white/22 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                    >
+                      <Pencil className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  </div>
+                ) : null}
+                {hasImagePreview ? (
+                  <div className="absolute inset-x-0 bottom-0 p-4">
+                    <p className="text-sm font-semibold text-white">
+                      {imagePreviewLabel}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-white/78">
+                      JPG, PNG, or WEBP up to 5 MB.
+                    </p>
+                  </div>
+                ) : null}
               </div>
             </label>
             <FieldError message={fieldErrors.featuredImage} />
@@ -416,7 +446,7 @@ export function NewsPostForm({
         </div>
       </form>
 
-      {isImageModalOpen && (
+      {isImageModalOpen && hasImagePreview ? (
         <div className="fixed inset-0 z-[80] bg-black/88 backdrop-blur-sm">
           <button
             type="button"
@@ -471,7 +501,7 @@ export function NewsPostForm({
             </div>
           </section>
         </div>
-      )}
+      ) : null}
     </>
   );
 }

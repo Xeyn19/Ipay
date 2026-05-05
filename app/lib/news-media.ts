@@ -200,27 +200,15 @@ export const newsFeaturedVideos: NewsroomLinkItem[] = [
   },
 ];
 
-function padDatePart(value: number) {
-  return value.toString().padStart(2, "0");
-}
-
-function getTodayNewsDate() {
-  const now = new Date();
-
-  return `${now.getFullYear()}-${padDatePart(now.getMonth() + 1)}-${padDatePart(
-    now.getDate(),
-  )}`;
-}
-
 export function createEmptyNewsArticle(): NewsArticle {
   return {
     id: "new-post",
     title: "",
     slug: "",
-    category: "Company Update",
+    category: "",
     excerpt: "",
-    coverImage: "/img/requestproposal.jpg",
-    publishDate: getTodayNewsDate(),
+    coverImage: "",
+    publishDate: "",
     status: "draft",
     views: 0,
     body: EMPTY_NEWS_BODY,

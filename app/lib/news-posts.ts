@@ -16,6 +16,7 @@ export type NewsPostRow = {
   body: JSONContent;
   status: NewsPostStatus;
   featured_image_path: string | null;
+  publish_date: string;
   published_at: string | null;
   created_at: string;
   view_count: number | null;
@@ -30,18 +31,30 @@ export type PostsQueryParams = {
 };
 
 export type NewsPostStatusCounts = {
+  archived: number;
   draft: number;
   published: number;
 };
 
 export const newsPostSelect =
-  "id,title,slug,category,excerpt,body,status,featured_image_path,published_at,created_at,view_count";
+  "id,title,slug,category,excerpt,body,status,featured_image_path,publish_date,published_at,created_at,view_count";
 
 const newsPostSortColumnMap: Record<string, string> = {
   excerpt: "excerpt",
+  publishDate: "publish_date",
   status: "status",
   title: "title",
   views: "view_count",
+};
+
+type OrderableQuery<TQuery> = {
+  order: (
+    column: string,
+    options?: {
+      ascending?: boolean;
+      nullsFirst?: boolean;
+    },
+  ) => TQuery;
 };
 
 function getPublicImageUrl(
@@ -59,26 +72,16 @@ function getPublicImageUrl(
   return publicUrl || "/img/requestproposal.jpg";
 }
 
-function getActiveStatus(status: NewsPostStatus): NewsArticleStatus {
-  if (status === "archived") {
-    throw new Error("Archived news posts must be filtered before mapping.");
-  }
-
-  return status;
+function applyDefaultOrder<TQuery extends OrderableQuery<TQuery>>(query: TQuery) {
+  return query
+    .order("publish_date", {
+      ascending: false,
+      nullsFirst: false,
+    })
+    .order("created_at", { ascending: false });
 }
 
-function applyDefaultOrder<TQuery extends SupabaseClient["from"] extends (
-  ...args: never[]
-) => infer _TReturn
-  ? { order: (column: string, options?: { ascending?: boolean; nullsFirst?: boolean }) => TQuery }
-  : never>(query: TQuery) {
-  return query.order("published_at", {
-    ascending: false,
-    nullsFirst: false,
-  }).order("created_at", { ascending: false });
-}
-
-function applySorting<TQuery extends { order: (column: string, options?: { ascending?: boolean; nullsFirst?: boolean }) => TQuery }>(
+function applySorting<TQuery extends OrderableQuery<TQuery>>(
   query: TQuery,
   sortBy: SortingState,
 ) {
@@ -115,8 +118,8 @@ export function mapNewsPostRow(
     excerpt: row.excerpt,
     body: row.body,
     coverImage: getPublicImageUrl(supabase, row.featured_image_path),
-    publishDate: row.published_at ?? row.created_at,
-    status: getActiveStatus(row.status),
+    publishDate: row.publish_date,
+    status: row.status,
     views: row.view_count ?? 0,
   };
 }
@@ -131,10 +134,15 @@ export async function fetchNewsPostsPage(
   let query = supabase
     .from("news_posts")
     .select(newsPostSelect, { count: "exact" })
-    .neq("status", "archived")
     .range(from, to);
 
-  if (params.status) {
+  if (params.status === "archived") {
+    query = query.eq("status", "archived");
+  } else {
+    query = query.neq("status", "archived");
+  }
+
+  if (params.status && params.status !== "archived") {
     query = query.eq("status", params.status);
   }
 
@@ -160,7 +168,7 @@ export async function fetchNewsPostsPage(
 }
 
 export async function fetchNewsPostStatusCounts(supabase: SupabaseClient) {
-  const [draftResult, publishedResult] = await Promise.all([
+  const [draftResult, publishedResult, archivedResult] = await Promise.all([
     supabase
       .from("news_posts")
       .select("id", { count: "exact", head: true })
@@ -169,6 +177,10 @@ export async function fetchNewsPostStatusCounts(supabase: SupabaseClient) {
       .from("news_posts")
       .select("id", { count: "exact", head: true })
       .eq("status", "published"),
+    supabase
+      .from("news_posts")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "archived"),
   ]);
 
   if (draftResult.error) {
@@ -179,7 +191,12 @@ export async function fetchNewsPostStatusCounts(supabase: SupabaseClient) {
     throw publishedResult.error;
   }
 
+  if (archivedResult.error) {
+    throw archivedResult.error;
+  }
+
   return {
+    archived: archivedResult.count ?? 0,
     draft: draftResult.count ?? 0,
     published: publishedResult.count ?? 0,
   } satisfies NewsPostStatusCounts;
@@ -190,7 +207,7 @@ export async function fetchPublishedNewsArticles(supabase: SupabaseClient) {
     .from("news_posts")
     .select(newsPostSelect)
     .eq("status", "published")
-    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("publish_date", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
   const { data, error } = await query;
 
@@ -204,13 +221,20 @@ export async function fetchPublishedNewsArticles(supabase: SupabaseClient) {
 export async function fetchNewsArticleById(
   supabase: SupabaseClient,
   postId: string,
+  options?: {
+    includeArchived?: boolean;
+  },
 ) {
-  const { data, error } = await supabase
+  let query = supabase
     .from("news_posts")
     .select(newsPostSelect)
-    .eq("id", postId)
-    .neq("status", "archived")
-    .maybeSingle();
+    .eq("id", postId);
+
+  if (!options?.includeArchived) {
+    query = query.neq("status", "archived");
+  }
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     throw error;

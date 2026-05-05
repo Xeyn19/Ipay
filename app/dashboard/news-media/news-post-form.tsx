@@ -2,9 +2,8 @@
 
 import Image from "next/image";
 import { Expand, Pencil, X } from "lucide-react";
-import { type Editor } from "@tiptap/react";
-import toast from "react-hot-toast";
 import {
+  useActionState,
   useEffect,
   useId,
   useRef,
@@ -13,7 +12,10 @@ import {
   type MouseEvent,
 } from "react";
 import {
-  EMPTY_NEWS_BODY,
+  createNewsPost,
+  updateNewsPost,
+} from "@/app/dashboard/news-media/actions";
+import {
   buildNewsSlug,
   formatNewsDate,
   type NewsArticle,
@@ -23,9 +25,24 @@ import { NewsBodyEditor } from "./news-body-editor";
 const inputClassName =
   "mt-2 w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-elevated)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] shadow-sm outline-none transition focus:border-[var(--border-orange)] focus:ring-2 focus:ring-[color:var(--brand)]/15";
 
-const toastOptions = {
-  position: "top-right" as const,
+const initialFormState = {
+  fieldErrors: {},
+  message: "",
+  status: "idle" as const,
+  submittedAt: null,
 };
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) {
+    return null;
+  }
+
+  return (
+    <p className="mt-2 text-xs font-medium text-[#dc2626]">
+      {message}
+    </p>
+  );
+}
 
 export function NewsPostForm({
   initialArticle,
@@ -34,21 +51,39 @@ export function NewsPostForm({
   initialArticle: NewsArticle;
   mode: "create" | "edit";
 }) {
+  const updateAction = updateNewsPost.bind(null, initialArticle.id);
+  const [formState, formAction, isPending] = useActionState(
+    mode === "create" ? createNewsPost : updateAction,
+    initialFormState,
+  );
+  const fieldErrors = formState.fieldErrors ?? {};
   const [article, setArticle] = useState<NewsArticle>(initialArticle);
+  const [bodyContent, setBodyContent] = useState(initialArticle.body);
   const [hasCustomSlug, setHasCustomSlug] = useState(mode === "edit");
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImageName, setSelectedImageName] = useState("");
   const [imagePreviewSrc, setImagePreviewSrc] = useState(initialArticle.coverImage);
-  const editorRef = useRef<Editor | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const previewObjectUrlRef = useRef<string | null>(null);
   const imageModalTitleId = useId();
   const imageModalDescriptionId = useId();
-  const initialBodyContent = mode === "edit" ? initialArticle.body : null;
+  const isArchived = article.status === "archived";
   const isObjectUrlPreview = imagePreviewSrc.startsWith("blob:");
-  const imagePreviewLabel = selectedImageName || "Choose an image file";
+  const imagePreviewLabel =
+    selectedImageName ||
+    (initialArticle.coverImage !== "/img/requestproposal.jpg"
+      ? "Current featured image"
+      : "Choose an image file");
   const imageModalTitle = article.title.trim() || "Untitled post";
   const imageModalDate = formatNewsDate(article.publishDate);
+  const saveButtonLabel =
+    mode === "create"
+      ? isPending
+        ? "Creating..."
+        : "Create post"
+      : isPending
+        ? "Saving..."
+        : "Save";
 
   function clearPreviewObjectUrl() {
     if (!previewObjectUrlRef.current) {
@@ -100,9 +135,9 @@ export function NewsPostForm({
     }));
   }
 
-  function handleFieldChange<Field extends "excerpt">(
+  function handleFieldChange<Field extends "category" | "excerpt" | "publishDate">(
     field: Field,
-    value: NewsArticle[Field]
+    value: NewsArticle[Field],
   ) {
     setArticle((current) => ({
       ...current,
@@ -145,55 +180,100 @@ export function NewsPostForm({
   }
 
   function handleToggleStatus() {
+    if (isArchived) {
+      return;
+    }
+
     setArticle((current) => ({
       ...current,
       status: current.status === "published" ? "draft" : "published",
     }));
   }
 
-  function handleSave() {
-    const body = editorRef.current?.getJSON() ?? EMPTY_NEWS_BODY;
-
-    setArticle((current) => ({
-      ...current,
-      body,
-    }));
-
-    toast(
-      "Save is not connected yet. This post has not been persisted to the database.",
-      toastOptions
-    );
-  }
-
   return (
     <>
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)]">
+      <form action={formAction} className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)]">
+        <input type="hidden" name="status" value={article.status} />
+        <textarea
+          hidden
+          readOnly
+          name="body"
+          value={JSON.stringify(bodyContent)}
+        />
+
         <section className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
           <div className="flex flex-col gap-4 p-6">
+            {formState.message ? (
+              <div
+                className={`rounded-2xl border px-4 py-3 text-sm ${
+                  formState.status === "success"
+                    ? "border-[var(--tone-green)]/25 bg-[var(--tone-green-soft)] text-[var(--tone-green)]"
+                    : "border-[#fecaca] bg-[#fef2f2] text-[#b91c1c]"
+                }`}
+              >
+                {formState.message}
+              </div>
+            ) : null}
+
             <label>
               <span className="text-sm font-medium text-[var(--text-primary)]">
                 Title
               </span>
               <input
                 type="text"
+                name="title"
                 value={article.title}
                 onChange={(event) => handleTitleChange(event.target.value)}
                 placeholder="Enter the post title"
                 className={inputClassName}
               />
+              <FieldError message={fieldErrors.title} />
             </label>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <label>
+                <span className="text-sm font-medium text-[var(--text-primary)]">
+                  URL slug
+                </span>
+                <input
+                  type="text"
+                  name="slug"
+                  value={article.slug}
+                  onChange={(event) => handleSlugChange(event.target.value)}
+                  placeholder="post-url-slug"
+                  className={inputClassName}
+                />
+                <FieldError message={fieldErrors.slug} />
+              </label>
+
+              <label>
+                <span className="text-sm font-medium text-[var(--text-primary)]">
+                  Category
+                </span>
+                <input
+                  type="text"
+                  name="category"
+                  value={article.category}
+                  onChange={(event) => handleFieldChange("category", event.target.value)}
+                  placeholder="Company Update"
+                  className={inputClassName}
+                />
+                <FieldError message={fieldErrors.category} />
+              </label>
+            </div>
 
             <label>
               <span className="text-sm font-medium text-[var(--text-primary)]">
-                URL slug
+                Publish date
               </span>
               <input
-                type="text"
-                value={article.slug}
-                onChange={(event) => handleSlugChange(event.target.value)}
-                placeholder="post-url-slug"
+                type="date"
+                name="publishDate"
+                value={article.publishDate}
+                onChange={(event) => handleFieldChange("publishDate", event.target.value)}
                 className={inputClassName}
               />
+              <FieldError message={fieldErrors.publishDate} />
             </label>
 
             <label>
@@ -201,12 +281,14 @@ export function NewsPostForm({
                 Excerpt
               </span>
               <textarea
+                name="excerpt"
                 value={article.excerpt}
                 onChange={(event) => handleFieldChange("excerpt", event.target.value)}
                 rows={5}
                 placeholder="Write a short summary for the post listing."
                 className={`${inputClassName} resize-y`}
               />
+              <FieldError message={fieldErrors.excerpt} />
             </label>
 
             <div>
@@ -214,9 +296,10 @@ export function NewsPostForm({
                 Body
               </span>
               <NewsBodyEditor
-                initialContent={initialBodyContent}
-                editorRef={editorRef}
+                initialContent={initialArticle.body}
+                onChange={setBodyContent}
               />
+              <FieldError message={fieldErrors.body} />
             </div>
           </div>
         </section>
@@ -229,29 +312,40 @@ export function NewsPostForm({
                   Status
                 </p>
                 <h2 className="mt-1 font-heading text-lg font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
-                  {article.status === "published" ? "Published" : "Draft"}
+                  {article.status === "archived"
+                    ? "Archived"
+                    : article.status === "published"
+                      ? "Published"
+                      : "Draft"}
                 </h2>
+                {isArchived ? (
+                  <p className="mt-2 max-w-xs text-xs leading-5 text-[var(--text-muted)]">
+                    Restore this post from the manage table to return it to the active newsroom workflow.
+                  </p>
+                ) : null}
               </div>
 
-              <button
-                type="button"
-                role="switch"
-                aria-checked={article.status === "published"}
-                onClick={handleToggleStatus}
-                className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
-                  article.status === "published"
-                    ? "border-[var(--tone-green)]/30 bg-[var(--tone-green-soft)]"
-                    : "border-[var(--border-light)] bg-[var(--bg-subtle)]"
-                }`}
-              >
-                <span
-                  className={`inline-block h-6 w-6 rounded-full bg-white shadow-sm transition-transform ${
+              {isArchived ? null : (
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={article.status === "published"}
+                  onClick={handleToggleStatus}
+                  className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
                     article.status === "published"
-                      ? "translate-x-7"
-                      : "translate-x-1"
+                      ? "border-[var(--tone-green)]/30 bg-[var(--tone-green-soft)]"
+                      : "border-[var(--border-light)] bg-[var(--bg-subtle)]"
                   }`}
-                />
-              </button>
+                >
+                  <span
+                    className={`inline-block h-6 w-6 rounded-full bg-white shadow-sm transition-transform ${
+                      article.status === "published"
+                        ? "translate-x-7"
+                        : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              )}
             </div>
           </section>
 
@@ -263,8 +357,9 @@ export function NewsPostForm({
               <span className="sr-only">Upload featured image</span>
               <input
                 ref={imageInputRef}
+                name="featuredImage"
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={handleImageChange}
                 className="sr-only"
               />
@@ -301,25 +396,25 @@ export function NewsPostForm({
                     {imagePreviewLabel}
                   </p>
                   <p className="mt-1 text-xs leading-5 text-white/78">
-                    JPG, PNG, or WEBP can be attached here when storage is
-                    connected.
+                    JPG, PNG, or WEBP up to 5 MB.
                   </p>
                 </div>
               </div>
             </label>
+            <FieldError message={fieldErrors.featuredImage} />
           </section>
 
           <section>
             <button
-              type="button"
-              onClick={handleSave}
-              className="inline-flex w-full h-11 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white shadow-[var(--shadow-button)] transition hover:bg-[var(--brand-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+              type="submit"
+              disabled={isPending}
+              className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white shadow-[var(--shadow-button)] transition hover:bg-[var(--brand-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Save
+              {saveButtonLabel}
             </button>
           </section>
         </div>
-      </div>
+      </form>
 
       {isImageModalOpen && (
         <div className="fixed inset-0 z-[80] bg-black/88 backdrop-blur-sm">

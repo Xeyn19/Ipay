@@ -30,10 +30,11 @@ async function fetchPosts(params: PostsQueryParams): Promise<UsePostsResult> {
   };
 }
 
-export function usePosts(params: PostsQueryParams) {
+export function usePosts(params: PostsQueryParams, refreshKey = 0) {
   const { pageIndex, pageSize, searchQuery, sortBy, status } = params;
   const [data, setData] = useState<NewsArticle[]>([]);
   const [statusCounts, setStatusCounts] = useState<NewsPostStatusCounts>({
+    archived: 0,
     draft: 0,
     published: 0,
   });
@@ -75,6 +76,7 @@ export function usePosts(params: PostsQueryParams) {
   }, [
     pageIndex,
     pageSize,
+    refreshKey,
     searchQuery,
     sortBy,
     status,

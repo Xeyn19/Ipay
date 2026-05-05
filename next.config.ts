@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 import { supabaseProjectHost } from "./app/lib/supabase-config";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "6mb",
+    },
+  },
   serverExternalPackages: ["nodemailer"],
   images: {
     remotePatterns: [

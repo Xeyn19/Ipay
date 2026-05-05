@@ -1,6 +1,7 @@
 import type { JSONContent } from "@tiptap/react";
 
-export type NewsArticleStatus = "draft" | "published";
+export type NewsArticleStatus = "draft" | "published" | "archived";
+export type ActiveNewsArticleStatus = Exclude<NewsArticleStatus, "archived">;
 
 export type NewsArticle = {
   id: string;
@@ -27,7 +28,7 @@ export type NewsroomLinkItem = {
 
 export const newsStatusOptions: Array<{
   label: string;
-  value: NewsArticleStatus;
+  value: ActiveNewsArticleStatus;
 }> = [
   { label: "Draft", value: "draft" },
   { label: "Published", value: "published" },
@@ -199,6 +200,18 @@ export const newsFeaturedVideos: NewsroomLinkItem[] = [
   },
 ];
 
+function padDatePart(value: number) {
+  return value.toString().padStart(2, "0");
+}
+
+function getTodayNewsDate() {
+  const now = new Date();
+
+  return `${now.getFullYear()}-${padDatePart(now.getMonth() + 1)}-${padDatePart(
+    now.getDate(),
+  )}`;
+}
+
 export function createEmptyNewsArticle(): NewsArticle {
   return {
     id: "new-post",
@@ -207,7 +220,7 @@ export function createEmptyNewsArticle(): NewsArticle {
     category: "Company Update",
     excerpt: "",
     coverImage: "/img/requestproposal.jpg",
-    publishDate: "2026-05-10",
+    publishDate: getTodayNewsDate(),
     status: "draft",
     views: 0,
     body: EMPTY_NEWS_BODY,
@@ -312,6 +325,10 @@ export function estimateNewsReadingMinutes(body: JSONContent) {
 }
 
 export function getNewsStatusLabel(status: NewsArticleStatus) {
+  if (status === "archived") {
+    return "Archived";
+  }
+
   if (status === "published") {
     return "Published";
   }
@@ -320,6 +337,10 @@ export function getNewsStatusLabel(status: NewsArticleStatus) {
 }
 
 export function getNewsStatusClassName(status: NewsArticleStatus) {
+  if (status === "archived") {
+    return "border-[var(--border-light)] bg-[var(--bg-subtle)] text-[var(--text-secondary)]";
+  }
+
   if (status === "published") {
     return "border-[var(--tone-green)]/20 bg-[var(--tone-green-soft)] text-[var(--tone-green)]";
   }

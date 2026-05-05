@@ -7,7 +7,7 @@ import { NewsPostForm } from "../news-post-form";
 export const metadata: Metadata = {
   title: "Create News Post | iPay Dashboard",
   description:
-    "Draft a new News & Media post in the iPay dashboard before persistence is connected.",
+    "Draft a new News & Media post in the iPay dashboard.",
 };
 
 export default function NewNewsMediaPostPage() {

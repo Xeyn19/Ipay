@@ -1,12 +1,11 @@
 "use client";
 
 import "./news-body-editor.css";
-import { useEffect, type ReactNode, type RefObject } from "react";
+import { type ReactNode } from "react";
 import {
   EditorContent,
   useEditor,
   useEditorState,
-  type Editor,
   type JSONContent,
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -24,7 +23,7 @@ import { EMPTY_NEWS_BODY } from "@/app/lib/news-media";
 
 type NewsBodyEditorProps = {
   initialContent: JSONContent | null;
-  editorRef: RefObject<Editor | null>;
+  onChange: (value: JSONContent) => void;
 };
 
 type ToolbarButtonProps = {
@@ -60,12 +59,15 @@ function ToolbarButton({
 
 export function NewsBodyEditor({
   initialContent,
-  editorRef,
+  onChange,
 }: NewsBodyEditorProps) {
   const editor = useEditor({
     content: initialContent ?? EMPTY_NEWS_BODY,
     extensions: [StarterKit],
     immediatelyRender: false,
+    onUpdate: ({ editor: currentEditor }) => {
+      onChange(currentEditor.getJSON());
+    },
     shouldRerenderOnTransaction: false,
     editorProps: {
       attributes: {
@@ -102,16 +104,6 @@ export function NewsBodyEditor({
       };
     },
   });
-
-  useEffect(() => {
-    editorRef.current = editor;
-
-    return () => {
-      if (editorRef.current === editor) {
-        editorRef.current = null;
-      }
-    };
-  }, [editor, editorRef]);
 
   return (
     <div className="news-body-editor mt-2 overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-sm transition focus-within:border-[var(--border-orange)] focus-within:ring-2 focus-within:ring-[color:var(--brand)]/15">

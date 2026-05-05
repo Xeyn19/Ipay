@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReadonlyURLSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState, type FormEvent } from "react";
 import type { PaginationState, SortingState } from "@tanstack/react-table";
 import {
@@ -10,10 +12,23 @@ import type { NewsArticleStatus } from "@/app/lib/news-media";
 import { NewsMediaManageTable } from "./news-media-manage-table";
 import { usePosts } from "./use-posts";
 
+function getFilterFromSearchParams(
+  searchParams: ReadonlyURLSearchParams,
+): NewsArticleStatus | null {
+  const filter = searchParams.get("filter");
+
+  if (filter === "draft" || filter === "published" || filter === "archived") {
+    return filter;
+  }
+
+  return null;
+}
+
 export function NewsMediaManageClient() {
-  const [activeFilter, setActiveFilter] = useState<NewsArticleStatus | null>(
-    null,
-  );
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [refreshKey, setRefreshKey] = useState(0);
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -21,6 +36,7 @@ export function NewsMediaManageClient() {
     pageIndex: 0,
     pageSize: NEWS_POSTS_PAGE_SIZE,
   });
+  const activeFilter = getFilterFromSearchParams(searchParams);
 
   const params: PostsQueryParams = {
     pageIndex: pagination.pageIndex,
@@ -29,7 +45,10 @@ export function NewsMediaManageClient() {
     sortBy: sorting,
     status: activeFilter,
   };
-  const { data, isLoading, statusCounts, totalCount } = usePosts(params);
+  const { data, isLoading, statusCounts, totalCount } = usePosts(
+    params,
+    refreshKey,
+  );
 
   const resetToFirstPage = useCallback(() => {
     setPagination((current) =>
@@ -62,8 +81,24 @@ export function NewsMediaManageClient() {
     resetToFirstPage();
   }
 
+  function syncFilterInUrl(nextFilter: NewsArticleStatus | null) {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (nextFilter) {
+      params.set("filter", nextFilter);
+    } else {
+      params.delete("filter");
+    }
+
+    const nextQuery = params.toString();
+    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, {
+      scroll: false,
+    });
+  }
+
   function handleFilterToggle(status: NewsArticleStatus) {
-    setActiveFilter((current) => (current === status ? null : status));
+    const nextFilter = activeFilter === status ? null : status;
+    syncFilterInUrl(nextFilter);
     resetToFirstPage();
   }
 
@@ -79,6 +114,7 @@ export function NewsMediaManageClient() {
       totalCount={totalCount}
       onFilterToggle={handleFilterToggle}
       onPaginationChange={handlePaginationChange}
+      onPostsChanged={() => setRefreshKey((current) => current + 1)}
       onSearchInputChange={setSearchInput}
       onSearchSubmit={handleSearchSubmit}
       onSortingChange={handleSortingChange}

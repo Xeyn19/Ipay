@@ -73,7 +73,9 @@ export default async function EditNewsMediaPostPage({
 }: NewsMediaEditPageProps) {
   const { postId } = await params;
   const supabase = await createClient();
-  const article = await fetchNewsArticleById(supabase, postId);
+  const article = await fetchNewsArticleById(supabase, postId, {
+    includeArchived: true,
+  });
 
   if (!article) {
     return <NewsMediaPostState />;
@@ -83,7 +85,7 @@ export default async function EditNewsMediaPostPage({
     <div className="space-y-6">
       <DashboardPageHeader
         title="Edit post"
-        subtitle="Update the current post and review its draft details."
+        subtitle="Update the current post and review its newsroom details."
         actions={
           <Link
             href="/dashboard/news-media"

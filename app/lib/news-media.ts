@@ -1,3 +1,5 @@
+import type { JSONContent } from "@tiptap/react";
+
 export type NewsArticleStatus = "draft" | "published";
 
 export type NewsArticle = {
@@ -10,7 +12,7 @@ export type NewsArticle = {
   publishDate: string;
   status: NewsArticleStatus;
   views: number;
-  body: string;
+  body: JSONContent;
 };
 
 export type NewsroomLinkItem = {
@@ -31,6 +33,30 @@ export const newsStatusOptions: Array<{
   { label: "Published", value: "published" },
 ];
 
+export const EMPTY_NEWS_BODY: JSONContent = {
+  type: "doc",
+  content: [{ type: "paragraph" }],
+};
+
+function createNewsBody(...paragraphs: string[]): JSONContent {
+  const content = paragraphs
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => ({
+      type: "paragraph",
+      content: [{ type: "text", text: paragraph }],
+    }));
+
+  if (content.length === 0) {
+    return EMPTY_NEWS_BODY;
+  }
+
+  return {
+    type: "doc",
+    content,
+  };
+}
+
 export const newsSeedArticles: NewsArticle[] = [
   {
     id: "merchant-collections-scale",
@@ -43,11 +69,11 @@ export const newsSeedArticles: NewsArticle[] = [
     publishDate: "2026-05-01",
     status: "published",
     views: 1840,
-    body: `iPay continues to refine how merchants handle day-to-day collections across branches, counters, and digital payment touchpoints. The latest rollout focuses on giving operations and finance teams a cleaner view of incoming transactions without adding extra dashboards to monitor.
-
-For merchant teams managing multiple outlets, consistency matters as much as speed. The updated workflow is designed to reduce handoff friction between front-line staff, reconcilers, and finance reviewers so branch activity can be monitored with less manual follow-up.
-
-This direction reflects iPay's broader goal: making enterprise-grade payment infrastructure easier to use for teams that need reliability, governance, and faster turnaround in everyday operations.`,
+    body: createNewsBody(
+      "iPay continues to refine how merchants handle day-to-day collections across branches, counters, and digital payment touchpoints. The latest rollout focuses on giving operations and finance teams a cleaner view of incoming transactions without adding extra dashboards to monitor.",
+      "For merchant teams managing multiple outlets, consistency matters as much as speed. The updated workflow is designed to reduce handoff friction between front-line staff, reconcilers, and finance reviewers so branch activity can be monitored with less manual follow-up.",
+      "This direction reflects iPay's broader goal: making enterprise-grade payment infrastructure easier to use for teams that need reliability, governance, and faster turnaround in everyday operations.",
+    ),
   },
   {
     id: "settlement-monitoring-launch",
@@ -60,11 +86,11 @@ This direction reflects iPay's broader goal: making enterprise-grade payment inf
     publishDate: "2026-04-24",
     status: "published",
     views: 1265,
-    body: `Finance teams often need to answer the same questions quickly: what settled, what is still moving, and what needs review. iPay's updated monitoring approach is built to make that interpretation more immediate.
-
-The public-facing news stream highlights this product direction through a simpler story: less time searching through fragmented updates, and more confidence in the status of day-to-day collections activity.
-
-As the newsroom grows, this category will be used for future platform updates, release notes, and notable workflow improvements relevant to iPay clients and partners.`,
+    body: createNewsBody(
+      "Finance teams often need to answer the same questions quickly: what settled, what is still moving, and what needs review. iPay's updated monitoring approach is built to make that interpretation more immediate.",
+      "The public-facing news stream highlights this product direction through a simpler story: less time searching through fragmented updates, and more confidence in the status of day-to-day collections activity.",
+      "As the newsroom grows, this category will be used for future platform updates, release notes, and notable workflow improvements relevant to iPay clients and partners.",
+    ),
   },
   {
     id: "partner-enablements",
@@ -77,11 +103,11 @@ As the newsroom grows, this category will be used for future platform updates, r
     publishDate: "2026-04-15",
     status: "published",
     views: 930,
-    body: `Institutional rollouts and platform deployments usually require more than a working payment flow. Teams also need documentation, accountability, and a dependable rhythm for operational coordination.
-
-This update represents iPay's commitment to partner readiness: aligning implementation expectations, clarifying milestones, and improving how updates are communicated to the organizations that rely on the platform.
-
-The CMS workspace planned for the dashboard is intended to support that same direction by giving the internal team a cleaner place to prepare public-facing announcements before backend publishing is introduced.`,
+    body: createNewsBody(
+      "Institutional rollouts and platform deployments usually require more than a working payment flow. Teams also need documentation, accountability, and a dependable rhythm for operational coordination.",
+      "This update represents iPay's commitment to partner readiness: aligning implementation expectations, clarifying milestones, and improving how updates are communicated to the organizations that rely on the platform.",
+      "The CMS workspace planned for the dashboard is intended to support that same direction by giving the internal team a cleaner place to prepare public-facing announcements before backend publishing is introduced.",
+    ),
   },
   {
     id: "draft-qr-campaign-story",
@@ -94,9 +120,10 @@ The CMS workspace planned for the dashboard is intended to support that same dir
     publishDate: "2026-05-08",
     status: "draft",
     views: 0,
-    body: `This draft is being prepared to support a broader campaign around merchant QR payment readiness, simple customer communication, and clearer rollout references for the business team.
-
-The working version is intentionally concise while the final message, imagery, and public timing are still being aligned across marketing and partnerships.`,
+    body: createNewsBody(
+      "This draft is being prepared to support a broader campaign around merchant QR payment readiness, simple customer communication, and clearer rollout references for the business team.",
+      "The working version is intentionally concise while the final message, imagery, and public timing are still being aligned across marketing and partnerships.",
+    ),
   },
   {
     id: "draft-client-portal-update",
@@ -109,9 +136,10 @@ The working version is intentionally concise while the final message, imagery, a
     publishDate: "2026-05-06",
     status: "draft",
     views: 0,
-    body: `This draft is reserved for the next settlement portal messaging cycle and focuses on what finance and operations teams need to know before the update is announced publicly.
-
-The article body will later be expanded with screenshots, release timing, and operational guidance once the final rollout date is approved.`,
+    body: createNewsBody(
+      "This draft is reserved for the next settlement portal messaging cycle and focuses on what finance and operations teams need to know before the update is announced publicly.",
+      "The article body will later be expanded with screenshots, release timing, and operational guidance once the final rollout date is approved.",
+    ),
   },
 ];
 
@@ -182,7 +210,7 @@ export function createEmptyNewsArticle(): NewsArticle {
     publishDate: "2026-05-10",
     status: "draft",
     views: 0,
-    body: "",
+    body: EMPTY_NEWS_BODY,
   };
 }
 
@@ -237,15 +265,49 @@ export function getNewsArticleById(
   return articles.find((article) => article.id === articleId);
 }
 
-export function getNewsBodyParagraphs(body: string) {
-  return body
-    .split(/\n\s*\n/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
+function getNodeText(node: JSONContent | undefined): string {
+  if (!node) {
+    return "";
+  }
+
+  if (node.type === "text") {
+    return node.text ?? "";
+  }
+
+  if (node.type === "hardBreak") {
+    return " ";
+  }
+
+  return (node.content ?? []).map(getNodeText).join(" ");
 }
 
-export function estimateNewsReadingMinutes(body: string) {
-  const wordCount = body.trim().split(/\s+/).filter(Boolean).length;
+function getBlockParagraphs(node: JSONContent | undefined): string[] {
+  if (!node) {
+    return [];
+  }
+
+  if (
+    node.type === "paragraph" ||
+    node.type === "heading" ||
+    node.type === "codeBlock"
+  ) {
+    const text = getNodeText(node).replace(/\s+/g, " ").trim();
+    return text ? [text] : [];
+  }
+
+  return (node.content ?? []).flatMap(getBlockParagraphs);
+}
+
+export function getNewsBodyText(body: JSONContent) {
+  return getNodeText(body).replace(/\s+/g, " ").trim();
+}
+
+export function getNewsBodyParagraphs(body: JSONContent) {
+  return getBlockParagraphs(body);
+}
+
+export function estimateNewsReadingMinutes(body: JSONContent) {
+  const wordCount = getNewsBodyText(body).split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.ceil(wordCount / 180));
 }
 

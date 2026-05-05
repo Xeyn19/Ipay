@@ -27,13 +27,19 @@ Recommended UI mapping:
 | `slug` | `slug` | Used in table subtitle and public URLs |
 | `category` | `category` | Preserve for public newsroom cards |
 | `excerpt` | `excerpt` | Longest table column |
-| `body` | `body` | Used by search and edit form |
-| `status` | `status` | Must map to `draft` or `published` |
-| `featured_image_url` | `coverImage` | Prefer when storing a direct public URL |
-| `featured_image_path` | `coverImage` | Convert to a public/signed URL if no direct URL exists |
+| `body` | `body` | `jsonb` column; stores TipTap `editor.getJSON()` output |
+| `status` | `status` | `news_post_status` enum: `draft`, `published`, `archived` |
+| `featured_image_path` | `coverImage` | Derive public URL at runtime via Supabase Storage helper |
 | `published_at` | `publishDate` | Fallback to `created_at` for drafts if needed |
 | `view_count` | `views` | Default to `0` |
-| `archived_at` | none yet | Filter out active table rows with `is null` until archive view exists |
+
+`featured_image_url` has been removed from the schema. Always derive the public URL from `featured_image_path` at runtime:
+
+```ts
+const { data: { publicUrl } } = supabase.storage
+  .from('news-media')
+  .getPublicUrl(post.featured_image_path)
+```
 
 Keep `NewsArticle` as the UI-facing type unless the public newsroom model is also refactored. Add a separate Supabase row type so database naming does not leak into every component.
 
@@ -64,11 +70,13 @@ type PostsQueryParams = {
 };
 ```
 
+`status` does not need to include `"archived"` here — archived posts are always excluded from the manage table by filtering on `status != 'archived'` at the query level.
+
 `sortBy` should use TanStack sorting state so columns can map directly to Supabase order clauses.
 
 ## Row Mapper
 
-Create a mapper near the fetch function or in a small data module:
+Create a mapper near the fetch function or in a small data module. `featured_image_url` has been removed — use a Supabase Storage helper to derive the public URL from `featured_image_path` instead:
 
 ```ts
 type NewsPostRow = {
@@ -77,14 +85,21 @@ type NewsPostRow = {
   slug: string;
   category: string | null;
   excerpt: string;
-  body: string;
-  status: "draft" | "published";
+  body: Record<string, unknown>; // jsonb from TipTap editor.getJSON()
+  status: "draft" | "published" | "archived";
   featured_image_path: string | null;
-  featured_image_url: string | null;
   published_at: string | null;
   created_at: string;
   view_count: number | null;
 };
+
+function getPublicImageUrl(path: string | null): string {
+  if (!path) return "/img/requestproposal.jpg";
+  const { data: { publicUrl } } = supabase.storage
+    .from("news-media")
+    .getPublicUrl(path);
+  return publicUrl;
+}
 
 function mapNewsPostRow(row: NewsPostRow): NewsArticle {
   return {
@@ -93,23 +108,18 @@ function mapNewsPostRow(row: NewsPostRow): NewsArticle {
     slug: row.slug,
     category: row.category ?? "Company Update",
     excerpt: row.excerpt,
-    coverImage:
-      row.featured_image_url ??
-      row.featured_image_path ??
-      "/img/requestproposal.jpg",
+    body: row.body,
+    coverImage: getPublicImageUrl(row.featured_image_path),
     publishDate: row.published_at ?? row.created_at,
     status: row.status,
     views: row.view_count ?? 0,
-    body: row.body,
   };
 }
 ```
 
-If `featured_image_path` points to Supabase Storage, replace the raw path fallback with a helper that creates a public URL or signed URL.
-
 ## Future Fetch Implementation
 
-Replace the body of `fetchPosts` in `use-posts.ts` with a Supabase query. Keep the TODO comment until the query is actually implemented.
+Replace the body of `fetchPosts` in `use-posts.ts` with a Supabase query. Archived posts are excluded by filtering `status` directly — no `archived_at` column exists in the schema:
 
 ```ts
 async function fetchPosts(params: PostsQueryParams) {
@@ -121,10 +131,10 @@ async function fetchPosts(params: PostsQueryParams) {
   let query = supabase
     .from("news_posts")
     .select(
-      "id,title,slug,category,excerpt,body,status,featured_image_path,featured_image_url,published_at,created_at,view_count",
+      "id,title,slug,category,excerpt,body,status,featured_image_path,published_at,created_at,view_count",
       { count: "exact" },
     )
-    .is("archived_at", null)
+    .neq("status", "archived") // exclude archived posts
     .range(from, to);
 
   if (params.status) {
@@ -134,7 +144,7 @@ async function fetchPosts(params: PostsQueryParams) {
   if (params.searchQuery.trim()) {
     const search = `%${params.searchQuery.trim()}%`;
     query = query.or(
-      `title.ilike.${search},slug.ilike.${search},excerpt.ilike.${search},body.ilike.${search}`,
+      `title.ilike.${search},slug.ilike.${search},excerpt.ilike.${search}`,
     );
   }
 
@@ -166,6 +176,8 @@ async function fetchPosts(params: PostsQueryParams) {
 }
 ```
 
+Note: `body` is a `jsonb` column. Supabase returns it as a plain object — pass it directly to TipTap's `content` prop without parsing.
+
 The current project has server-side Supabase helpers in `app/lib/supabase-server.ts` and `app/lib/supabase-admin.ts`. For this hook-based client fetch, add a browser-safe client helper instead of importing server-only helpers into Client Components.
 
 ## Required UI Refactor For Server-Backed Tables
@@ -190,7 +202,7 @@ Recommended flow:
 
 - Use `createClient()` from `app/lib/supabase-server.ts` for user-scoped reads/writes where RLS applies.
 - Use `createAdminClient()` from `app/lib/supabase-admin.ts` only for trusted server-side operations that require service-role privileges.
-- Keep archive as a soft delete by setting `archived_at`.
+- Archive is handled by setting `status = 'archived'` — there is no `archived_at` column.
 - Revalidate dashboard/public newsroom routes after successful mutations.
 
 ## Validation Checklist
@@ -198,10 +210,22 @@ Recommended flow:
 When Supabase is connected, verify:
 
 - Dashboard table loads rows from `news_posts`.
+- Archived posts (`status = 'archived'`) do not appear in the manage table.
 - Draft/Published filters query Supabase instead of filtering only in memory.
-- Search works across title, slug, excerpt, and body.
+- Search works across title, slug, and excerpt.
 - Sortable headers update Supabase ordering.
 - Previous/Next uses Supabase `.range(from, to)`.
 - `Page X of Y` uses Supabase `count`.
-- Archived rows do not appear in the active manage table.
-- Public newsroom only shows `published` and unarchived posts.
+- Public newsroom only shows `published` posts with `status != 'archived'`.
+- TipTap editor receives `body` as a plain object (not a string) when loading an existing post.
+- Featured images resolve correctly via Supabase Storage public URL.
+
+## Changes from Initial Guide
+
+| Change | Reason |
+| --- | --- |
+| `featured_image_url` removed from row type and mapper | Dropped from schema; public URL derived at runtime from `featured_image_path` |
+| `archived_at` filter replaced with `status != 'archived'` | Archive state is now owned by the `status` enum, not a separate timestamp column |
+| `body` typed as `Record<string, unknown>` instead of `string` | Schema uses `jsonb`; Supabase returns it as a plain object |
+| `status` type updated to include `"archived"` | Reflects the `news_post_status` enum values |
+| Search removed `body` from `ilike` filter | `body` is now `jsonb` and cannot be used with `ilike`; use full-text search if body search is needed later |

@@ -24,7 +24,6 @@ function NewsMediaPostState() {
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        eyebrow="News & Media"
         title="Edit post"
         subtitle="Return to the manage page and choose another mock post to continue."
         actions={
@@ -86,7 +85,6 @@ export default async function EditNewsMediaPostPage({
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        eyebrow="News & Media"
         title="Edit post"
         subtitle="Update the current mock content and review its draft details."
         actions={
@@ -100,7 +98,6 @@ export default async function EditNewsMediaPostPage({
       />
 
       <NewsPostForm
-        backHref="/dashboard/news-media"
         initialArticle={article}
         mode="edit"
       />

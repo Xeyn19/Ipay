@@ -14,7 +14,6 @@ export default function DashboardNewsMediaPage() {
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        eyebrow="Content Management"
         title="News & Media"
         subtitle="Manage static newsroom posts, drafts, and published content in one place."
         actions={

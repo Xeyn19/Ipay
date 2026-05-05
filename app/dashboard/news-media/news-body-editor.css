@@ -1,0 +1,71 @@
+.news-body-editor .news-body-editor__content {
+  min-height: 18rem;
+  padding: 0.875rem;
+  color: var(--text-primary);
+  outline: none;
+  white-space: pre-wrap;
+}
+
+.news-body-editor .news-body-editor__content > * + * {
+  margin-top: 0.9rem;
+}
+
+.news-body-editor .news-body-editor__content h2,
+.news-body-editor .news-body-editor__content h3 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+
+.news-body-editor .news-body-editor__content h2 {
+  font-size: 1.5rem;
+  line-height: 1.15;
+}
+
+.news-body-editor .news-body-editor__content h3 {
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.news-body-editor .news-body-editor__content p,
+.news-body-editor .news-body-editor__content li,
+.news-body-editor .news-body-editor__content blockquote {
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: var(--text-primary);
+}
+
+.news-body-editor .news-body-editor__content ul,
+.news-body-editor .news-body-editor__content ol {
+  padding-left: 1.4rem;
+}
+
+.news-body-editor .news-body-editor__content ul {
+  list-style: disc;
+}
+
+.news-body-editor .news-body-editor__content ol {
+  list-style: decimal;
+}
+
+.news-body-editor .news-body-editor__content blockquote {
+  border-left: 3px solid var(--border-orange);
+  background: var(--bg-subtle);
+  padding: 0.75rem 1rem;
+  border-radius: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.news-body-editor .news-body-editor__content pre {
+  overflow-x: auto;
+  border-radius: 1rem;
+  background: var(--bg-subtle);
+  padding: 0.9rem 1rem;
+  color: var(--text-primary);
+}
+
+.news-body-editor .news-body-editor__content code {
+  font-size: 0.88rem;
+  font-family: Consolas, "Courier New", monospace;
+}

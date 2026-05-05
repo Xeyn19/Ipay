@@ -14,7 +14,6 @@ export default function NewNewsMediaPostPage() {
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        eyebrow="News & Media"
         title="Create post"
         subtitle="Prepare a new newsroom entry with the core post information."
         actions={
@@ -28,7 +27,6 @@ export default function NewNewsMediaPostPage() {
       />
 
       <NewsPostForm
-        backHref="/dashboard/news-media"
         initialArticle={createEmptyNewsArticle()}
         mode="create"
       />

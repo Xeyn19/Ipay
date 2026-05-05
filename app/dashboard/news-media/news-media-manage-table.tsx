@@ -14,6 +14,7 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import type { NewsArticle, NewsArticleStatus } from "@/app/lib/news-media";
+import { getNewsBodyText } from "@/app/lib/news-media";
 import { newsMediaColumns } from "./news-media-columns";
 
 const pageSize = 5;
@@ -38,7 +39,7 @@ function matchesSearch(article: NewsArticle, query: string) {
     article.title,
     article.slug,
     article.excerpt,
-    article.body,
+    getNewsBodyText(article.body),
   ]
     .join(" ")
     .toLowerCase();

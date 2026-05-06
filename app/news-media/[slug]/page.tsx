@@ -10,6 +10,7 @@ import { fetchPublishedNewsArticleBySlug } from "@/app/lib/news-posts";
 import { formatNewsDate } from "@/app/lib/news-media";
 import { createClient } from "@/app/lib/supabase-server";
 import { DEFAULT_THEME, THEME_COOKIE_KEY, isTheme } from "@/app/lib/theme";
+import { NewsPostViewTracker } from "./news-post-view-tracker";
 import { NewsArticleBody } from "../news-article-body";
 
 type NewsArticlePageProps = {
@@ -39,6 +40,7 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
 
   return (
     <main className="overflow-x-hidden bg-[var(--bg-base)] pt-[var(--nav-height)] text-[var(--text-primary)]">
+      <NewsPostViewTracker postId={article.id} />
       <Navbar initialTheme={initialTheme} />
 
       <section className="px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
@@ -81,7 +83,7 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
                 </div>
               </div>
 
-              <p className="mt-5 text-justify text-base leading-8 text-[var(--text-muted)]">
+              <p className="mt-10 text-justify text-base leading-8 text-[var(--text-muted)]">
                 {article.excerpt}
               </p>
 

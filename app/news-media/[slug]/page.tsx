@@ -81,7 +81,7 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
                 </div>
               </div>
 
-              <p className="mt-5 text-justify text-base leading-8 text-[var(--text-muted)]">
+              <p className="mt-10 text-justify text-base leading-8 text-[var(--text-muted)]">
                 {article.excerpt}
               </p>
 

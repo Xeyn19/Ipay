@@ -848,6 +848,182 @@ export async function restoreNewsPost(
   }
 }
 
+export async function publishNewsPost(
+  postId: string,
+): Promise<NewsPostMutationResult> {
+  if (!postId.trim()) {
+    return {
+      message: "Invalid post selection.",
+      status: "error",
+    };
+  }
+
+  try {
+    const userId = await getAuthenticatedUserId();
+    const existingPost = await getNewsPostRecord(postId);
+
+    if (!existingPost) {
+      return {
+        message: "Post not found.",
+        status: "error",
+      };
+    }
+
+    if (existingPost.status === "published") {
+      return {
+        message: "Post is already published.",
+        status: "success",
+      };
+    }
+
+    if (existingPost.status === "archived") {
+      return {
+        message: "Archived posts cannot be published from preview.",
+        status: "error",
+      };
+    }
+
+    const admin = createAdminClient();
+    const { error } = await admin
+      .from("news_posts")
+      .update({
+        published_at: existingPost.published_at ?? new Date().toISOString(),
+        status: "published",
+        updated_by: userId,
+      })
+      .eq("id", postId);
+
+    if (error) {
+      return {
+        message: error.message ?? "The post could not be published.",
+        status: "error",
+      };
+    }
+
+    revalidateNewsPaths(postId);
+
+    return {
+      message: "Post published.",
+      status: "success",
+    };
+  } catch (error) {
+    unstable_rethrow(error);
+
+    return {
+      message:
+        error instanceof Error && error.message === "Unauthorized"
+          ? "You must be signed in to publish newsroom posts."
+          : error instanceof Error && error.message
+            ? error.message
+            : "The post could not be published.",
+      status: "error",
+    };
+  }
+}
+
+export async function unpublishNewsPost(
+  postId: string,
+): Promise<NewsPostMutationResult> {
+  if (!postId.trim()) {
+    return {
+      message: "Invalid post selection.",
+      status: "error",
+    };
+  }
+
+  try {
+    const userId = await getAuthenticatedUserId();
+    const existingPost = await getNewsPostRecord(postId);
+
+    if (!existingPost) {
+      return {
+        message: "Post not found.",
+        status: "error",
+      };
+    }
+
+    if (existingPost.status === "draft") {
+      return {
+        message: "Post is already unpublished.",
+        status: "success",
+      };
+    }
+
+    if (existingPost.status === "archived") {
+      return {
+        message: "Archived posts cannot be unpublished.",
+        status: "error",
+      };
+    }
+
+    const admin = createAdminClient();
+    const { error } = await admin
+      .from("news_posts")
+      .update({
+        published_at: existingPost.published_at,
+        status: "draft",
+        updated_by: userId,
+      })
+      .eq("id", postId);
+
+    if (error) {
+      return {
+        message: error.message ?? "The post could not be unpublished.",
+        status: "error",
+      };
+    }
+
+    revalidateNewsPaths(postId);
+
+    return {
+      message: "Post moved back to drafts.",
+      status: "success",
+    };
+  } catch (error) {
+    unstable_rethrow(error);
+
+    return {
+      message:
+        error instanceof Error && error.message === "Unauthorized"
+          ? "You must be signed in to unpublish newsroom posts."
+          : error instanceof Error && error.message
+            ? error.message
+            : "The post could not be unpublished.",
+      status: "error",
+    };
+  }
+}
+
+export async function publishNewsPostFromPreview(
+  postId: string,
+  redirectTo: string,
+  _formData: FormData,
+) {
+  void _formData;
+  const result = await publishNewsPost(postId);
+
+  if (result.status === "error") {
+    throw new Error(result.message);
+  }
+
+  redirect(redirectTo);
+}
+
+export async function unpublishNewsPostFromPreview(
+  postId: string,
+  redirectTo: string,
+  _formData: FormData,
+) {
+  void _formData;
+  const result = await unpublishNewsPost(postId);
+
+  if (result.status === "error") {
+    throw new Error(result.message);
+  }
+
+  redirect(redirectTo);
+}
+
 export async function permanentlyDeleteNewsPost(
   postId: string,
 ): Promise<NewsPostMutationResult> {

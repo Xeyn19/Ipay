@@ -53,17 +53,16 @@ export default async function NewsArticlePage({
   ]);
   const cookieTheme = cookieStore.get(THEME_COOKIE_KEY)?.value;
   const initialTheme = isTheme(cookieTheme) ? cookieTheme : DEFAULT_THEME;
-  const [article, authResult] = await Promise.all([
-    fetchNewsArticleBySlug(supabase, slug),
-    supabase.auth.getUser(),
-  ]);
+  const isPreviewRequest = getQueryValue(query.preview) === "true";
+  const article = await fetchNewsArticleBySlug(supabase, slug);
 
   if (!article) {
     notFound();
   }
 
-  const user = authResult.data.user;
-  const isPreviewRequest = getQueryValue(query.preview) === "true";
+  const user = isPreviewRequest
+    ? (await supabase.auth.getUser()).data.user
+    : null;
   const showPreviewBar = isPreviewRequest && Boolean(user);
   const shouldTrackView = article.status === "published" && !showPreviewBar;
   const previewHref = `/news-media/${article.slug}?preview=true`;

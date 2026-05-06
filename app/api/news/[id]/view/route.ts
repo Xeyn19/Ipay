@@ -7,8 +7,14 @@ const uuidPattern =
 
 function getClientIp(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for");
+  const forwardedIp = forwardedFor?.split(",")[0]?.trim();
 
-  return forwardedFor?.split(",")[0]?.trim() || "unknown";
+  return (
+    request.headers.get("cf-connecting-ip") ??
+    request.headers.get("x-real-ip") ??
+    forwardedIp ??
+    "unknown"
+  );
 }
 
 function hashIp(ip: string) {

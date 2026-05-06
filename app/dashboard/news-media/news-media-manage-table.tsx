@@ -24,11 +24,11 @@ const searchButtonClassName =
   "inline-flex items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-[var(--border-light)] disabled:hover:bg-[var(--bg-elevated)] disabled:hover:text-[var(--text-secondary)] sm:self-stretch";
 
 const columnClassNames: Record<string, string> = {
-  actions: "w-[9.5rem]",
+  actions: "w-[10.75rem]",
   excerpt: "w-[26rem]",
   status: "w-[7.5rem]",
   title: "w-[18rem]",
-  views: "w-[6.5rem]",
+  views: "w-[5.25rem]",
 };
 
 function FilterPill({
@@ -305,7 +305,7 @@ export function NewsMediaManageTable({
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[68rem] table-fixed">
+                <table className="w-full min-w-[64rem] table-fixed">
                   <thead>
                     {table.getHeaderGroups().map((headerGroup) => (
                       <tr

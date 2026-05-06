@@ -348,14 +348,13 @@ export async function fetchNewsArticleById(
   return mapNewsPostRow(data as NewsPostRow, supabase);
 }
 
-export async function fetchPublishedNewsArticleBySlug(
+export async function fetchNewsArticleBySlug(
   supabase: SupabaseClient,
   slug: string,
 ) {
   const { data, error } = await supabase
     .from("news_posts")
     .select(newsPostSelect)
-    .eq("status", "published")
     .eq("slug", slug)
     .maybeSingle();
 

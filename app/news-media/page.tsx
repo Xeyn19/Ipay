@@ -227,7 +227,7 @@ export default async function NewsMediaPage({ searchParams }: NewsMediaPageProps
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">
                       Featured Post
                     </p>
-                    <h1 className="font-heading mt-4 text-[clamp(2.2rem,4vw,4.5rem)] font-semibold leading-[1.02] tracking-[-0.06em] text-[var(--text-primary)]">
+                    <h1 className="font-heading mt-4 text-3xl md:text-4xl lg:text-5xl font-semibold leading-[1.02] tracking-[-0.06em] text-[var(--text-primary)]">
                       {featuredArticle.title}
                     </h1>
                     <Link

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Archive, Loader2, Pencil, Trash2, Undo2 } from "lucide-react";
+import { Archive, ExternalLink, Loader2, Pencil, Trash2, Undo2 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
   getNewsStatusClassName,
@@ -103,6 +103,20 @@ export function getNewsMediaColumns({
             >
               <Pencil className="h-4 w-4" aria-hidden="true" />
             </Link>
+            {
+              !isArchived && (
+                <Link
+                  href={`/news-media/${article.slug}?preview=true`}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Preview ${article.title}`}
+                  title="Preview"
+                  className={iconButtonClassName}
+                >
+                  <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              )
+            }
             {isArchived ? (
               <>
                 <button

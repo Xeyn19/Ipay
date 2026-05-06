@@ -1,7 +1,9 @@
 'use client';
 
 import Image from "next/image";
-import { Expand, Pencil, Plus, X } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Expand, ExternalLink, Pencil, Plus, X } from "lucide-react";
 import {
   useActionState,
   useEffect,
@@ -204,6 +206,7 @@ export function NewsPostForm({
     mode === "create" ? createNewsPost : updateAction,
     initialFormState,
   );
+  const router = useRouter();
   const fieldErrors = formState.fieldErrors ?? {};
   const [article, setArticle] = useState<NewsArticle>(initialArticle);
   const [categories, setCategories] = useState<NewsPostCategory[]>(
@@ -222,6 +225,9 @@ export function NewsPostForm({
   const isArchived = article.status === "archived";
   const hasImagePreview = imagePreviewSrc.length > 0;
   const isObjectUrlPreview = imagePreviewSrc.startsWith("blob:");
+  const previewHref = initialArticle.slug
+    ? `/news-media/${initialArticle.slug}?preview=true`
+    : "";
   const imagePreviewLabel =
     selectedImageName ||
     (hasImagePreview
@@ -246,6 +252,9 @@ export function NewsPostForm({
     }
 
     if (formState.status === "success") {
+      if (mode === "edit") {
+        router.refresh();
+      }
       toast.success(formState.message);
       return;
     }
@@ -253,7 +262,7 @@ export function NewsPostForm({
     if (formState.status === "error") {
       toast.error(formState.message);
     }
-  }, [formState.message, formState.status, formState.submittedAt]);
+  }, [formState.message, formState.status, formState.submittedAt, mode, router]);
 
   function clearPreviewObjectUrl() {
     if (!previewObjectUrlRef.current) {
@@ -638,14 +647,38 @@ export function NewsPostForm({
             <FieldError message={fieldErrors.featuredImage} />
           </section>
 
-          <section>
+          <section className="flex items-center gap-3">
             <button
               type="submit"
               disabled={isPending}
-              className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white shadow-[var(--shadow-button)] transition hover:bg-[var(--brand-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-11 flex-1 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white shadow-[var(--shadow-button)] transition hover:bg-[var(--brand-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saveButtonLabel}
             </button>
+            {mode === "edit" ? (
+              initialArticle.slug ? (
+                <Link
+                  href={previewHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Preview post"
+                  title="Preview"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] transition hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+                >
+                  <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  aria-label="Preview unavailable"
+                  title="Preview unavailable"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-faint)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                </button>
+              )
+            ) : null}
           </section>
         </div>
       </form>

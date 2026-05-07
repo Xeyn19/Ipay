@@ -274,7 +274,7 @@ export default async function NewsMediaPage({ searchParams }: NewsMediaPageProps
                 {gridResult.totalCount > PUBLIC_NEWS_POSTS_PAGE_SIZE ? (
                   <nav
                     aria-label="News post pagination"
-                    className="mt-8 flex flex-wrap items-center gap-2"
+                    className="mt-8 flex flex-wrap items-center justify-center gap-2"
                   >
                     <Link
                       href={buildNewsMediaHref({
@@ -288,7 +288,7 @@ export default async function NewsMediaPage({ searchParams }: NewsMediaPageProps
                           : "border-[var(--border-light)] bg-[var(--bg-base)] text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
                       }`}
                     >
-                      Previous
+                      Prev
                     </Link>
 
                     {paginationItems.map((item, index) =>
@@ -352,7 +352,7 @@ export default async function NewsMediaPage({ searchParams }: NewsMediaPageProps
           </section>
 
           {hasPosts ? (
-            <section className="grid gap-6 xl:grid-cols-[minmax(0,7fr)_minmax(18rem,3fr)] xl:gap-0">
+            <section className="mt-18 grid gap-6 xl:grid-cols-[minmax(0,7fr)_minmax(18rem,3fr)] xl:gap-0">
             <div className="xl:pr-6">
               <div>
                 <h2 className="font-heading mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--text-primary)]">

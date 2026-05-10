@@ -39,6 +39,14 @@ function applyMarks(node: JSONContent, content: ReactNode, key: string) {
       return <s key={markKey}>{result}</s>;
     }
 
+    if (mark.type === "superscript") {
+      return <sup key={markKey}>{result}</sup>;
+    }
+
+    if (mark.type === "subscript") {
+      return <sub key={markKey}>{result}</sub>;
+    }
+
     if (mark.type === "code") {
       return (
         <code

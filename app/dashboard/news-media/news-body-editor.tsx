@@ -9,6 +9,8 @@ import {
   type Editor,
   type JSONContent,
 } from "@tiptap/react";
+import Subscript from "@tiptap/extension-subscript";
+import Superscript from "@tiptap/extension-superscript";
 import StarterKit from "@tiptap/starter-kit";
 import {
   Bold,
@@ -24,6 +26,8 @@ import {
   Redo2,
   SquareDashedText,
   Strikethrough,
+  Subscript as SubscriptIcon,
+  Superscript as SuperscriptIcon,
   Underline,
   Undo2,
 } from "lucide-react";
@@ -251,7 +255,7 @@ export function NewsBodyEditor({
 
   const editor = useEditor({
     content: initialContent ?? EMPTY_NEWS_BODY,
-    extensions: [StarterKit],
+    extensions: [StarterKit, Superscript, Subscript],
     immediatelyRender: false,
     onUpdate: ({ editor: currentEditor }) => {
       onChange(currentEditor.getJSON());
@@ -280,6 +284,8 @@ export function NewsBodyEditor({
           link: false,
           orderedList: false,
           strike: false,
+          subscript: false,
+          superscript: false,
           underline: false,
         };
       }
@@ -296,6 +302,8 @@ export function NewsBodyEditor({
         link: currentEditor.isActive("link"),
         orderedList: currentEditor.isActive("orderedList"),
         strike: currentEditor.isActive("strike"),
+        subscript: currentEditor.isActive("subscript"),
+        superscript: currentEditor.isActive("superscript"),
         underline: currentEditor.isActive("underline"),
       };
     },
@@ -521,6 +529,28 @@ export function NewsBodyEditor({
                             }
                           >
                             Strike Through
+                          </MenuItem>
+                          <MenuItem
+                            icon={<SuperscriptIcon className="h-4 w-4" />}
+                            isActive={editorState?.superscript}
+                            onClick={() =>
+                              runAction(() =>
+                                editor?.chain().focus().toggleSuperscript().run(),
+                              )
+                            }
+                          >
+                            Superscript
+                          </MenuItem>
+                          <MenuItem
+                            icon={<SubscriptIcon className="h-4 w-4" />}
+                            isActive={editorState?.subscript}
+                            onClick={() =>
+                              runAction(() =>
+                                editor?.chain().focus().toggleSubscript().run(),
+                              )
+                            }
+                          >
+                            Subscript
                           </MenuItem>
                           <MenuItem
                             icon={<Code2 className="h-4 w-4" />}

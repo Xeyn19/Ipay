@@ -2,6 +2,15 @@ import type { JSONContent } from "@tiptap/react";
 import type { ReactNode } from "react";
 import { getNewsBodyText } from "@/app/lib/news-media";
 
+const headingClassNames = {
+  1: "font-heading text-4xl font-semibold tracking-[-0.04em] text-[var(--text-primary)]",
+  2: "font-heading text-3xl font-semibold tracking-[-0.04em] text-[var(--text-primary)]",
+  3: "font-heading text-2xl font-semibold tracking-[-0.03em] text-[var(--text-primary)]",
+  4: "font-heading text-xl font-semibold tracking-[-0.02em] text-[var(--text-primary)]",
+  5: "font-heading text-lg font-semibold text-[var(--text-primary)]",
+  6: "font-heading text-base font-semibold text-[var(--text-primary)]",
+} as const;
+
 function renderInlineNodes(nodes: JSONContent[] | undefined, keyPrefix: string): ReactNode {
   if (!nodes?.length) {
     return null;
@@ -20,6 +29,46 @@ function applyMarks(node: JSONContent, content: ReactNode, key: string) {
 
     if (mark.type === "italic") {
       return <em key={markKey}>{result}</em>;
+    }
+
+    if (mark.type === "underline") {
+      return <u key={markKey}>{result}</u>;
+    }
+
+    if (mark.type === "strike") {
+      return <s key={markKey}>{result}</s>;
+    }
+
+    if (mark.type === "code") {
+      return (
+        <code
+          key={markKey}
+          className="rounded-md bg-[var(--bg-subtle)] px-1.5 py-0.5 font-mono text-sm text-[var(--text-primary)]"
+        >
+          {result}
+        </code>
+      );
+    }
+
+    if (mark.type === "link") {
+      const href =
+        typeof mark.attrs?.href === "string" ? mark.attrs.href : undefined;
+
+      if (!href) {
+        return result;
+      }
+
+      return (
+        <a
+          key={markKey}
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className="font-medium text-[var(--brand)] underline decoration-[var(--brand)]/35 underline-offset-4 transition-colors hover:decoration-[var(--brand)]"
+        >
+          {result}
+        </a>
+      );
     }
 
     return result;
@@ -69,20 +118,56 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
         </p>
       );
     case "heading": {
-      const level = node.attrs?.level === 3 ? 3 : 2;
-      const HeadingTag = level === 3 ? "h3" : "h2";
+      const level = Number(node.attrs?.level);
+      const headingLevel =
+        level >= 1 && level <= 6 ? (level as keyof typeof headingClassNames) : 2;
+      const className = headingClassNames[headingLevel];
+      const content = renderInlineNodes(node.content, key);
+
+      if (headingLevel === 1) {
+        return (
+          <h1 key={key} className={className}>
+            {content}
+          </h1>
+        );
+      }
+
+      if (headingLevel === 3) {
+        return (
+          <h3 key={key} className={className}>
+            {content}
+          </h3>
+        );
+      }
+
+      if (headingLevel === 4) {
+        return (
+          <h4 key={key} className={className}>
+            {content}
+          </h4>
+        );
+      }
+
+      if (headingLevel === 5) {
+        return (
+          <h5 key={key} className={className}>
+            {content}
+          </h5>
+        );
+      }
+
+      if (headingLevel === 6) {
+        return (
+          <h6 key={key} className={className}>
+            {content}
+          </h6>
+        );
+      }
 
       return (
-        <HeadingTag
-          key={key}
-          className={
-            level === 3
-              ? "font-heading text-2xl font-semibold tracking-[-0.03em] text-[var(--text-primary)]"
-              : "font-heading text-3xl font-semibold tracking-[-0.04em] text-[var(--text-primary)]"
-          }
-        >
-          {renderInlineNodes(node.content, key)}
-        </HeadingTag>
+        <h2 key={key} className={className}>
+          {content}
+        </h2>
       );
     }
     case "bulletList":
@@ -128,6 +213,13 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
         >
           <code>{getNewsBodyText(node)}</code>
         </pre>
+      );
+    case "horizontalRule":
+      return (
+        <hr
+          key={key}
+          className="border-0 border-t border-[var(--border-light)]"
+        />
       );
     default: {
       const text = getNewsBodyText(node);

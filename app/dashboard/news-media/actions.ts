@@ -46,6 +46,10 @@ export type NewsPostMutationResult = {
   status: "error" | "success";
 };
 
+export type NewsBodyImageUploadResult = NewsPostMutationResult & {
+  url?: string;
+};
+
 export type NewsPostCategoryFormState = {
   createdCategory: NewsPostCategory | null;
   fieldErrors: NewsPostCategoryFieldErrors;
@@ -164,8 +168,8 @@ function getImageExtension(filename: string, mimeType: string) {
   return "";
 }
 
-function getFeaturedImageFile(formData: FormData) {
-  const value = formData.get("featuredImage");
+function getImageFile(formData: FormData, key: string) {
+  const value = formData.get(key);
 
   if (!(value instanceof File) || value.size === 0) {
     return null;
@@ -174,7 +178,16 @@ function getFeaturedImageFile(formData: FormData) {
   return value;
 }
 
-function validateFeaturedImage(file: File | null) {
+function getFeaturedImageFile(formData: FormData) {
+  return getImageFile(formData, "featuredImage");
+}
+
+function validateImageFile(
+  file: File | null,
+  options?: {
+    sizeMessage?: string;
+  },
+) {
   if (!file) {
     return null;
   }
@@ -198,10 +211,16 @@ function validateFeaturedImage(file: File | null) {
   }
 
   if (file.size > MAX_FEATURED_IMAGE_SIZE_BYTES) {
-    return "Featured image must be 5 MB or smaller.";
+    return options?.sizeMessage ?? "Image must be 5 MB or smaller.";
   }
 
   return null;
+}
+
+function validateFeaturedImage(file: File | null) {
+  return validateImageFile(file, {
+    sizeMessage: "Featured image must be 5 MB or smaller.",
+  });
 }
 
 function normalizeStatus(
@@ -394,6 +413,42 @@ async function uploadFeaturedImage(
   return path;
 }
 
+function getPublicNewsMediaUrl(path: string) {
+  const admin = createAdminClient();
+  const {
+    data: { publicUrl },
+  } = admin.storage.from(NEWS_MEDIA_BUCKET).getPublicUrl(path);
+
+  if (!publicUrl) {
+    throw new Error("The uploaded image URL could not be created.");
+  }
+
+  return publicUrl;
+}
+
+async function uploadNewsBodyImageFile(userId: string, file: File) {
+  const mimeType = file.type.trim().toLowerCase() || "application/octet-stream";
+  const extension = getImageExtension(file.name, mimeType);
+  const safeName = buildNewsSlug(file.name.replace(/\.[^.]+$/, "")) || "image";
+  const path = `body/${userId}/${Date.now()}-${safeName}.${extension}`;
+  const admin = createAdminClient();
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const { error } = await admin.storage.from(NEWS_MEDIA_BUCKET).upload(path, buffer, {
+    cacheControl: "3600",
+    contentType: mimeType,
+    upsert: false,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    path,
+    url: getPublicNewsMediaUrl(path),
+  };
+}
+
 async function deleteFeaturedImage(path: string | null) {
   if (!path) {
     return;
@@ -404,6 +459,57 @@ async function deleteFeaturedImage(path: string | null) {
 
   if (error) {
     console.error("Unable to remove newsroom image.", error);
+  }
+}
+
+export async function uploadNewsBodyImage(
+  formData: FormData,
+): Promise<NewsBodyImageUploadResult> {
+  const file = getImageFile(formData, "image");
+  const imageError = validateImageFile(file);
+
+  if (imageError) {
+    return {
+      message: imageError,
+      status: "error",
+    };
+  }
+
+  if (!file) {
+    return {
+      message: "Choose an image to upload.",
+      status: "error",
+    };
+  }
+
+  let uploadedPath: string | null = null;
+
+  try {
+    const userId = await getAuthenticatedUserId();
+    const uploadedImage = await uploadNewsBodyImageFile(userId, file);
+    uploadedPath = uploadedImage.path;
+
+    return {
+      message: "Image uploaded.",
+      status: "success",
+      url: uploadedImage.url,
+    };
+  } catch (error) {
+    if (uploadedPath) {
+      await deleteFeaturedImage(uploadedPath);
+    }
+
+    unstable_rethrow(error);
+
+    return {
+      message:
+        error instanceof Error && error.message === "Unauthorized"
+          ? "You must be signed in to upload newsroom images."
+          : error instanceof Error && error.message
+            ? error.message
+            : "The image could not be uploaded.",
+      status: "error",
+    };
   }
 }
 

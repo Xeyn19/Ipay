@@ -5,9 +5,12 @@ import {
   type ChangeEvent,
   type ReactNode,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
+import FileHandler from "@tiptap/extension-file-handler";
+import TiptapImage from "@tiptap/extension-image";
 import {
   EditorContent,
   useEditor,
@@ -39,6 +42,9 @@ import {
   Code2,
   Droplets,
   Eraser,
+  Image as ImageIcon,
+  ImagePlus,
+  ImageUp,
   Italic,
   Link,
   List,
@@ -57,6 +63,8 @@ import {
   Underline,
   Undo2,
 } from "lucide-react";
+import toast from "react-hot-toast";
+import { uploadNewsBodyImage } from "@/app/dashboard/news-media/actions";
 import {
   collectDocumentTextStyleColors,
   DEFAULT_TEXT_STYLE_COLORS,
@@ -67,6 +75,7 @@ import {
   type NewsBodyTextStyleAttributes,
 } from "@/app/lib/news-body-text-styles";
 import { EMPTY_NEWS_BODY } from "@/app/lib/news-media";
+import { dashboardInputClassName, NewsModal } from "./news-modal";
 
 type NewsBodyEditorProps = {
   initialContent: JSONContent | null;
@@ -120,6 +129,14 @@ type ColorGridProps = {
   columns: 3 | 5;
   onSelect: (color: string) => void;
 };
+
+type ImageInsertTarget = number | { from: number; to: number } | null;
+
+const EDITOR_IMAGE_ALLOWED_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+] as const;
 
 const headingOptions: Array<{
   label: string;
@@ -521,6 +538,156 @@ function getColorInputValue(
   return fallback;
 }
 
+function getImageInsertTarget(editor: Editor) {
+  const { from, to } = editor.state.selection;
+
+  return from === to ? from : { from, to };
+}
+
+function insertImageNode(
+  editor: Editor,
+  src: string,
+  target?: ImageInsertTarget,
+) {
+  const imageNode = {
+    type: "image",
+    attrs: {
+      src,
+    },
+  };
+
+  if (target !== undefined && target !== null) {
+    editor.chain().focus().insertContentAt(target, imageNode).run();
+    return;
+  }
+
+  editor.chain().focus().insertContent(imageNode).run();
+}
+
+function normalizeImageUrl(value: string) {
+  try {
+    const url = new URL(value.trim());
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function ImageUrlModal({
+  onClose,
+  onSubmit,
+}: {
+  onClose: () => void;
+  onSubmit: (url: string) => void;
+}) {
+  const titleId = useId();
+  const descriptionId = useId();
+  const [value, setValue] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const originalBodyOverflow = document.body.style.overflow;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  function handleSubmit() {
+    const normalizedUrl = normalizeImageUrl(value);
+
+    if (!normalizedUrl) {
+      setError("Enter a valid http or https image URL.");
+      return;
+    }
+
+    setError("");
+    onSubmit(normalizedUrl);
+  }
+
+  return (
+    <NewsModal
+      ariaDescribedBy={descriptionId}
+      ariaLabel="Close image URL dialog"
+      ariaLabelledBy={titleId}
+      onClose={onClose}
+      title={
+        <p
+          id={titleId}
+          className="font-heading text-base font-bold tracking-[-0.02em] text-[var(--text-primary)]"
+        >
+          Insert image via URL
+        </p>
+      }
+    >
+      <div className="space-y-4 px-5 py-5 sm:px-6">
+        <p id={descriptionId} className="sr-only">
+          Paste a public image URL to insert it into the article body.
+        </p>
+        <label>
+          <span className="text-sm font-medium text-[var(--text-primary)]">
+            Image URL
+          </span>
+          <input
+            autoFocus
+            type="url"
+            value={value}
+            onChange={(event) => {
+              setValue(event.target.value);
+              if (error) {
+                setError("");
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                handleSubmit();
+              }
+            }}
+            placeholder="https://example.com/news-image.jpg"
+            className={dashboardInputClassName}
+          />
+          {error ? (
+            <p className="mt-2 text-xs font-medium text-[#dc2626]">{error}</p>
+          ) : null}
+        </label>
+
+        <div className="flex flex-col-reverse gap-2 border-t border-[var(--border-light)] pt-4 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-medium text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            className="inline-flex h-10 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white shadow-[var(--shadow-button)] transition hover:bg-[var(--brand-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+          >
+            Insert image
+          </button>
+        </div>
+      </div>
+    </NewsModal>
+  );
+}
+
 export function NewsBodyEditor({
   initialContent,
   onChange,
@@ -528,12 +695,17 @@ export function NewsBodyEditor({
   const menuRef = useRef<HTMLDivElement | null>(null);
   const textColorInputRef = useRef<HTMLInputElement | null>(null);
   const backgroundColorInputRef = useRef<HTMLInputElement | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingImageInsertTargetRef = useRef<ImageInsertTarget>(null);
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
+  const [isImageUrlModalOpen, setIsImageUrlModalOpen] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const editor = useEditor({
     content: initialContent ?? EMPTY_NEWS_BODY,
     extensions: [
       StarterKit,
+      TiptapImage,
       Superscript,
       Subscript,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
@@ -542,6 +714,23 @@ export function NewsBodyEditor({
       FontFamily,
       Color,
       BackgroundColor,
+      FileHandler.configure({
+        allowedMimeTypes: [...EDITOR_IMAGE_ALLOWED_MIME_TYPES],
+        onDrop: (currentEditor, files, pos) => {
+          void uploadAndInsertImages(currentEditor, files, pos);
+        },
+        onPaste: (currentEditor, files, htmlContent) => {
+          if (htmlContent?.length) {
+            return;
+          }
+
+          void uploadAndInsertImages(
+            currentEditor,
+            files,
+            getImageInsertTarget(currentEditor),
+          );
+        },
+      }),
     ],
     immediatelyRender: false,
     onUpdate: ({ editor: currentEditor }) => {
@@ -631,6 +820,110 @@ export function NewsBodyEditor({
   function runAction(action: () => void) {
     action();
     closeMenu();
+  }
+
+  async function uploadImageFile(file: File) {
+    try {
+      const formData = new FormData();
+
+      formData.set("image", file);
+
+      const result = await uploadNewsBodyImage(formData);
+
+      if (result.status === "error" || !result.url) {
+        toast.error(result.message || "The image could not be uploaded.");
+        return null;
+      }
+
+      return result.url;
+    } catch {
+      toast.error("The image could not be uploaded.");
+      return null;
+    }
+  }
+
+  async function uploadAndInsertImages(
+    targetEditor: Editor,
+    files: File[],
+    target?: ImageInsertTarget,
+  ) {
+    const imageFiles = files.filter((file) =>
+      EDITOR_IMAGE_ALLOWED_MIME_TYPES.includes(
+        file.type as (typeof EDITOR_IMAGE_ALLOWED_MIME_TYPES)[number],
+      ),
+    );
+
+    if (imageFiles.length === 0) {
+      return;
+    }
+
+    setIsUploadingImage(true);
+
+    try {
+      let nextTarget = target;
+
+      for (const file of imageFiles) {
+        const imageUrl = await uploadImageFile(file);
+
+        if (!imageUrl) {
+          continue;
+        }
+
+        insertImageNode(targetEditor, imageUrl, nextTarget);
+        nextTarget = undefined;
+      }
+    } finally {
+      setIsUploadingImage(false);
+    }
+  }
+
+  function openUploadFromComputer() {
+    if (!editor || isUploadingImage) {
+      return;
+    }
+
+    pendingImageInsertTargetRef.current = getImageInsertTarget(editor);
+    closeMenu();
+    imageInputRef.current?.click();
+  }
+
+  async function handleImageInputChange(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    const target = pendingImageInsertTargetRef.current;
+
+    pendingImageInsertTargetRef.current = null;
+    event.target.value = "";
+
+    if (!editor || selectedFiles.length === 0) {
+      return;
+    }
+
+    await uploadAndInsertImages(editor, selectedFiles, target);
+  }
+
+  function openImageUrlModal() {
+    if (!editor) {
+      return;
+    }
+
+    pendingImageInsertTargetRef.current = getImageInsertTarget(editor);
+    closeMenu();
+    setIsImageUrlModalOpen(true);
+  }
+
+  function closeImageUrlModal() {
+    pendingImageInsertTargetRef.current = null;
+    setIsImageUrlModalOpen(false);
+  }
+
+  function handleInsertImageUrl(url: string) {
+    if (!editor) {
+      return;
+    }
+
+    insertImageNode(editor, url, pendingImageInsertTargetRef.current);
+    pendingImageInsertTargetRef.current = null;
+    setIsImageUrlModalOpen(false);
   }
 
   function setFontSizeValue(value: string | null) {
@@ -1039,6 +1332,32 @@ export function NewsBodyEditor({
 
                 {key === "insert" ? (
                   <>
+                    <SubmenuItem
+                      icon={<ImageIcon className="h-4 w-4" />}
+                      submenu={
+                        <>
+                          <MenuItem
+                            icon={<ImageUp className="h-4 w-4" />}
+                            disabled={!editor || isUploadingImage}
+                            onClick={openUploadFromComputer}
+                          >
+                            {isUploadingImage
+                              ? "Uploading image..."
+                              : "Upload From Computer"}
+                          </MenuItem>
+                          <MenuItem
+                            icon={<ImagePlus className="h-4 w-4" />}
+                            disabled={!editor || isUploadingImage}
+                            onClick={openImageUrlModal}
+                          >
+                            Via Url
+                          </MenuItem>
+                        </>
+                      }
+                    >
+                      Image
+                    </SubmenuItem>
+                    <MenuSeparator />
                     <MenuItem
                       icon={<Link className="h-4 w-4" />}
                       isActive={editorState?.link}
@@ -1381,8 +1700,22 @@ export function NewsBodyEditor({
           }
         }}
       >
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept={EDITOR_IMAGE_ALLOWED_MIME_TYPES.join(",")}
+          onChange={handleImageInputChange}
+          className="sr-only"
+        />
         <EditorContent editor={editor} />
       </div>
+
+      {isImageUrlModalOpen ? (
+        <ImageUrlModal
+          onClose={closeImageUrlModal}
+          onSubmit={handleInsertImageUrl}
+        />
+      ) : null}
     </div>
   );
 }

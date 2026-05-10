@@ -26,10 +26,11 @@ import {
   type NewsArticle,
   type NewsPostCategory,
 } from "@/app/lib/news-media";
+import {
+  dashboardInputClassName,
+  NewsModal,
+} from "./news-modal";
 import { NewsBodyEditor } from "./news-body-editor";
-
-const inputClassName =
-  "mt-2 w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-elevated)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] shadow-sm outline-none transition focus:border-[var(--border-orange)] focus:ring-2 focus:ring-[color:var(--brand)]/15";
 
 const initialFormState = {
   fieldErrors: {},
@@ -123,72 +124,65 @@ function NewsPostCategoryModal({
   }, [formState.createdCategory, formState.status, onCategoryCreated, onClose]);
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center px-4 py-6 sm:px-6">
-      <button
-        type="button"
-        aria-label="Close category dialog"
-        onClick={() => {
-          if (!isPending) {
-            onClose();
-          }
-        }}
-        className="absolute inset-0 bg-black/40 backdrop-blur-[3px]"
-      />
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={descriptionId}
-        className="relative flex w-full max-w-md flex-col overflow-hidden rounded-[24px] border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-large)]"
-      >
-        <div className="border-b border-[var(--border-light)] bg-[linear-gradient(180deg,var(--bg-subtle)_0%,var(--bg-elevated)_100%)] px-5 py-4 sm:px-6">
-          <p
-            id={titleId}
-            className="font-heading text-base font-bold tracking-[-0.02em] text-[var(--text-primary)]"
-          >
-            Create category
-          </p>
-        </div>
-
-        <form
-          ref={formRef}
-          action={formAction}
-          className="space-y-4 px-5 py-5 sm:px-6"
+    <NewsModal
+      ariaDescribedBy={descriptionId}
+      ariaLabel="Close category dialog"
+      ariaLabelledBy={titleId}
+      onClose={() => {
+        if (!isPending) {
+          onClose();
+        }
+      }}
+      title={
+        <p
+          id={titleId}
+          className="font-heading text-base font-bold tracking-[-0.02em] text-[var(--text-primary)]"
         >
-          <label>
-            <span className="text-sm font-medium text-[var(--text-primary)]">
-              Category Name
-            </span>
-            <input
-              autoFocus
-              type="text"
-              name="name"
-              placeholder="Product Update"
-              className={inputClassName}
-            />
-            <FieldError message={formState.fieldErrors.name} />
-          </label>
+          Create category
+        </p>
+      }
+    >
+      <form
+        ref={formRef}
+        action={formAction}
+        className="space-y-4 px-5 py-5 sm:px-6"
+      >
+        <p id={descriptionId} className="sr-only">
+          Create a category for newsroom posts.
+        </p>
+        <label>
+          <span className="text-sm font-medium text-[var(--text-primary)]">
+            Category Name
+          </span>
+          <input
+            autoFocus
+            type="text"
+            name="name"
+            placeholder="Product Update"
+            className={dashboardInputClassName}
+          />
+          <FieldError message={formState.fieldErrors.name} />
+        </label>
 
-          <div className="flex flex-col-reverse gap-2 border-t border-[var(--border-light)] pt-4 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isPending}
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-medium text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isPending}
-              className="inline-flex h-10 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white shadow-[var(--shadow-button)] transition hover:bg-[var(--brand-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isPending ? "Saving..." : "Save category"}
-            </button>
-          </div>
-        </form>
-      </section>
-    </div>
+        <div className="flex flex-col-reverse gap-2 border-t border-[var(--border-light)] pt-4 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isPending}
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-medium text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="inline-flex h-10 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white shadow-[var(--shadow-button)] transition hover:bg-[var(--brand-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isPending ? "Saving..." : "Save category"}
+          </button>
+        </div>
+      </form>
+    </NewsModal>
   );
 }
 
@@ -421,7 +415,7 @@ export function NewsPostForm({
                 value={article.title}
                 onChange={(event) => handleTitleChange(event.target.value)}
                 placeholder="Enter the post title"
-                className={inputClassName}
+                className={dashboardInputClassName}
               />
               <FieldError message={fieldErrors.title} />
             </label>
@@ -437,7 +431,7 @@ export function NewsPostForm({
                   value={article.slug}
                   onChange={(event) => handleSlugChange(event.target.value)}
                   placeholder="post-url-slug"
-                  className={inputClassName}
+                  className={dashboardInputClassName}
                 />
                 <FieldError message={fieldErrors.slug} />
               </label>
@@ -451,7 +445,7 @@ export function NewsPostForm({
                     name="categoryId"
                     value={article.categoryId}
                     onChange={(event) => handleCategoryChange(event.target.value)}
-                    className={`${inputClassName} mt-0`}
+                    className={`${dashboardInputClassName} mt-0`}
                   >
                     <option value="">
                       {categories.length > 0
@@ -492,7 +486,7 @@ export function NewsPostForm({
                 name="publishDate"
                 value={article.publishDate}
                 onChange={(event) => handleFieldChange("publishDate", event.target.value)}
-                className={inputClassName}
+                className={dashboardInputClassName}
               />
               <FieldError message={fieldErrors.publishDate} />
             </label>
@@ -507,7 +501,7 @@ export function NewsPostForm({
                 onChange={(event) => handleFieldChange("excerpt", event.target.value)}
                 rows={5}
                 placeholder="Write a short summary for the post listing."
-                className={`${inputClassName} resize-y`}
+                className={`${dashboardInputClassName} resize-y`}
               />
               <FieldError message={fieldErrors.excerpt} />
             </label>

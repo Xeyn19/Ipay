@@ -162,6 +162,22 @@ function renderListItemContent(nodes: JSONContent[] | undefined, keyPrefix: stri
   });
 }
 
+function getNumericNodeAttribute(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number.parseInt(value, 10);
+
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return undefined;
+}
+
 function renderBlockNode(node: JSONContent, key: string): ReactNode {
   switch (node.type) {
     case "paragraph":
@@ -283,6 +299,43 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
           className="border-0 border-t border-[var(--border-light)]"
         />
       );
+    case "image": {
+      const src =
+        typeof node.attrs?.src === "string" ? node.attrs.src.trim() : "";
+
+      if (!src) {
+        return null;
+      }
+
+      const alt =
+        typeof node.attrs?.alt === "string" ? node.attrs.alt : "Article image";
+      const title =
+        typeof node.attrs?.title === "string" ? node.attrs.title : undefined;
+      const width = getNumericNodeAttribute(node.attrs?.width);
+      const height = getNumericNodeAttribute(node.attrs?.height);
+
+      return (
+        <figure key={key} className="overflow-hidden rounded-[1.75rem] border border-[var(--border-light)] bg-[var(--bg-subtle)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src}
+            alt={alt}
+            title={title}
+            width={width}
+            height={height}
+            className={
+              width || height
+                ? "block max-w-full"
+                : "block h-auto w-full"
+            }
+            style={{
+              height: "auto",
+              maxWidth: "100%",
+            }}
+          />
+        </figure>
+      );
+    }
     default: {
       const text = getNewsBodyText(node);
 

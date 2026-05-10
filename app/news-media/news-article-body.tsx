@@ -1,5 +1,6 @@
 import type { JSONContent } from "@tiptap/react";
 import type { ReactNode } from "react";
+import { buildInlineTextStyle } from "@/app/lib/news-body-text-styles";
 import { getNewsBodyText } from "@/app/lib/news-media";
 
 const headingClassNames = {
@@ -46,7 +47,21 @@ function renderInlineNodes(nodes: JSONContent[] | undefined, keyPrefix: string):
 }
 
 function applyMarks(node: JSONContent, content: ReactNode, key: string) {
-  return (node.marks ?? []).reduce<ReactNode>((result, mark, markIndex) => {
+  const textStyleMark = (node.marks ?? []).find((mark) => mark.type === "textStyle");
+  const textStyle = textStyleMark
+    ? buildInlineTextStyle(textStyleMark.attrs)
+    : undefined;
+  const styledContent = textStyle ? (
+    <span key={`${key}-text-style`} style={textStyle}>
+      {content}
+    </span>
+  ) : (
+    content
+  );
+
+  return (node.marks ?? [])
+    .filter((mark) => mark.type !== "textStyle")
+    .reduce<ReactNode>((result, mark, markIndex) => {
     const markKey = `${key}-mark-${markIndex}`;
 
     if (mark.type === "bold") {
@@ -105,8 +120,8 @@ function applyMarks(node: JSONContent, content: ReactNode, key: string) {
       );
     }
 
-    return result;
-  }, content);
+      return result;
+    }, styledContent);
 }
 
 function renderInlineNode(node: JSONContent, key: string): ReactNode {

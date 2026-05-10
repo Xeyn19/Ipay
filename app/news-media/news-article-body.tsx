@@ -11,6 +11,32 @@ const headingClassNames = {
   6: "font-heading text-base font-semibold text-[var(--text-primary)]",
 } as const;
 
+function joinClassNames(...classNames: Array<string | undefined>) {
+  return classNames.filter(Boolean).join(" ");
+}
+
+function getTextAlignmentClassName(node: JSONContent) {
+  const textAlign = node.attrs?.textAlign;
+
+  if (textAlign === "left") {
+    return "text-left";
+  }
+
+  if (textAlign === "right") {
+    return "text-right";
+  }
+
+  if (textAlign === "center") {
+    return "text-center";
+  }
+
+  if (textAlign === "justify") {
+    return "text-justify";
+  }
+
+  return undefined;
+}
+
 function renderInlineNodes(nodes: JSONContent[] | undefined, keyPrefix: string): ReactNode {
   if (!nodes?.length) {
     return null;
@@ -110,7 +136,11 @@ function renderListItemContent(nodes: JSONContent[] | undefined, keyPrefix: stri
     const key = `${keyPrefix}-${index}`;
 
     if (node.type === "paragraph") {
-      return <div key={key}>{renderInlineNodes(node.content, key)}</div>;
+      return (
+        <div key={key} className={getTextAlignmentClassName(node)}>
+          {renderInlineNodes(node.content, key)}
+        </div>
+      );
     }
 
     return renderBlockNode(node, key);
@@ -121,7 +151,13 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
   switch (node.type) {
     case "paragraph":
       return (
-        <p key={key} className="text-base text-justify leading-8 text-[var(--text-muted)]">
+        <p
+          key={key}
+          className={joinClassNames(
+            "text-base leading-8 text-[var(--text-muted)]",
+            getTextAlignmentClassName(node),
+          )}
+        >
           {renderInlineNodes(node.content, key)}
         </p>
       );
@@ -129,7 +165,10 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
       const level = Number(node.attrs?.level);
       const headingLevel =
         level >= 1 && level <= 6 ? (level as keyof typeof headingClassNames) : 2;
-      const className = headingClassNames[headingLevel];
+      const className = joinClassNames(
+        headingClassNames[headingLevel],
+        getTextAlignmentClassName(node),
+      );
       const content = renderInlineNodes(node.content, key);
 
       if (headingLevel === 1) {

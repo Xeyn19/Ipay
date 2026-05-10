@@ -11,8 +11,13 @@ import {
 } from "@tiptap/react";
 import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
+import TextAlign from "@tiptap/extension-text-align";
 import StarterKit from "@tiptap/starter-kit";
 import {
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
   Bold,
   ChevronDown,
   ChevronRight,
@@ -39,6 +44,7 @@ type NewsBodyEditorProps = {
 };
 
 type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
+type TextAlignment = "left" | "right" | "center" | "justify" | null;
 type OpenMenu = "edit" | "view" | "insert" | "format" | "heading" | null;
 
 type ToolbarButtonProps = {
@@ -69,6 +75,33 @@ const headingOptions: Array<{
   { label: "Heading 4", value: 4 },
   { label: "Heading 5", value: 5 },
   { label: "Heading 6", value: 6 },
+];
+
+const textAlignmentOptions: Array<{
+  icon: ReactNode;
+  label: string;
+  value: Exclude<TextAlignment, null>;
+}> = [
+  {
+    icon: <AlignLeft className="h-4 w-4" />,
+    label: "Align Left",
+    value: "left",
+  },
+  {
+    icon: <AlignRight className="h-4 w-4" />,
+    label: "Align Right",
+    value: "right",
+  },
+  {
+    icon: <AlignCenter className="h-4 w-4" />,
+    label: "Align Center",
+    value: "center",
+  },
+  {
+    icon: <AlignJustify className="h-4 w-4" />,
+    label: "Justify",
+    value: "justify",
+  },
 ];
 
 function ToolbarButton({
@@ -220,6 +253,22 @@ function applyHeading(
   editor.chain().focus().setHeading({ level: value }).run();
 }
 
+function getCurrentTextAlignment(editor: Editor | null): TextAlignment {
+  if (!editor) {
+    return null;
+  }
+
+  if (editor.isActive("heading")) {
+    const textAlign = editor.getAttributes("heading").textAlign;
+
+    return typeof textAlign === "string" ? (textAlign as TextAlignment) : null;
+  }
+
+  const textAlign = editor.getAttributes("paragraph").textAlign;
+
+  return typeof textAlign === "string" ? (textAlign as TextAlignment) : null;
+}
+
 function updateLink(editor: Editor | null) {
   if (!editor) {
     return;
@@ -255,7 +304,12 @@ export function NewsBodyEditor({
 
   const editor = useEditor({
     content: initialContent ?? EMPTY_NEWS_BODY,
-    extensions: [StarterKit, Superscript, Subscript],
+    extensions: [
+      StarterKit,
+      Superscript,
+      Subscript,
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
+    ],
     immediatelyRender: false,
     onUpdate: ({ editor: currentEditor }) => {
       onChange(currentEditor.getJSON());
@@ -280,6 +334,7 @@ export function NewsBodyEditor({
           canUndo: false,
           code: false,
           currentHeading: "paragraph" as const,
+          currentTextAlign: null as TextAlignment,
           italic: false,
           link: false,
           orderedList: false,
@@ -298,6 +353,7 @@ export function NewsBodyEditor({
         canUndo: currentEditor.can().undo(),
         code: currentEditor.isActive("code"),
         currentHeading: getCurrentHeading(currentEditor),
+        currentTextAlign: getCurrentTextAlignment(currentEditor),
         italic: currentEditor.isActive("italic"),
         link: currentEditor.isActive("link"),
         orderedList: currentEditor.isActive("orderedList"),
@@ -311,6 +367,8 @@ export function NewsBodyEditor({
 
   const selectedHeading: "paragraph" | HeadingLevel =
     editorState?.currentHeading ?? "paragraph";
+  const selectedTextAlignment: TextAlignment =
+    editorState?.currentTextAlign ?? null;
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -364,6 +422,23 @@ export function NewsBodyEditor({
         >
           {option.label}
         </span>
+      </MenuItem>
+    ));
+  }
+
+  function renderTextAlignmentMenuItems() {
+    return textAlignmentOptions.map((option) => (
+      <MenuItem
+        key={option.value}
+        icon={option.icon}
+        isActive={selectedTextAlignment === option.value}
+        onClick={() =>
+          runAction(() =>
+            editor?.chain().focus().setTextAlign(option.value).run(),
+          )
+        }
+      >
+        {option.label}
       </MenuItem>
     ));
   }
@@ -595,6 +670,10 @@ export function NewsBodyEditor({
                     >
                       Numbered List
                     </MenuItem>
+                    <MenuSeparator />
+                    <SubmenuItem submenu={renderTextAlignmentMenuItems()}>
+                      Text Alignment
+                    </SubmenuItem>
                   </>
                 )}
               </div>

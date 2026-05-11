@@ -19,6 +19,9 @@ import {
   type Editor,
   type JSONContent,
 } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
+import { CellSelection, TableMap } from "@tiptap/pm/tables";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import {
   BackgroundColor,
   Color,
@@ -40,6 +43,7 @@ import {
   Bold,
   CaseSensitive,
   ChevronDown,
+  Columns3,
   ChevronRight,
   Code2,
   Droplets,
@@ -56,12 +60,15 @@ import {
   Palette,
   Quote,
   Redo2,
+  Rows3,
   SquareDashedText,
   Strikethrough,
   Subscript as SubscriptIcon,
   Superscript as SuperscriptIcon,
+  TableCellsMerge,
   Table2,
   TextCursorInput,
+  Trash2,
   Type,
   Underline,
   Undo2,
@@ -139,6 +146,41 @@ type TableInsertPickerProps = {
 };
 
 type ImageInsertTarget = number | { from: number; to: number } | null;
+type TableAxis = "columns" | "rows";
+type MergeDirection = "up" | "right" | "down" | "left";
+type OpenTableBubbleSubmenu = TableAxis | "merge" | null;
+type ActiveTableContext = {
+  activeCellPos: number | null;
+  activeTablePos: number | null;
+  tableActive: boolean;
+};
+type ToolbarSplitMenuButtonProps = {
+  ariaLabel: string;
+  ariaMenuLabel: string;
+  menuDisabled?: boolean;
+  icon: ReactNode;
+  isOpen: boolean;
+  onClick: () => void;
+  onMenuClick: () => void;
+  primaryDisabled?: boolean;
+};
+type MenuToggleItemProps = {
+  checked: boolean;
+  children: ReactNode;
+  disabled?: boolean;
+  onClick?: () => void;
+};
+type MergeDirectionAvailability = Record<MergeDirection, boolean>;
+type TableGeometry = {
+  cellRect: {
+    bottom: number;
+    left: number;
+    right: number;
+    top: number;
+  };
+  tableMap: TableMap;
+  tableNode: ProseMirrorNode;
+};
 
 const EDITOR_IMAGE_ALLOWED_MIME_TYPES = [
   "image/jpeg",
@@ -147,6 +189,13 @@ const EDITOR_IMAGE_ALLOWED_MIME_TYPES = [
 ] as const;
 const TABLE_PICKER_LIMIT = 10;
 const DEFAULT_TABLE_DIMENSION = 3;
+const TABLE_BUBBLE_MENU_PLUGIN_KEY = "newsBodyEditorTableBubbleMenu";
+const EMPTY_MERGE_DIRECTION_AVAILABILITY: MergeDirectionAvailability = {
+  down: false,
+  left: false,
+  right: false,
+  up: false,
+};
 
 const headingOptions: Array<{
   label: string;
@@ -270,6 +319,57 @@ function ToolbarMenuButton({
   );
 }
 
+function ToolbarSplitMenuButton({
+  ariaLabel,
+  ariaMenuLabel,
+  menuDisabled = false,
+  icon,
+  isOpen,
+  onClick,
+  onMenuClick,
+  primaryDisabled = false,
+}: ToolbarSplitMenuButtonProps) {
+  const isActive = isOpen;
+  const isFullyDisabled = primaryDisabled && menuDisabled;
+
+  return (
+    <div
+      className={`inline-flex h-8 overflow-hidden rounded-lg border transition-colors ${
+        isActive
+          ? "border-[var(--border-orange)] bg-[var(--brand-pale)] text-[var(--brand)]"
+          : "border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+      } ${isFullyDisabled ? "opacity-50" : ""}`}
+    >
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        disabled={primaryDisabled}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={onClick}
+        className="inline-flex h-full min-w-8 items-center justify-center px-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-inset disabled:cursor-not-allowed"
+      >
+        {icon}
+      </button>
+      <button
+        type="button"
+        aria-label={ariaMenuLabel}
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+        disabled={menuDisabled}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={onMenuClick}
+        className="inline-flex h-full w-7 items-center justify-center border-l border-current/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-inset disabled:cursor-not-allowed"
+      >
+        <ChevronDown
+          size={12}
+          className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
+          aria-hidden="true"
+        />
+      </button>
+    </div>
+  );
+}
+
 function ToolbarSeparator() {
   return (
     <div
@@ -341,6 +441,39 @@ function MenuItem({
   );
 }
 
+function MenuToggleItem({
+  checked,
+  children,
+  disabled = false,
+  onClick,
+}: MenuToggleItemProps) {
+  return (
+    <button
+      type="button"
+      role="menuitemcheckbox"
+      aria-checked={checked}
+      disabled={disabled}
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={onClick}
+      className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <span className="min-w-0 flex-1">{children}</span>
+      <span
+        className={`relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors ${
+          checked ? "bg-[var(--brand)]" : "bg-[var(--border-light)]"
+        }`}
+        aria-hidden="true"
+      >
+        <span
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+            checked ? "translate-x-4" : "translate-x-0.5"
+          }`}
+        />
+      </span>
+    </button>
+  );
+}
+
 function ColorGrid({ activeColor, colors, columns, onSelect }: ColorGridProps) {
   const gridClassName = columns === 3 ? "grid-cols-3" : "grid-cols-5";
   const normalizedActiveColor = activeColor?.trim().toLowerCase() ?? null;
@@ -408,6 +541,263 @@ function parseTableDimensionInput(value: string) {
   }
 
   return clampTableDimension(parsed);
+}
+
+function getTableRole(node: ProseMirrorNode | null) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (node?.type?.spec as any)?.tableRole as string | undefined;
+}
+
+function getActiveTableContext(editor: Editor | null): ActiveTableContext {
+  if (!editor) {
+    return {
+      activeCellPos: null,
+      activeTablePos: null,
+      tableActive: false,
+    };
+  }
+
+  const { selection } = editor.state;
+  let activeCellPos: number | null = null;
+  let activeTablePos: number | null = null;
+
+  for (let depth = selection.$anchor.depth; depth > 0; depth -= 1) {
+    const node = selection.$anchor.node(depth);
+    const tableRole = getTableRole(node);
+
+    if (
+      activeCellPos === null &&
+      (tableRole === "cell" || tableRole === "header_cell")
+    ) {
+      activeCellPos = selection.$anchor.before(depth);
+    }
+
+    if (tableRole === "table") {
+      activeTablePos = selection.$anchor.before(depth);
+      break;
+    }
+  }
+
+  return {
+    activeCellPos,
+    activeTablePos,
+    tableActive: activeTablePos !== null,
+  };
+}
+
+function getActiveTableElement(editor: Editor | null, tablePos: number | null) {
+  if (!editor || tablePos === null) {
+    return null;
+  }
+
+  const nodeDom = editor.view.nodeDOM(tablePos);
+
+  if (!(nodeDom instanceof HTMLElement)) {
+    return null;
+  }
+
+  const wrapper =
+    nodeDom.classList.contains("tableWrapper")
+      ? nodeDom
+      : nodeDom.closest(".tableWrapper");
+
+  if (wrapper instanceof HTMLElement) {
+    return wrapper;
+  }
+
+  if (nodeDom instanceof HTMLTableElement) {
+    return nodeDom;
+  }
+
+  const table = nodeDom.querySelector("table");
+
+  return table instanceof HTMLElement ? table : nodeDom;
+}
+
+function getTableBubbleAnchorRect(element: HTMLElement) {
+  const rect = element.getBoundingClientRect();
+  const centerX = (rect.left + rect.right) / 2;
+
+  if (typeof DOMRect !== "undefined" && typeof DOMRect.fromRect === "function") {
+    return DOMRect.fromRect({
+      x: centerX,
+      y: rect.top,
+      width: 0,
+      height: 0,
+    });
+  }
+
+  return {
+    x: centerX,
+    y: rect.top,
+    width: 0,
+    height: 0,
+    top: rect.top,
+    right: centerX,
+    bottom: rect.top,
+    left: centerX,
+    toJSON: () => ({}),
+  };
+}
+
+function isHeaderCellNode(node: ProseMirrorNode | null) {
+  return getTableRole(node) === "header_cell";
+}
+
+function getTableStructure(doc: ProseMirrorNode, tablePos: number | null) {
+  if (tablePos === null) {
+    return null;
+  }
+
+  const tableNode = doc.nodeAt(tablePos);
+
+  if (!tableNode || getTableRole(tableNode) !== "table") {
+    return null;
+  }
+
+  return {
+    tableMap: TableMap.get(tableNode),
+    tableNode,
+  };
+}
+
+function getTableGeometry(
+  doc: ProseMirrorNode,
+  tablePos: number | null,
+  cellPos: number | null,
+): TableGeometry | null {
+  if (tablePos === null || cellPos === null) {
+    return null;
+  }
+
+  const tableStructure = getTableStructure(doc, tablePos);
+
+  if (!tableStructure) {
+    return null;
+  }
+
+  const relativeCellPos = cellPos - (tablePos + 1);
+
+  if (relativeCellPos <= 0) {
+    return null;
+  }
+
+  const { tableMap, tableNode } = tableStructure;
+  let cellRect: TableGeometry["cellRect"];
+
+  try {
+    cellRect = tableMap.findCell(relativeCellPos);
+  } catch {
+    return null;
+  }
+
+  return {
+    cellRect,
+    tableMap,
+    tableNode,
+  };
+}
+
+function isHeaderAxisActive(
+  doc: ProseMirrorNode,
+  tablePos: number | null,
+  axis: TableAxis,
+) {
+  const tableStructure = getTableStructure(doc, tablePos);
+
+  if (!tableStructure || tablePos === null) {
+    return false;
+  }
+
+  const { tableMap } = tableStructure;
+  const rect =
+    axis === "columns"
+      ? {
+          bottom: tableMap.height,
+          left: 0,
+          right: 1,
+          top: 0,
+        }
+      : {
+          bottom: 1,
+          left: 0,
+          right: tableMap.width,
+          top: 0,
+        };
+
+  const cells = tableMap.cellsInRect(rect);
+
+  return (
+    cells.length > 0 &&
+    cells.every((relativePos) =>
+      isHeaderCellNode(doc.nodeAt(tablePos + 1 + relativePos)),
+    )
+  );
+}
+
+function getAdjacentCellPos(
+  doc: ProseMirrorNode,
+  tablePos: number | null,
+  cellPos: number | null,
+  direction: MergeDirection,
+) {
+  const tableGeometry = getTableGeometry(doc, tablePos, cellPos);
+
+  if (!tableGeometry || tablePos === null) {
+    return null;
+  }
+
+  let targetRow = tableGeometry.cellRect.top;
+  let targetColumn = tableGeometry.cellRect.left;
+
+  if (direction === "up") {
+    targetRow = tableGeometry.cellRect.top - 1;
+  }
+
+  if (direction === "right") {
+    targetColumn = tableGeometry.cellRect.right;
+  }
+
+  if (direction === "down") {
+    targetRow = tableGeometry.cellRect.bottom;
+  }
+
+  if (direction === "left") {
+    targetColumn = tableGeometry.cellRect.left - 1;
+  }
+
+  if (
+    targetRow < 0 ||
+    targetColumn < 0 ||
+    targetRow >= tableGeometry.tableMap.height ||
+    targetColumn >= tableGeometry.tableMap.width
+  ) {
+    return null;
+  }
+
+  const relativePos =
+    tableGeometry.tableMap.map[
+      targetRow * tableGeometry.tableMap.width + targetColumn
+    ];
+
+  if (typeof relativePos !== "number") {
+    return null;
+  }
+
+  return tablePos + 1 + relativePos;
+}
+
+function getMergeDirectionAvailability(
+  doc: ProseMirrorNode,
+  tablePos: number | null,
+  cellPos: number | null,
+): MergeDirectionAvailability {
+  return {
+    down: getAdjacentCellPos(doc, tablePos, cellPos, "down") !== null,
+    left: getAdjacentCellPos(doc, tablePos, cellPos, "left") !== null,
+    right: getAdjacentCellPos(doc, tablePos, cellPos, "right") !== null,
+    up: getAdjacentCellPos(doc, tablePos, cellPos, "up") !== null,
+  };
 }
 
 function SubmenuItem({
@@ -895,6 +1285,8 @@ export function NewsBodyEditor({
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const pendingImageInsertTargetRef = useRef<ImageInsertTarget>(null);
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
+  const [openTableBubbleSubmenu, setOpenTableBubbleSubmenu] =
+    useState<OpenTableBubbleSubmenu>(null);
   const [isImageUrlModalOpen, setIsImageUrlModalOpen] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -957,10 +1349,19 @@ export function NewsBodyEditor({
           blockquote: false,
           bold: false,
           bulletList: false,
+          canMergeDirection: EMPTY_MERGE_DIRECTION_AVAILABILITY,
+          canMergeSelection: false,
           canRedo: false,
+          canSplitCell: false,
+          canToggleHeaderColumn: false,
+          canToggleHeaderRow: false,
           canUndo: false,
+          activeCellPos: null as number | null,
+          activeTablePos: null as number | null,
           code: false,
+          currentColumnIsHeader: false,
           currentHeading: "paragraph" as const,
+          currentRowIsHeader: false,
           currentTextAlign: null as TextAlignment,
           currentTextStyle: null as NewsBodyTextStyleAttributes | null,
           documentColors: collectDocumentTextStyleColors(
@@ -969,6 +1370,7 @@ export function NewsBodyEditor({
           italic: false,
           link: false,
           orderedList: false,
+          tableActive: false,
           strike: false,
           subscript: false,
           superscript: false,
@@ -976,14 +1378,38 @@ export function NewsBodyEditor({
         };
       }
 
+      const activeTableContext = getActiveTableContext(currentEditor);
+      const currentColumnIsHeader = isHeaderAxisActive(
+        currentEditor.state.doc,
+        activeTableContext.activeTablePos,
+        "columns",
+      );
+      const currentRowIsHeader = isHeaderAxisActive(
+        currentEditor.state.doc,
+        activeTableContext.activeTablePos,
+        "rows",
+      );
+
       return {
+        ...activeTableContext,
         blockquote: currentEditor.isActive("blockquote"),
         bold: currentEditor.isActive("bold"),
         bulletList: currentEditor.isActive("bulletList"),
+        canMergeDirection: getMergeDirectionAvailability(
+          currentEditor.state.doc,
+          activeTableContext.activeTablePos,
+          activeTableContext.activeCellPos,
+        ),
+        canMergeSelection: currentEditor.can().mergeCells(),
         canRedo: currentEditor.can().redo(),
+        canSplitCell: currentEditor.can().splitCell(),
+        canToggleHeaderColumn: currentEditor.can().toggleHeaderColumn(),
+        canToggleHeaderRow: currentEditor.can().toggleHeaderRow(),
         canUndo: currentEditor.can().undo(),
         code: currentEditor.isActive("code"),
+        currentColumnIsHeader,
         currentHeading: getCurrentHeading(currentEditor),
+        currentRowIsHeader,
         currentTextAlign: getCurrentTextAlignment(currentEditor),
         currentTextStyle: getCurrentTextStyle(currentEditor),
         documentColors: collectDocumentTextStyleColors(currentEditor.getJSON()),
@@ -1011,6 +1437,20 @@ export function NewsBodyEditor({
     backgroundColors: [],
     textColors: [],
   };
+  const activeCellPos = editorState?.activeCellPos ?? null;
+  const activeTablePos = editorState?.activeTablePos ?? null;
+  const canMergeDirection =
+    editorState?.canMergeDirection ?? EMPTY_MERGE_DIRECTION_AVAILABILITY;
+  const canMergeSelection = editorState?.canMergeSelection ?? false;
+  const canSplitCell = editorState?.canSplitCell ?? false;
+  const canToggleHeaderColumn = editorState?.canToggleHeaderColumn ?? false;
+  const canToggleHeaderRow = editorState?.canToggleHeaderRow ?? false;
+  const currentColumnIsHeader = editorState?.currentColumnIsHeader ?? false;
+  const currentRowIsHeader = editorState?.currentRowIsHeader ?? false;
+  const isTableActive = editorState?.tableActive ?? false;
+  const hasDirectionalMergeAction = Object.values(canMergeDirection).some(
+    Boolean,
+  );
 
   function closeMenu() {
     setOpenMenu(null);
@@ -1023,6 +1463,23 @@ export function NewsBodyEditor({
   function runAction(action: () => void) {
     action();
     closeMenu();
+  }
+
+  function toggleTableBubbleSubmenu(
+    menu: Exclude<OpenTableBubbleSubmenu, null>,
+  ) {
+    setOpenTableBubbleSubmenu((currentMenu) =>
+      currentMenu === menu ? null : menu,
+    );
+  }
+
+  function closeTableBubbleSubmenu() {
+    setOpenTableBubbleSubmenu(null);
+  }
+
+  function runTableBubbleAction(action: () => void) {
+    action();
+    closeTableBubbleSubmenu();
   }
 
   async function uploadImageFile(file: File) {
@@ -1146,6 +1603,97 @@ export function NewsBodyEditor({
     closeMenu();
   }
 
+  function selectTableAxis(axis: TableAxis) {
+    if (!editor || activeCellPos === null) {
+      return;
+    }
+
+    const $cell = editor.state.doc.resolve(activeCellPos);
+    const nextSelection =
+      axis === "columns"
+        ? CellSelection.colSelection($cell, $cell)
+        : CellSelection.rowSelection($cell, $cell);
+
+    editor.view.dispatch(
+      editor.state.tr.setSelection(nextSelection).scrollIntoView(),
+    );
+    editor.view.focus();
+  }
+
+  function toggleHeaderAxis(axis: TableAxis) {
+    if (!editor) {
+      return;
+    }
+
+    const didToggle =
+      axis === "columns"
+        ? editor.chain().focus().toggleHeaderColumn().run()
+        : editor.chain().focus().toggleHeaderRow().run();
+
+    if (!didToggle) {
+      toast.error("That header toggle isn't available for the current cell.");
+    }
+  }
+
+  function toggleMergeSelectedCells() {
+    if (!editor) {
+      return;
+    }
+
+    const didMergeOrSplit = editor.chain().focus().mergeOrSplit().run();
+
+    if (!didMergeOrSplit) {
+      toast.error("Select mergeable cells or a merged cell first.");
+    }
+  }
+
+  function splitSelectedCell() {
+    if (!editor) {
+      return;
+    }
+
+    const didSplit = editor.chain().focus().splitCell().run();
+
+    if (!didSplit) {
+      toast.error("Select a merged cell first.");
+    }
+  }
+
+  function mergeCellInDirection(direction: MergeDirection) {
+    if (!editor || activeCellPos === null || activeTablePos === null) {
+      return;
+    }
+
+    const adjacentCellPos = getAdjacentCellPos(
+      editor.state.doc,
+      activeTablePos,
+      activeCellPos,
+      direction,
+    );
+
+    if (adjacentCellPos === null) {
+      toast.error("No adjacent cell is available in that direction.");
+      return;
+    }
+
+    editor.view.dispatch(
+      editor.state.tr
+        .setSelection(
+          new CellSelection(
+            editor.state.doc.resolve(activeCellPos),
+            editor.state.doc.resolve(adjacentCellPos),
+          ),
+        )
+        .scrollIntoView(),
+    );
+
+    const didMerge = editor.chain().focus().mergeCells().run();
+
+    if (!didMerge) {
+      toast.error("Those cells can't be merged.");
+    }
+  }
+
   function setFontSizeValue(value: string | null) {
     if (!editor) {
       return;
@@ -1192,6 +1740,20 @@ export function NewsBodyEditor({
   }
 
   useEffect(() => {
+    if (!isTableActive) {
+      setOpenTableBubbleSubmenu(null);
+    }
+  }, [isTableActive, activeTablePos]);
+
+  useEffect(() => {
+    if (!editor || !isTableActive) {
+      return;
+    }
+
+    editor.commands.setMeta(TABLE_BUBBLE_MENU_PLUGIN_KEY, "updatePosition");
+  }, [editor, isTableActive, activeTablePos, openTableBubbleSubmenu]);
+
+  useEffect(() => {
     function applyStepFontSize(delta: number) {
       if (!editor) {
         return;
@@ -1205,6 +1767,7 @@ export function NewsBodyEditor({
     function handlePointerDown(event: MouseEvent) {
       if (!menuRef.current?.contains(event.target as Node)) {
         setOpenMenu(null);
+        setOpenTableBubbleSubmenu(null);
       }
     }
 
@@ -1233,6 +1796,7 @@ export function NewsBodyEditor({
 
       if (event.key === "Escape") {
         setOpenMenu(null);
+        setOpenTableBubbleSubmenu(null);
       }
     }
 
@@ -1456,6 +2020,224 @@ export function NewsBodyEditor({
 
   function renderTableInsertMenuContent() {
     return <TableInsertPicker onInsert={insertTable} />;
+  }
+
+  function renderTableBubbleMenuPanel(
+    content: ReactNode,
+    className = "min-w-44",
+  ) {
+    return (
+      <div
+        role="menu"
+        className={`news-body-editor__table-bubble-submenu ${className}`}
+      >
+        {content}
+      </div>
+    );
+  }
+
+  function renderTableBubbleContent() {
+    return (
+      <div className="news-body-editor__table-bubble">
+        <div className="relative">
+          <ToolbarMenuButton
+            ariaLabel="Column actions"
+            icon={<Columns3 className="h-4 w-4" aria-hidden="true" />}
+            isOpen={openTableBubbleSubmenu === "columns"}
+            onClick={() => toggleTableBubbleSubmenu("columns")}
+          />
+
+          {openTableBubbleSubmenu === "columns"
+            ? renderTableBubbleMenuPanel(
+                <>
+                  <MenuToggleItem
+                    checked={currentColumnIsHeader}
+                    disabled={!canToggleHeaderColumn}
+                    onClick={() =>
+                      runTableBubbleAction(() => toggleHeaderAxis("columns"))
+                    }
+                  >
+                    Header column
+                  </MenuToggleItem>
+                  <MenuSeparator />
+                  <MenuItem
+                    onClick={() =>
+                      runTableBubbleAction(() =>
+                        editor?.chain().focus().addColumnBefore().run(),
+                      )
+                    }
+                  >
+                    Insert column left
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() =>
+                      runTableBubbleAction(() =>
+                        editor?.chain().focus().addColumnAfter().run(),
+                      )
+                    }
+                  >
+                    Insert column right
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() =>
+                      runTableBubbleAction(() =>
+                        editor?.chain().focus().deleteColumn().run(),
+                      )
+                    }
+                  >
+                    Delete column
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() =>
+                      runTableBubbleAction(() => selectTableAxis("columns"))
+                    }
+                  >
+                    Select column
+                  </MenuItem>
+                </>,
+                "min-w-52",
+              )
+            : null}
+        </div>
+
+        <div className="relative">
+          <ToolbarMenuButton
+            ariaLabel="Row actions"
+            icon={<Rows3 className="h-4 w-4" aria-hidden="true" />}
+            isOpen={openTableBubbleSubmenu === "rows"}
+            onClick={() => toggleTableBubbleSubmenu("rows")}
+          />
+
+          {openTableBubbleSubmenu === "rows"
+            ? renderTableBubbleMenuPanel(
+                <>
+                  <MenuToggleItem
+                    checked={currentRowIsHeader}
+                    disabled={!canToggleHeaderRow}
+                    onClick={() =>
+                      runTableBubbleAction(() => toggleHeaderAxis("rows"))
+                    }
+                  >
+                    Header row
+                  </MenuToggleItem>
+                  <MenuSeparator />
+                  <MenuItem
+                    onClick={() =>
+                      runTableBubbleAction(() =>
+                        editor?.chain().focus().addRowBefore().run(),
+                      )
+                    }
+                  >
+                    Insert row above
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() =>
+                      runTableBubbleAction(() =>
+                        editor?.chain().focus().addRowAfter().run(),
+                      )
+                    }
+                  >
+                    Insert row below
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() =>
+                      runTableBubbleAction(() =>
+                        editor?.chain().focus().deleteRow().run(),
+                      )
+                    }
+                  >
+                    Delete row
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() =>
+                      runTableBubbleAction(() => selectTableAxis("rows"))
+                    }
+                  >
+                    Select row
+                  </MenuItem>
+                </>,
+                "min-w-52",
+              )
+            : null}
+        </div>
+
+        <div className="relative">
+          <ToolbarSplitMenuButton
+            ariaLabel="Merge or split selected cells"
+            ariaMenuLabel="Merge and split cell options"
+            icon={<TableCellsMerge className="h-4 w-4" aria-hidden="true" />}
+            isOpen={openTableBubbleSubmenu === "merge"}
+            menuDisabled={!hasDirectionalMergeAction && !canSplitCell}
+            onClick={() => runTableBubbleAction(toggleMergeSelectedCells)}
+            onMenuClick={() => toggleTableBubbleSubmenu("merge")}
+            primaryDisabled={!canMergeSelection && !canSplitCell}
+          />
+
+          {openTableBubbleSubmenu === "merge"
+            ? renderTableBubbleMenuPanel(
+                <>
+                  <MenuItem
+                    disabled={!canMergeDirection.up}
+                    onClick={() =>
+                      runTableBubbleAction(() => mergeCellInDirection("up"))
+                    }
+                  >
+                    Merge cell up
+                  </MenuItem>
+                  <MenuItem
+                    disabled={!canMergeDirection.right}
+                    onClick={() =>
+                      runTableBubbleAction(() => mergeCellInDirection("right"))
+                    }
+                  >
+                    Merge cell right
+                  </MenuItem>
+                  <MenuItem
+                    disabled={!canMergeDirection.down}
+                    onClick={() =>
+                      runTableBubbleAction(() => mergeCellInDirection("down"))
+                    }
+                  >
+                    Merge cell down
+                  </MenuItem>
+                  <MenuItem
+                    disabled={!canMergeDirection.left}
+                    onClick={() =>
+                      runTableBubbleAction(() => mergeCellInDirection("left"))
+                    }
+                  >
+                    Merge cell left
+                  </MenuItem>
+                  <MenuSeparator />
+                  <MenuItem
+                    disabled={!canSplitCell}
+                    onClick={() => runTableBubbleAction(splitSelectedCell)}
+                  >
+                    Split cell
+                  </MenuItem>
+                </>,
+                "min-w-52",
+              )
+            : null}
+        </div>
+
+        <div
+          className="mx-0.5 h-7 w-px self-center bg-[var(--border-light)]"
+          aria-hidden="true"
+        />
+
+        <ToolbarButton
+          ariaLabel="Delete table"
+          onClick={() =>
+            runTableBubbleAction(() =>
+              editor?.chain().focus().deleteTable().run(),
+            )
+          }
+        >
+          <Trash2 className="h-4 w-4" aria-hidden="true" />
+        </ToolbarButton>
+      </div>
+    );
   }
 
   function renderToolbarMenuPanel(content: ReactNode, className = "min-w-64") {
@@ -1947,6 +2729,10 @@ export function NewsBodyEditor({
           if (openMenu !== null) {
             closeMenu();
           }
+
+          if (openTableBubbleSubmenu !== null) {
+            closeTableBubbleSubmenu();
+          }
         }}
       >
         <input
@@ -1958,6 +2744,45 @@ export function NewsBodyEditor({
         />
         <EditorContent editor={editor} />
       </div>
+
+      {editor ? (
+        <BubbleMenu
+          editor={editor}
+          pluginKey={TABLE_BUBBLE_MENU_PLUGIN_KEY}
+          appendTo={() => menuRef.current ?? document.body}
+          options={{
+            placement: "top",
+            offset: 10,
+            shift: true,
+          }}
+          shouldShow={({ editor: currentEditor, view }) => {
+            const tableContext = getActiveTableContext(currentEditor);
+
+            return (
+              view.hasFocus() &&
+              tableContext.tableActive &&
+              getActiveTableElement(
+                currentEditor,
+                tableContext.activeTablePos,
+              ) !== null
+            );
+          }}
+          getReferencedVirtualElement={() => {
+            const tableElement = getActiveTableElement(editor, activeTablePos);
+
+            if (!tableElement) {
+              return null;
+            }
+
+            return {
+              contextElement: tableElement,
+              getBoundingClientRect: () => getTableBubbleAnchorRect(tableElement),
+            };
+          }}
+        >
+          {renderTableBubbleContent()}
+        </BubbleMenu>
+      ) : null}
 
       {isImageUrlModalOpen ? (
         <ImageUrlModal

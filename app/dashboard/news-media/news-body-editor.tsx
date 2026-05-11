@@ -11,6 +11,7 @@ import {
 } from "react";
 import FileHandler from "@tiptap/extension-file-handler";
 import TiptapImage from "@tiptap/extension-image";
+import { TableKit } from "@tiptap/extension-table";
 import {
   EditorContent,
   useEditor,
@@ -59,6 +60,7 @@ import {
   Strikethrough,
   Subscript as SubscriptIcon,
   Superscript as SuperscriptIcon,
+  Table2,
   TextCursorInput,
   Type,
   Underline,
@@ -95,6 +97,7 @@ type OpenMenu =
   | "toolbar-font-family"
   | "toolbar-text-color"
   | "toolbar-background-color"
+  | "toolbar-table"
   | null;
 
 type ToolbarButtonProps = {
@@ -131,6 +134,10 @@ type ColorGridProps = {
   onSelect: (color: string) => void;
 };
 
+type TableInsertPickerProps = {
+  onInsert: (rows: number, columns: number) => void;
+};
+
 type ImageInsertTarget = number | { from: number; to: number } | null;
 
 const EDITOR_IMAGE_ALLOWED_MIME_TYPES = [
@@ -138,6 +145,8 @@ const EDITOR_IMAGE_ALLOWED_MIME_TYPES = [
   "image/png",
   "image/webp",
 ] as const;
+const TABLE_PICKER_LIMIT = 10;
+const DEFAULT_TABLE_DIMENSION = 3;
 
 const headingOptions: Array<{
   label: string;
@@ -362,24 +371,79 @@ function ColorGrid({ activeColor, colors, columns, onSelect }: ColorGridProps) {
   );
 }
 
+function useCanHover() {
+  const [canHover, setCanHover] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+
+    function updateCanHover() {
+      setCanHover(mediaQuery.matches);
+    }
+
+    updateCanHover();
+    mediaQuery.addEventListener("change", updateCanHover);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateCanHover);
+    };
+  }, []);
+
+  return canHover;
+}
+
+function clampTableDimension(value: number) {
+  return Math.min(TABLE_PICKER_LIMIT, Math.max(1, value));
+}
+
+function parseTableDimensionInput(value: string) {
+  const parsed = Number.parseInt(value, 10);
+
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return clampTableDimension(parsed);
+}
+
 function SubmenuItem({
   children,
   submenu,
   icon,
+  submenuClassName = "min-w-64",
 }: {
   children: ReactNode;
   submenu: ReactNode;
   icon?: ReactNode;
+  submenuClassName?: string;
 }) {
+  const canHover = useCanHover();
+  const [isOpen, setIsOpen] = useState(false);
+
+  function toggleOpen() {
+    setIsOpen((currentOpen) => !currentOpen);
+  }
+
   return (
     <div
-      className="[&:hover>.submenu-panel]:visible [&:hover>.submenu-panel]:opacity-100 relative"
+      className={`relative ${
+        canHover
+          ? "[&:hover>.submenu-panel]:visible [&:hover>.submenu-panel]:opacity-100"
+          : ""
+      }`}
       role="none"
     >
       <button
         type="button"
         role="menuitem"
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
         onMouseDown={(event) => event.preventDefault()}
+        onClick={toggleOpen}
         className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
       >
         <span
@@ -389,10 +453,141 @@ function SubmenuItem({
           {icon}
         </span>
         <span className="min-w-0 flex-1">{children}</span>
-        <ChevronRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <ChevronRight
+          className={`h-4 w-4 shrink-0 transition-transform ${
+            isOpen ? "rotate-90" : ""
+          }`}
+          aria-hidden="true"
+        />
       </button>
-      <div className="submenu-panel invisible absolute left-full top-0 z-30 -ml-px min-w-64 overflow-visible rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] py-1 opacity-0 shadow-[var(--shadow-card)] transition">
+      <div
+        data-open={isOpen}
+        className={`submenu-panel invisible absolute left-0 right-0 top-full z-30 mt-1 overflow-visible rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] py-1 opacity-0 shadow-[var(--shadow-card)] transition data-[open=true]:visible data-[open=true]:opacity-100 sm:left-full sm:right-auto sm:top-0 sm:-ml-px sm:mt-0 ${submenuClassName}`}
+      >
         {submenu}
+      </div>
+    </div>
+  );
+}
+
+function TableInsertPicker({ onInsert }: TableInsertPickerProps) {
+  const canHover = useCanHover();
+  const [hoveredRows, setHoveredRows] = useState(0);
+  const [hoveredColumns, setHoveredColumns] = useState(0);
+  const [rowValue, setRowValue] = useState(
+    String(DEFAULT_TABLE_DIMENSION),
+  );
+  const [columnValue, setColumnValue] = useState(
+    String(DEFAULT_TABLE_DIMENSION),
+  );
+
+  const parsedRows = parseTableDimensionInput(rowValue);
+  const parsedColumns = parseTableDimensionInput(columnValue);
+  const canInsertFromInputs = parsedRows !== null && parsedColumns !== null;
+
+  function handleInputInsert() {
+    if (!canInsertFromInputs) {
+      return;
+    }
+
+    onInsert(parsedRows, parsedColumns);
+  }
+
+  if (!canHover) {
+    return (
+      <div className="space-y-3 px-3 py-3" role="none">
+        <div className="text-xs font-medium uppercase tracking-[0.12em] text-[var(--text-faint)]">
+          Insert table
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="space-y-1.5">
+            <span className="text-xs font-medium text-[var(--text-secondary)]">
+              Rows
+            </span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={TABLE_PICKER_LIMIT}
+              value={rowValue}
+              onChange={(event) => setRowValue(event.target.value)}
+              className={dashboardInputClassName}
+            />
+          </label>
+          <label className="space-y-1.5">
+            <span className="text-xs font-medium text-[var(--text-secondary)]">
+              Columns
+            </span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={TABLE_PICKER_LIMIT}
+              value={columnValue}
+              onChange={(event) => setColumnValue(event.target.value)}
+              className={dashboardInputClassName}
+            />
+          </label>
+        </div>
+        <button
+          type="button"
+          disabled={!canInsertFromInputs}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={handleInputInsert}
+          className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white shadow-[var(--shadow-button)] transition hover:bg-[var(--brand-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Insert table
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="px-3 pb-3 pt-2"
+      role="none"
+      onMouseLeave={() => {
+        setHoveredRows(0);
+        setHoveredColumns(0);
+      }}
+    >
+      <div className="pb-2 text-xs font-medium uppercase tracking-[0.12em] text-[var(--text-faint)]">
+        {hoveredRows > 0 && hoveredColumns > 0
+          ? `${hoveredRows} x ${hoveredColumns} table`
+          : "Select table size"}
+      </div>
+      <div className="grid grid-cols-10 gap-1">
+        {Array.from({ length: TABLE_PICKER_LIMIT * TABLE_PICKER_LIMIT }).map(
+          (_, index) => {
+            const row = Math.floor(index / TABLE_PICKER_LIMIT) + 1;
+            const column = (index % TABLE_PICKER_LIMIT) + 1;
+            const isActive = row <= hoveredRows && column <= hoveredColumns;
+
+            return (
+              <button
+                key={`${row}-${column}`}
+                type="button"
+                role="menuitem"
+                aria-label={`Insert ${row} by ${column} table`}
+                onMouseDown={(event) => event.preventDefault()}
+                onMouseEnter={() => {
+                  setHoveredRows(row);
+                  setHoveredColumns(column);
+                }}
+                onFocus={() => {
+                  setHoveredRows(row);
+                  setHoveredColumns(column);
+                }}
+                onClick={() => onInsert(row, column)}
+                className={`h-4 w-4 rounded-[0.2rem] border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
+                  isActive
+                    ? "border-[var(--border-orange)] bg-[var(--brand)]/20"
+                    : "border-[var(--border-light)] bg-[var(--bg-subtle)] hover:border-[var(--border-orange)]"
+                }`}
+              />
+            );
+          },
+        )}
       </div>
     </div>
   );
@@ -708,6 +903,11 @@ export function NewsBodyEditor({
     extensions: [
       StarterKit,
       TiptapImage,
+      TableKit.configure({
+        table: {
+          renderWrapper: true,
+        },
+      }),
       Superscript,
       Subscript,
       Typography,
@@ -927,6 +1127,23 @@ export function NewsBodyEditor({
     insertImageNode(editor, url, pendingImageInsertTargetRef.current);
     pendingImageInsertTargetRef.current = null;
     setIsImageUrlModalOpen(false);
+  }
+
+  function insertTable(rows: number, columns: number) {
+    if (!editor) {
+      return;
+    }
+
+    editor
+      .chain()
+      .focus()
+      .insertTable({
+        rows: clampTableDimension(rows),
+        cols: clampTableDimension(columns),
+        withHeaderRow: true,
+      })
+      .run();
+    closeMenu();
   }
 
   function setFontSizeValue(value: string | null) {
@@ -1237,6 +1454,10 @@ export function NewsBodyEditor({
     );
   }
 
+  function renderTableInsertMenuContent() {
+    return <TableInsertPicker onInsert={insertTable} />;
+  }
+
   function renderToolbarMenuPanel(content: ReactNode, className = "min-w-64") {
     return (
       <div
@@ -1359,6 +1580,13 @@ export function NewsBodyEditor({
                       }
                     >
                       Image
+                    </SubmenuItem>
+                    <SubmenuItem
+                      icon={<Table2 className="h-4 w-4" />}
+                      submenu={renderTableInsertMenuContent()}
+                      submenuClassName="min-w-[17rem]"
+                    >
+                      Table
                     </SubmenuItem>
                     <MenuSeparator />
                     <MenuItem
@@ -1694,6 +1922,24 @@ export function NewsBodyEditor({
         >
           <Underline className="h-4 w-4" aria-hidden="true" />
         </ToolbarButton>
+
+        <ToolbarSeparator />
+
+        <div className="relative">
+          <ToolbarMenuButton
+            ariaLabel="Table options"
+            icon={<Table2 className="h-4 w-4" aria-hidden="true" />}
+            isOpen={openMenu === "toolbar-table"}
+            onClick={() => toggleMenu("toolbar-table")}
+          />
+
+          {openMenu === "toolbar-table"
+            ? renderToolbarMenuPanel(
+                renderTableInsertMenuContent(),
+                "min-w-[17rem]",
+              )
+            : null}
+        </div>
       </div>
 
       <div

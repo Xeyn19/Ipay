@@ -38,16 +38,41 @@ function getTextAlignmentClassName(node: JSONContent) {
   return undefined;
 }
 
-function renderInlineNodes(nodes: JSONContent[] | undefined, keyPrefix: string): ReactNode {
+function getTableCellAlignmentClassName(node: JSONContent) {
+  const align = node.attrs?.align;
+
+  if (align === "left") {
+    return "text-left";
+  }
+
+  if (align === "right") {
+    return "text-right";
+  }
+
+  if (align === "center") {
+    return "text-center";
+  }
+
+  return undefined;
+}
+
+function renderInlineNodes(
+  nodes: JSONContent[] | undefined,
+  keyPrefix: string,
+): ReactNode {
   if (!nodes?.length) {
     return null;
   }
 
-  return nodes.map((node, index) => renderInlineNode(node, `${keyPrefix}-${index}`));
+  return nodes.map((node, index) =>
+    renderInlineNode(node, `${keyPrefix}-${index}`),
+  );
 }
 
 function applyMarks(node: JSONContent, content: ReactNode, key: string) {
-  const textStyleMark = (node.marks ?? []).find((mark) => mark.type === "textStyle");
+  const textStyleMark = (node.marks ?? []).find(
+    (mark) => mark.type === "textStyle",
+  );
   const textStyle = textStyleMark
     ? buildInlineTextStyle(textStyleMark.attrs)
     : undefined;
@@ -153,6 +178,35 @@ function renderListItemContent(nodes: JSONContent[] | undefined, keyPrefix: stri
     if (node.type === "paragraph") {
       return (
         <div key={key} className={getTextAlignmentClassName(node)}>
+          {renderInlineNodes(node.content, key)}
+        </div>
+      );
+    }
+
+    return renderBlockNode(node, key);
+  });
+}
+
+function renderTableCellContent(
+  nodes: JSONContent[] | undefined,
+  keyPrefix: string,
+): ReactNode {
+  if (!nodes?.length) {
+    return null;
+  }
+
+  return nodes.map((node, index) => {
+    const key = `${keyPrefix}-${index}`;
+
+    if (node.type === "paragraph") {
+      return (
+        <div
+          key={key}
+          className={joinClassNames(
+            "text-sm leading-7 text-[var(--text-primary)]",
+            getTextAlignmentClassName(node),
+          )}
+        >
           {renderInlineNodes(node.content, key)}
         </div>
       );
@@ -299,6 +353,62 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
           className="border-0 border-t border-[var(--border-light)]"
         />
       );
+    case "table":
+      return (
+        <div
+          key={key}
+          className="overflow-x-auto border border-[var(--border-light)] bg-[var(--bg-elevated)]"
+        >
+          <table className="min-w-full border-collapse">
+            <tbody>
+              {(node.content ?? []).map((row, rowIndex) =>
+                row.type === "tableRow" ? (
+                  <tr key={`${key}-${rowIndex}`}>
+                    {(row.content ?? []).map((cell, cellIndex) => {
+                      const cellKey = `${key}-${rowIndex}-${cellIndex}`;
+                      const cellClassName = joinClassNames(
+                        "min-w-32 border border-[var(--border-light)] px-4 py-3 align-top",
+                        getTableCellAlignmentClassName(cell),
+                      );
+
+                      if (cell.type === "tableHeader") {
+                        return (
+                          <th
+                            key={cellKey}
+                            scope="col"
+                            className={joinClassNames(
+                              cellClassName,
+                              "bg-[var(--bg-subtle)] text-sm font-semibold text-[var(--text-primary)]",
+                            )}
+                          >
+                            <div className="space-y-2">
+                              {renderTableCellContent(cell.content, cellKey)}
+                            </div>
+                          </th>
+                        );
+                      }
+
+                      return (
+                        <td
+                          key={cellKey}
+                          className={joinClassNames(
+                            cellClassName,
+                            "text-sm text-[var(--text-primary)]",
+                          )}
+                        >
+                          <div className="space-y-2">
+                            {renderTableCellContent(cell.content, cellKey)}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ) : null,
+              )}
+            </tbody>
+          </table>
+        </div>
+      );
     case "image": {
       const src =
         typeof node.attrs?.src === "string" ? node.attrs.src.trim() : "";
@@ -359,5 +469,9 @@ export function NewsArticleBody({ body }: { body: JSONContent }) {
     return null;
   }
 
-  return <div className="space-y-6">{blocks.map((node, index) => renderBlockNode(node, `block-${index}`))}</div>;
+  return (
+    <div className="space-y-6">
+      {blocks.map((node, index) => renderBlockNode(node, `block-${index}`))}
+    </div>
+  );
 }

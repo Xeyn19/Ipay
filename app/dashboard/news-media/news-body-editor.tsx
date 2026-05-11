@@ -9,9 +9,12 @@ import {
   useRef,
   useState,
 } from "react";
+import { mergeAttributes } from "@tiptap/core";
 import FileHandler from "@tiptap/extension-file-handler";
 import TiptapImage from "@tiptap/extension-image";
 import { TableKit } from "@tiptap/extension-table";
+import { TableCell } from "@tiptap/extension-table/cell";
+import { TableHeader } from "@tiptap/extension-table/header";
 import {
   EditorContent,
   useEditor,
@@ -94,6 +97,7 @@ type NewsBodyEditorProps = {
 
 type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 type TextAlignment = "left" | "right" | "center" | "justify" | null;
+type TableCellHorizontalAlignment = Exclude<TextAlignment, null>;
 type OpenMenu =
   | "edit"
   | "view"
@@ -148,7 +152,8 @@ type TableInsertPickerProps = {
 type ImageInsertTarget = number | { from: number; to: number } | null;
 type TableAxis = "columns" | "rows";
 type MergeDirection = "up" | "right" | "down" | "left";
-type OpenTableBubbleSubmenu = TableAxis | "merge" | null;
+type OpenTableBubbleSubmenu = TableAxis | "merge" | "cell-properties" | null;
+type OpenCellPropertiesMenu = "background-color" | null;
 type ActiveTableContext = {
   activeCellPos: number | null;
   activeTablePos: number | null;
@@ -180,6 +185,17 @@ type TableGeometry = {
   };
   tableMap: TableMap;
   tableNode: ProseMirrorNode;
+};
+type TableCellStyleAttributes = {
+  backgroundColor?: string | null;
+  horizontalAlign?: TableCellHorizontalAlignment | null;
+  padding?: string | null;
+};
+type TableCellSelectionState = {
+  backgroundColor: string | null;
+  hasBackgroundColor: boolean;
+  horizontalAlign: TableCellHorizontalAlignment;
+  padding: string | null;
 };
 
 const EDITOR_IMAGE_ALLOWED_MIME_TYPES = [
@@ -223,7 +239,7 @@ const topLevelMenus: Array<{
 const textAlignmentOptions: Array<{
   icon: ReactNode;
   label: string;
-  value: Exclude<TextAlignment, null>;
+  value: TableCellHorizontalAlignment;
 }> = [
   {
     icon: <AlignLeft className="h-4 w-4" />,
@@ -246,6 +262,209 @@ const textAlignmentOptions: Array<{
     value: "justify",
   },
 ];
+
+function CellPropertiesGridIcon({
+  className = "h-4 w-4",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {[
+        [5, 5],
+        [12, 5],
+        [19, 5],
+        [5, 12],
+        [12, 12],
+        [19, 12],
+        [5, 19],
+        [12, 19],
+        [19, 19],
+      ].map(([cx, cy]) => (
+        <rect
+          key={`${cx}-${cy}`}
+          x={cx - 2}
+          y={cy - 2}
+          width="4"
+          height="4"
+          rx="0.75"
+        />
+      ))}
+    </svg>
+  );
+}
+
+function parseTableCellHorizontalAlignment(
+  value: unknown,
+): TableCellHorizontalAlignment | null {
+  return value === "left" ||
+    value === "center" ||
+    value === "right" ||
+    value === "justify"
+    ? value
+    : null;
+}
+
+function normalizeTableCellPaddingValue(value: unknown) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const match = value.trim().match(/^(\d+(?:\.\d+)?)px$/i);
+
+  if (!match) {
+    return null;
+  }
+
+  const parsed = Number.parseFloat(match[1]);
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null;
+  }
+
+  const normalized = Number.isInteger(parsed)
+    ? parsed
+    : Number(parsed.toFixed(2));
+
+  return `${normalized}px`;
+}
+
+function getTableCellPaddingInputValue(value: string | null | undefined) {
+  const normalized = normalizeTableCellPaddingValue(value);
+
+  if (!normalized) {
+    return "";
+  }
+
+  return normalized.slice(0, -2);
+}
+
+function getTableCellStyleAttributes(
+  node: ProseMirrorNode | null,
+): TableCellStyleAttributes {
+  if (!node) {
+    return {
+      backgroundColor: null,
+      horizontalAlign: null,
+      padding: null,
+    };
+  }
+
+  return {
+    backgroundColor:
+      typeof node.attrs.backgroundColor === "string"
+        ? node.attrs.backgroundColor
+        : null,
+    horizontalAlign: parseTableCellHorizontalAlignment(node.attrs.horizontalAlign),
+    padding: normalizeTableCellPaddingValue(node.attrs.padding),
+  };
+}
+
+function buildTableCellStyleValue(
+  attributes: TableCellStyleAttributes,
+  existingStyle: string | null | undefined,
+) {
+  const styles: string[] = [];
+
+  if (existingStyle?.trim()) {
+    styles.push(existingStyle.trim().replace(/;$/, ""));
+  }
+
+  if (attributes.backgroundColor) {
+    styles.push(`background-color: ${attributes.backgroundColor}`);
+  }
+
+  if (attributes.padding) {
+    styles.push(`padding: ${attributes.padding}`);
+  }
+
+  if (attributes.horizontalAlign) {
+    styles.push(`text-align: ${attributes.horizontalAlign}`);
+  }
+
+  return styles.length > 0 ? styles.join("; ") : undefined;
+}
+
+const tableCellAttributeConfig = {
+  backgroundColor: {
+    default: null,
+    parseHTML: (element: HTMLElement) => element.style.backgroundColor || null,
+    rendered: false,
+  },
+  horizontalAlign: {
+    default: null,
+    parseHTML: (element: HTMLElement) =>
+      parseTableCellHorizontalAlignment(element.style.textAlign),
+    rendered: false,
+  },
+  padding: {
+    default: null,
+    parseHTML: (element: HTMLElement) =>
+      normalizeTableCellPaddingValue(element.style.padding),
+    rendered: false,
+  },
+};
+
+const CustomTableCell = TableCell.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      ...tableCellAttributeConfig,
+    };
+  },
+  renderHTML({ node, HTMLAttributes }) {
+    const { style, ...rest } = HTMLAttributes;
+    const nextStyle = buildTableCellStyleValue(
+      getTableCellStyleAttributes(node),
+      typeof style === "string" ? style : null,
+    );
+
+    return [
+      "td",
+      mergeAttributes(
+        this.options.HTMLAttributes,
+        rest,
+        nextStyle ? { style: nextStyle } : {},
+      ),
+      0,
+    ];
+  },
+});
+
+const CustomTableHeader = TableHeader.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      ...tableCellAttributeConfig,
+    };
+  },
+  renderHTML({ node, HTMLAttributes }) {
+    const { style, ...rest } = HTMLAttributes;
+    const nextStyle = buildTableCellStyleValue(
+      getTableCellStyleAttributes(node),
+      typeof style === "string" ? style : null,
+    );
+
+    return [
+      "th",
+      mergeAttributes(
+        this.options.HTMLAttributes,
+        rest,
+        nextStyle ? { style: nextStyle } : {},
+      ),
+      0,
+    ];
+  },
+});
 
 function ToolbarButton({
   ariaLabel,
@@ -1125,6 +1344,123 @@ function getColorInputValue(
   return fallback;
 }
 
+function collectDocumentEditorColors(body: JSONContent | null | undefined) {
+  const textStyleColors = collectDocumentTextStyleColors(body);
+  const backgroundColors = [...textStyleColors.backgroundColors];
+  const seenBackgroundColors = new Set(
+    backgroundColors.map((color) => color.trim().toLowerCase()),
+  );
+
+  function visit(node: JSONContent | undefined) {
+    if (!node) {
+      return;
+    }
+
+    if (
+      (node.type === "tableCell" || node.type === "tableHeader") &&
+      typeof node.attrs?.backgroundColor === "string"
+    ) {
+      const color = node.attrs.backgroundColor.trim();
+      const normalized = color.toLowerCase();
+
+      if (color && !seenBackgroundColors.has(normalized)) {
+        seenBackgroundColors.add(normalized);
+        backgroundColors.push(color);
+      }
+    }
+
+    for (const child of node.content ?? []) {
+      visit(child);
+    }
+  }
+
+  visit(body ?? undefined);
+
+  return {
+    backgroundColors: backgroundColors.slice(0, 5),
+    textColors: textStyleColors.textColors,
+  };
+}
+
+function getSelectedTableCellPositions(
+  editor: Editor | null,
+  tablePos: number | null,
+  activeCellPos: number | null,
+) {
+  if (!editor || activeCellPos === null) {
+    return [];
+  }
+
+  const { selection } = editor.state;
+
+  if (!(selection instanceof CellSelection) || tablePos === null) {
+    return [activeCellPos];
+  }
+
+  const tableStructure = getTableStructure(editor.state.doc, tablePos);
+
+  if (!tableStructure) {
+    return [activeCellPos];
+  }
+
+  const anchorCellPos = selection.$anchorCell.pos - (tablePos + 1);
+  const headCellPos = selection.$headCell.pos - (tablePos + 1);
+  const rect = tableStructure.tableMap.rectBetween(anchorCellPos, headCellPos);
+
+  return tableStructure.tableMap
+    .cellsInRect(rect)
+    .map((relativePos) => tablePos + 1 + relativePos);
+}
+
+function getCommonTableCellValue<T>(
+  values: T[],
+  fallback: T,
+) {
+  if (values.length === 0) {
+    return fallback;
+  }
+
+  const [firstValue, ...remainingValues] = values;
+
+  return remainingValues.every((value) => value === firstValue)
+    ? firstValue
+    : fallback;
+}
+
+function getSelectedTableCellState(
+  editor: Editor | null,
+  tablePos: number | null,
+  activeCellPos: number | null,
+): TableCellSelectionState {
+  const positions = getSelectedTableCellPositions(editor, tablePos, activeCellPos);
+
+  if (!editor || positions.length === 0) {
+    return {
+      backgroundColor: null,
+      hasBackgroundColor: false,
+      horizontalAlign: "left",
+      padding: null,
+    };
+  }
+
+  const cells = positions
+    .map((position) => editor.state.doc.nodeAt(position))
+    .filter((node): node is ProseMirrorNode => node !== null);
+  const styles = cells.map((cell) => getTableCellStyleAttributes(cell));
+  const backgroundColors = styles.map((style) => style.backgroundColor ?? null);
+  const paddings = styles.map((style) => style.padding ?? null);
+  const horizontalAlignments = styles.map(
+    (style) => style.horizontalAlign ?? "left",
+  );
+
+  return {
+    backgroundColor: getCommonTableCellValue(backgroundColors, null),
+    hasBackgroundColor: backgroundColors.some((value) => Boolean(value)),
+    horizontalAlign: getCommonTableCellValue(horizontalAlignments, "left"),
+    padding: getCommonTableCellValue(paddings, null),
+  };
+}
+
 function getImageInsertTarget(editor: Editor) {
   const { from, to } = editor.state.selection;
 
@@ -1282,11 +1618,15 @@ export function NewsBodyEditor({
   const menuRef = useRef<HTMLDivElement | null>(null);
   const textColorInputRef = useRef<HTMLInputElement | null>(null);
   const backgroundColorInputRef = useRef<HTMLInputElement | null>(null);
+  const cellBackgroundColorInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const pendingImageInsertTargetRef = useRef<ImageInsertTarget>(null);
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
   const [openTableBubbleSubmenu, setOpenTableBubbleSubmenu] =
     useState<OpenTableBubbleSubmenu>(null);
+  const [openCellPropertiesMenu, setOpenCellPropertiesMenu] =
+    useState<OpenCellPropertiesMenu>(null);
+  const [cellPaddingInputValue, setCellPaddingInputValue] = useState("");
   const [isImageUrlModalOpen, setIsImageUrlModalOpen] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -1299,7 +1639,11 @@ export function NewsBodyEditor({
         table: {
           renderWrapper: true,
         },
+        tableCell: false,
+        tableHeader: false,
       }),
+      CustomTableCell,
+      CustomTableHeader,
       Superscript,
       Subscript,
       Typography,
@@ -1361,12 +1705,16 @@ export function NewsBodyEditor({
           code: false,
           currentColumnIsHeader: false,
           currentHeading: "paragraph" as const,
+          currentCellProperties: {
+            backgroundColor: null,
+            hasBackgroundColor: false,
+            horizontalAlign: "left" as TableCellHorizontalAlignment,
+            padding: null,
+          },
           currentRowIsHeader: false,
           currentTextAlign: null as TextAlignment,
           currentTextStyle: null as NewsBodyTextStyleAttributes | null,
-          documentColors: collectDocumentTextStyleColors(
-            initialContent ?? EMPTY_NEWS_BODY,
-          ),
+          documentColors: collectDocumentEditorColors(initialContent ?? EMPTY_NEWS_BODY),
           italic: false,
           link: false,
           orderedList: false,
@@ -1407,12 +1755,17 @@ export function NewsBodyEditor({
         canToggleHeaderRow: currentEditor.can().toggleHeaderRow(),
         canUndo: currentEditor.can().undo(),
         code: currentEditor.isActive("code"),
+        currentCellProperties: getSelectedTableCellState(
+          currentEditor,
+          activeTableContext.activeTablePos,
+          activeTableContext.activeCellPos,
+        ),
         currentColumnIsHeader,
         currentHeading: getCurrentHeading(currentEditor),
         currentRowIsHeader,
         currentTextAlign: getCurrentTextAlignment(currentEditor),
         currentTextStyle: getCurrentTextStyle(currentEditor),
-        documentColors: collectDocumentTextStyleColors(currentEditor.getJSON()),
+        documentColors: collectDocumentEditorColors(currentEditor.getJSON()),
         italic: currentEditor.isActive("italic"),
         link: currentEditor.isActive("link"),
         orderedList: currentEditor.isActive("orderedList"),
@@ -1433,6 +1786,19 @@ export function NewsBodyEditor({
   const selectedFontFamily = selectedTextStyle?.fontFamily ?? null;
   const selectedTextColor = selectedTextStyle?.color ?? null;
   const selectedBackgroundColor = selectedTextStyle?.backgroundColor ?? null;
+  const selectedCellProperties = editorState?.currentCellProperties ?? {
+    backgroundColor: null,
+    hasBackgroundColor: false,
+    horizontalAlign: "left" as TableCellHorizontalAlignment,
+    padding: null,
+  };
+  const selectedCellBackgroundColor =
+    selectedCellProperties.backgroundColor ?? null;
+  const hasSelectedCellBackgroundColor =
+    selectedCellProperties.hasBackgroundColor ?? false;
+  const selectedCellPadding = selectedCellProperties.padding ?? null;
+  const selectedCellHorizontalAlignment =
+    selectedCellProperties.horizontalAlign ?? "left";
   const documentColors = editorState?.documentColors ?? {
     backgroundColors: [],
     textColors: [],
@@ -1468,18 +1834,139 @@ export function NewsBodyEditor({
   function toggleTableBubbleSubmenu(
     menu: Exclude<OpenTableBubbleSubmenu, null>,
   ) {
+    setOpenCellPropertiesMenu(null);
     setOpenTableBubbleSubmenu((currentMenu) =>
       currentMenu === menu ? null : menu,
     );
   }
 
   function closeTableBubbleSubmenu() {
+    setOpenCellPropertiesMenu(null);
     setOpenTableBubbleSubmenu(null);
   }
 
   function runTableBubbleAction(action: () => void) {
     action();
     closeTableBubbleSubmenu();
+  }
+
+  function openCellPropertiesView() {
+    setOpenCellPropertiesMenu(null);
+    setOpenTableBubbleSubmenu("cell-properties");
+  }
+
+  function closeCellPropertiesView() {
+    setOpenCellPropertiesMenu(null);
+    setOpenTableBubbleSubmenu(null);
+  }
+
+  function toggleCellPropertiesMenu(
+    menu: Exclude<OpenCellPropertiesMenu, null>,
+  ) {
+    setOpenCellPropertiesMenu((currentMenu) =>
+      currentMenu === menu ? null : menu,
+    );
+  }
+
+  function setSelectedTableCellAttribute(
+    attribute: keyof TableCellStyleAttributes,
+    value: string | null,
+  ) {
+    if (!editor || activeCellPos === null) {
+      return;
+    }
+
+    const cellPositions = getSelectedTableCellPositions(
+      editor,
+      activeTablePos,
+      activeCellPos,
+    );
+
+    if (cellPositions.length === 0) {
+      return;
+    }
+
+    let transaction = editor.state.tr;
+    let didChange = false;
+
+    for (const cellPosition of cellPositions) {
+      const cellNode = transaction.doc.nodeAt(cellPosition);
+
+      if (!cellNode) {
+        continue;
+      }
+
+      const currentValue =
+        typeof cellNode.attrs[attribute] === "string"
+          ? cellNode.attrs[attribute]
+          : null;
+
+      if (currentValue === value) {
+        continue;
+      }
+
+      transaction = transaction.setNodeMarkup(cellPosition, undefined, {
+        ...cellNode.attrs,
+        [attribute]: value,
+      });
+      didChange = true;
+    }
+
+    if (!didChange) {
+      return;
+    }
+
+    editor.view.dispatch(transaction.scrollIntoView());
+    editor.view.focus();
+  }
+
+  function setSelectedTableCellBackgroundColor(value: string) {
+    setSelectedTableCellAttribute("backgroundColor", value);
+    setOpenCellPropertiesMenu(null);
+  }
+
+  function unsetSelectedTableCellBackgroundColor() {
+    setSelectedTableCellAttribute("backgroundColor", null);
+    setOpenCellPropertiesMenu(null);
+  }
+
+  function setSelectedTableCellHorizontalAlignment(
+    value: TableCellHorizontalAlignment,
+  ) {
+    setSelectedTableCellAttribute(
+      "horizontalAlign",
+      value === "left" ? null : value,
+    );
+  }
+
+  function commitCellPaddingInput() {
+    const trimmedValue = cellPaddingInputValue.trim();
+
+    if (trimmedValue === "") {
+      setSelectedTableCellAttribute("padding", null);
+      return;
+    }
+
+    if (!/^\d+(?:\.\d+)?$/.test(trimmedValue)) {
+      setCellPaddingInputValue(getTableCellPaddingInputValue(selectedCellPadding));
+      toast.error("Padding must be a single pixel value.");
+      return;
+    }
+
+    const parsed = Number.parseFloat(trimmedValue);
+
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      setCellPaddingInputValue(getTableCellPaddingInputValue(selectedCellPadding));
+      toast.error("Padding must be a single pixel value.");
+      return;
+    }
+
+    const normalized = Number.isInteger(parsed)
+      ? parsed
+      : Number(parsed.toFixed(2));
+
+    setSelectedTableCellAttribute("padding", `${normalized}px`);
+    setCellPaddingInputValue(`${normalized}`);
   }
 
   async function uploadImageFile(file: File) {
@@ -1741,9 +2228,20 @@ export function NewsBodyEditor({
 
   useEffect(() => {
     if (!isTableActive) {
+      setOpenCellPropertiesMenu(null);
       setOpenTableBubbleSubmenu(null);
     }
   }, [isTableActive, activeTablePos]);
+
+  useEffect(() => {
+    if (openTableBubbleSubmenu !== "cell-properties") {
+      setOpenCellPropertiesMenu(null);
+    }
+  }, [openTableBubbleSubmenu]);
+
+  useEffect(() => {
+    setCellPaddingInputValue(getTableCellPaddingInputValue(selectedCellPadding));
+  }, [selectedCellPadding, activeCellPos, activeTablePos]);
 
   useEffect(() => {
     if (!editor || !isTableActive) {
@@ -1751,7 +2249,13 @@ export function NewsBodyEditor({
     }
 
     editor.commands.setMeta(TABLE_BUBBLE_MENU_PLUGIN_KEY, "updatePosition");
-  }, [editor, isTableActive, activeTablePos, openTableBubbleSubmenu]);
+  }, [
+    editor,
+    isTableActive,
+    activeTablePos,
+    openTableBubbleSubmenu,
+    openCellPropertiesMenu,
+  ]);
 
   useEffect(() => {
     function applyStepFontSize(delta: number) {
@@ -1767,6 +2271,7 @@ export function NewsBodyEditor({
     function handlePointerDown(event: MouseEvent) {
       if (!menuRef.current?.contains(event.target as Node)) {
         setOpenMenu(null);
+        setOpenCellPropertiesMenu(null);
         setOpenTableBubbleSubmenu(null);
       }
     }
@@ -1796,6 +2301,7 @@ export function NewsBodyEditor({
 
       if (event.key === "Escape") {
         setOpenMenu(null);
+        setOpenCellPropertiesMenu(null);
         setOpenTableBubbleSubmenu(null);
       }
     }
@@ -1809,9 +2315,14 @@ export function NewsBodyEditor({
     };
   }, [editor, selectedFontSize]);
 
-  function openColorPicker(mode: "text" | "background") {
+  function openColorPicker(mode: "text" | "background" | "cell-background") {
     if (mode === "text") {
       textColorInputRef.current?.click();
+      return;
+    }
+
+    if (mode === "cell-background") {
+      cellBackgroundColorInputRef.current?.click();
       return;
     }
 
@@ -1820,7 +2331,7 @@ export function NewsBodyEditor({
 
   function handleColorPickerChange(
     event: ChangeEvent<HTMLInputElement>,
-    mode: "text" | "background",
+    mode: "text" | "background" | "cell-background",
   ) {
     const value = event.target.value;
 
@@ -1830,8 +2341,15 @@ export function NewsBodyEditor({
 
     if (mode === "text") {
       setTextColorValue(value);
-    } else {
+    } else if (mode === "background") {
       setBackgroundColorValue(value);
+    } else {
+      setSelectedTableCellBackgroundColor(value);
+    }
+
+    if (mode === "cell-background") {
+      setOpenCellPropertiesMenu(null);
+      return;
     }
 
     closeMenu();
@@ -1934,6 +2452,7 @@ export function NewsBodyEditor({
     colors: string[],
     activeColor: string | null,
     onSelect: (color: string) => void,
+    closeAfterSelect = true,
   ) {
     if (colors.length === 0) {
       return (
@@ -1948,34 +2467,49 @@ export function NewsBodyEditor({
         activeColor={activeColor}
         colors={colors}
         columns={5}
-        onSelect={(color) => runAction(() => onSelect(color))}
+        onSelect={(color) => {
+          if (closeAfterSelect) {
+            runAction(() => onSelect(color));
+            return;
+          }
+
+          onSelect(color);
+        }}
       />
     );
   }
 
   function renderColorMenuContent(
-    mode: "text" | "background",
+    mode: "text" | "background" | "cell-background",
     includeColorPicker: boolean,
   ) {
     const isTextColorMode = mode === "text";
+    const isCellBackgroundMode = mode === "cell-background";
     const activeColor = isTextColorMode
       ? selectedTextColor
-      : selectedBackgroundColor;
+      : isCellBackgroundMode
+        ? selectedCellBackgroundColor
+        : selectedBackgroundColor;
     const documentPalette = isTextColorMode
       ? documentColors.textColors
       : documentColors.backgroundColors;
+    const canRemoveColor = isCellBackgroundMode
+      ? hasSelectedCellBackgroundColor
+      : Boolean(activeColor);
 
     return (
       <>
         <MenuItem
           icon={<Eraser className="h-4 w-4" />}
-          disabled={!activeColor}
+          disabled={!canRemoveColor}
           onClick={() =>
-            runAction(() =>
-              isTextColorMode
-                ? unsetTextColorValue()
-                : unsetBackgroundColorValue(),
-            )
+            isCellBackgroundMode
+              ? unsetSelectedTableCellBackgroundColor()
+              : runAction(() =>
+                  isTextColorMode
+                    ? unsetTextColorValue()
+                    : unsetBackgroundColorValue(),
+                )
           }
         >
           Remove color
@@ -1984,30 +2518,51 @@ export function NewsBodyEditor({
           activeColor={activeColor}
           colors={DEFAULT_TEXT_STYLE_COLORS}
           columns={5}
-          onSelect={(color) =>
+          onSelect={(color) => {
+            if (isCellBackgroundMode) {
+              setSelectedTableCellBackgroundColor(color);
+              return;
+            }
+
             runAction(() =>
               isTextColorMode
                 ? setTextColorValue(color)
                 : setBackgroundColorValue(color),
-            )
-          }
+            );
+          }}
         />
         <MenuSectionLabel>Document Colors</MenuSectionLabel>
-        {renderDocumentColorSection(documentPalette, activeColor, (color) => {
-          if (isTextColorMode) {
-            setTextColorValue(color);
-            return;
-          }
+        {renderDocumentColorSection(
+          documentPalette,
+          activeColor,
+          (color) => {
+            if (isCellBackgroundMode) {
+              setSelectedTableCellBackgroundColor(color);
+              return;
+            }
 
-          setBackgroundColorValue(color);
-        })}
+            if (isTextColorMode) {
+              setTextColorValue(color);
+              return;
+            }
+
+            setBackgroundColorValue(color);
+          },
+          !isCellBackgroundMode,
+        )}
         {includeColorPicker ? (
           <>
             <MenuSeparator />
             <MenuItem
               icon={<Palette className="h-4 w-4" />}
               onClick={() =>
-                openColorPicker(isTextColorMode ? "text" : "background")
+                openColorPicker(
+                  isTextColorMode
+                    ? "text"
+                    : isCellBackgroundMode
+                      ? "cell-background"
+                      : "background",
+                )
               }
             >
               Color Picker
@@ -2036,7 +2591,135 @@ export function NewsBodyEditor({
     );
   }
 
+  function renderCellPropertiesContent() {
+    const backgroundButtonLabel = selectedCellBackgroundColor
+      ? selectedCellBackgroundColor
+      : hasSelectedCellBackgroundColor
+        ? "Mixed"
+        : "Select color";
+
+    return (
+      <div className="news-body-editor__table-bubble news-body-editor__cell-properties-bubble">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Back to table actions"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={closeCellPropertiesView}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] transition hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+          >
+            <ChevronRight className="h-4 w-4 rotate-180" aria-hidden="true" />
+          </button>
+          <p className="font-heading text-sm font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
+            Cell Properties
+          </p>
+        </div>
+
+        <div className="news-body-editor__cell-properties-grid">
+          <div className="space-y-2">
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[var(--text-faint)]">
+              Background
+            </p>
+            <div className="relative">
+              <button
+                type="button"
+                aria-label="Cell background color options"
+                aria-expanded={openCellPropertiesMenu === "background-color"}
+                aria-haspopup="menu"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => toggleCellPropertiesMenu("background-color")}
+                className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-left text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
+                  openCellPropertiesMenu === "background-color"
+                    ? "border-[var(--border-orange)] bg-[var(--brand-pale)] text-[var(--brand)]"
+                    : "border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span
+                    className="h-4 w-4 shrink-0 rounded-md border border-black/10"
+                    style={{
+                      backgroundColor:
+                        selectedCellBackgroundColor ??
+                        "var(--bg-subtle)",
+                    }}
+                  />
+                  <span className="truncate">{backgroundButtonLabel}</span>
+                </span>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 transition-transform ${
+                    openCellPropertiesMenu === "background-color"
+                      ? "rotate-180"
+                      : ""
+                  }`}
+                  aria-hidden="true"
+                />
+              </button>
+
+              {openCellPropertiesMenu === "background-color"
+                ? renderTableBubbleMenuPanel(
+                    renderColorMenuContent("cell-background", true),
+                    "min-w-[17rem]",
+                  )
+                : null}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[var(--text-faint)]">
+              Dimensions
+            </p>
+            <div className="relative">
+              <input
+                type="text"
+                inputMode="decimal"
+                aria-label="Cell padding in pixels"
+                placeholder="padding"
+                value={cellPaddingInputValue}
+                onChange={(event) => setCellPaddingInputValue(event.target.value)}
+                onBlur={commitCellPaddingInput}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    commitCellPaddingInput();
+                  }
+                }}
+                className={`${dashboardInputClassName} !mt-0`}
+              />
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                px
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[var(--text-faint)]">
+            Table Cell Text Alignment
+          </p>
+          <div className="news-body-editor__cell-alignment-group">
+            {textAlignmentOptions.map((option) => (
+              <ToolbarButton
+                key={option.value}
+                ariaLabel={option.label}
+                isActive={selectedCellHorizontalAlignment === option.value}
+                onClick={() =>
+                  setSelectedTableCellHorizontalAlignment(option.value)
+                }
+              >
+                {option.icon}
+              </ToolbarButton>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function renderTableBubbleContent() {
+    if (openTableBubbleSubmenu === "cell-properties") {
+      return renderCellPropertiesContent();
+    }
+
     return (
       <div className="news-body-editor__table-bubble">
         <div className="relative">
@@ -2227,6 +2910,18 @@ export function NewsBodyEditor({
         />
 
         <ToolbarButton
+          ariaLabel="Cell properties"
+          onClick={openCellPropertiesView}
+        >
+          <CellPropertiesGridIcon />
+        </ToolbarButton>
+
+        <div
+          className="mx-0.5 h-7 w-px self-center bg-[var(--border-light)]"
+          aria-hidden="true"
+        />
+
+        <ToolbarButton
           ariaLabel="Delete table"
           onClick={() =>
             runTableBubbleAction(() =>
@@ -2273,6 +2968,15 @@ export function NewsBodyEditor({
         tabIndex={-1}
         value={getColorInputValue(selectedBackgroundColor, "#f8fafc")}
         onChange={(event) => handleColorPickerChange(event, "background")}
+      />
+      <input
+        ref={cellBackgroundColorInputRef}
+        type="color"
+        className="sr-only"
+        aria-hidden="true"
+        tabIndex={-1}
+        value={getColorInputValue(selectedCellBackgroundColor, "#f8fafc")}
+        onChange={(event) => handleColorPickerChange(event, "cell-background")}
       />
 
       <div className="relative z-20 flex flex-wrap gap-1 rounded-t-xl border-b border-[var(--border-light)] bg-[var(--bg-elevated)] px-3 py-2">
@@ -2728,6 +3432,10 @@ export function NewsBodyEditor({
         onMouseDownCapture={() => {
           if (openMenu !== null) {
             closeMenu();
+          }
+
+          if (openCellPropertiesMenu !== null) {
+            setOpenCellPropertiesMenu(null);
           }
 
           if (openTableBubbleSubmenu !== null) {

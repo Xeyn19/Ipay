@@ -1,5 +1,5 @@
 import type { JSONContent } from "@tiptap/react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { buildInlineTextStyle } from "@/app/lib/news-body-text-styles";
 import { getNewsBodyText } from "@/app/lib/news-media";
 
@@ -38,19 +38,23 @@ function getTextAlignmentClassName(node: JSONContent) {
   return undefined;
 }
 
-function getTableCellAlignmentClassName(node: JSONContent) {
-  const align = node.attrs?.align;
+function getTableCellHorizontalAlignment(node: JSONContent) {
+  const align = node.attrs?.horizontalAlign ?? node.attrs?.align;
 
   if (align === "left") {
-    return "text-left";
+    return "left";
   }
 
   if (align === "right") {
-    return "text-right";
+    return "right";
   }
 
   if (align === "center") {
-    return "text-center";
+    return "center";
+  }
+
+  if (align === "justify") {
+    return "justify";
   }
 
   return undefined;
@@ -232,6 +236,46 @@ function getNumericNodeAttribute(value: unknown) {
   return undefined;
 }
 
+function getTableCellRenderProps(node: JSONContent) {
+  const horizontalAlign = getTableCellHorizontalAlignment(node);
+  const backgroundColor =
+    typeof node.attrs?.backgroundColor === "string"
+      ? node.attrs.backgroundColor
+      : undefined;
+  const padding =
+    typeof node.attrs?.padding === "string" ? node.attrs.padding : undefined;
+  const colSpan = getNumericNodeAttribute(
+    node.attrs?.colspan ?? node.attrs?.colSpan,
+  );
+  const rowSpan = getNumericNodeAttribute(
+    node.attrs?.rowspan ?? node.attrs?.rowSpan,
+  );
+  const style: CSSProperties = {};
+
+  if (backgroundColor) {
+    style.backgroundColor = backgroundColor;
+  }
+
+  if (padding) {
+    style.padding = padding;
+  }
+
+  if (horizontalAlign) {
+    style.textAlign = horizontalAlign;
+  }
+
+  return {
+    className: joinClassNames(
+      "min-w-32 border border-[var(--border-light)]",
+      padding ? undefined : "px-3 py-3.5",
+      "align-top",
+    ),
+    colSpan,
+    rowSpan,
+    style: Object.keys(style).length > 0 ? style : undefined,
+  };
+}
+
 function renderBlockNode(node: JSONContent, key: string): ReactNode {
   switch (node.type) {
     case "paragraph":
@@ -366,20 +410,22 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
                   <tr key={`${key}-${rowIndex}`}>
                     {(row.content ?? []).map((cell, cellIndex) => {
                       const cellKey = `${key}-${rowIndex}-${cellIndex}`;
-                      const cellClassName = joinClassNames(
-                        "min-w-32 border border-[var(--border-light)] px-4 py-3 align-top",
-                        getTableCellAlignmentClassName(cell),
-                      );
+                      const cellProps = getTableCellRenderProps(cell);
 
                       if (cell.type === "tableHeader") {
                         return (
                           <th
                             key={cellKey}
-                            scope="col"
                             className={joinClassNames(
-                              cellClassName,
+                              cellProps.className,
                               "bg-[var(--bg-subtle)] text-sm font-semibold text-[var(--text-primary)]",
                             )}
+                            style={{
+                              textAlign: 'left', // override browser default
+                              ...cellProps.style, // explicit alignment from editor still wins
+                            }}
+                            colSpan={cellProps.colSpan}
+                            rowSpan={cellProps.rowSpan}
                           >
                             <div className="space-y-2">
                               {renderTableCellContent(cell.content, cellKey)}
@@ -392,9 +438,12 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
                         <td
                           key={cellKey}
                           className={joinClassNames(
-                            cellClassName,
+                            cellProps.className,
                             "text-sm text-[var(--text-primary)]",
                           )}
+                          style={cellProps.style}
+                          colSpan={cellProps.colSpan}
+                          rowSpan={cellProps.rowSpan}
                         >
                           <div className="space-y-2">
                             {renderTableCellContent(cell.content, cellKey)}

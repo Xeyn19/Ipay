@@ -12,6 +12,7 @@ import {
 import { mergeAttributes } from "@tiptap/core";
 import FileHandler from "@tiptap/extension-file-handler";
 import { TableKit } from "@tiptap/extension-table";
+import TableOfContents from "@tiptap/extension-table-of-contents";
 import { TableCell } from "@tiptap/extension-table/cell";
 import { TableHeader } from "@tiptap/extension-table/header";
 import {
@@ -95,8 +96,10 @@ import {
   stepFontSizeValue,
   type NewsBodyTextStyleAttributes,
 } from "@/app/lib/news-body-text-styles";
+import { NEWS_TABLE_OF_CONTENTS_NODE_NAME } from "@/app/lib/news-body-table-of-contents";
 import { EMPTY_NEWS_BODY } from "@/app/lib/news-media";
 import { NewsBodyImage } from "./news-body-image-extension";
+import { NewsTableOfContents } from "./news-body-table-of-contents-extension";
 import { dashboardInputClassName, NewsModal } from "./news-modal";
 
 type NewsBodyEditorProps = {
@@ -339,6 +342,31 @@ function CellPropertiesGridIcon({
           rx="0.75"
         />
       ))}
+    </svg>
+  );
+}
+
+function TableOfContentsIcon({
+  className = "h-4 w-4",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M5 7h14" />
+      <path d="M5 12h8" />
+      <path d="M5 17h10" />
+      <circle cx="18" cy="12" r="1.25" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="17" r="1.25" fill="currentColor" stroke="none" />
     </svg>
   );
 }
@@ -1529,6 +1557,25 @@ function getSelectedImageState(editor: Editor | null): SelectedImageState | null
   };
 }
 
+function hasTableOfContentsNode(editor: Editor | null) {
+  if (!editor) {
+    return false;
+  }
+
+  let found = false;
+
+  editor.state.doc.descendants((node) => {
+    if (node.type.name === NEWS_TABLE_OF_CONTENTS_NODE_NAME) {
+      found = true;
+      return false;
+    }
+
+    return true;
+  });
+
+  return found;
+}
+
 function getSelectedImageElement(editor: Editor | null) {
   if (!editor) {
     return null;
@@ -1713,6 +1760,10 @@ export function NewsBodyEditor({
     content: initialContent ?? EMPTY_NEWS_BODY,
     extensions: [
       StarterKit,
+      NewsTableOfContents,
+      TableOfContents.configure({
+        anchorTypes: ["heading"],
+      }),
       NewsBodyImage,
       TableKit.configure({
         table: {
@@ -1924,6 +1975,23 @@ export function NewsBodyEditor({
   function runAction(action: () => void) {
     action();
     closeMenu();
+  }
+
+  function insertTableOfContents() {
+    if (!editor) {
+      return;
+    }
+
+    if (hasTableOfContentsNode(editor)) {
+      toast.error("Table of contents already exists.");
+      return;
+    }
+
+    editor
+      .chain()
+      .focus()
+      .insertContent({ type: NEWS_TABLE_OF_CONTENTS_NODE_NAME })
+      .run();
   }
 
   function closeImageBubbleSubmenu() {
@@ -3390,6 +3458,12 @@ export function NewsBodyEditor({
                       }
                     >
                       Horizontal Rule
+                    </MenuItem>
+                    <MenuItem
+                      icon={<TableOfContentsIcon className="h-4 w-4" />}
+                      onClick={() => runAction(insertTableOfContents)}
+                    >
+                      Table of Contents
                     </MenuItem>
                   </>
                 ) : null}

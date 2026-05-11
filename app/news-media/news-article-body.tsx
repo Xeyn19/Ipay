@@ -4,6 +4,13 @@ import {
   normalizeNewsBodyImageAlignment,
   normalizeNewsBodyImageWidth,
 } from "@/app/lib/news-body-images";
+import {
+  buildNewsTableOfContentsDisplayItems,
+  extractNewsBodyHeadingItems,
+  extractNewsTableOfContentsItems,
+  NEWS_TABLE_OF_CONTENTS_NODE_NAME,
+  type NewsBodyHeadingItem,
+} from "@/app/lib/news-body-table-of-contents";
 import { buildInlineTextStyle } from "@/app/lib/news-body-text-styles";
 import { getNewsBodyText } from "@/app/lib/news-media";
 
@@ -63,6 +70,11 @@ function getTableCellHorizontalAlignment(node: JSONContent) {
 
   return undefined;
 }
+
+type NewsArticleBodyRenderContext = {
+  headingAnchorMap: ReadonlyMap<string, string>;
+  tableOfContentsItems: NewsBodyHeadingItem[];
+};
 
 function renderInlineNodes(
   nodes: JSONContent[] | undefined,
@@ -175,13 +187,19 @@ function renderInlineNode(node: JSONContent, key: string): ReactNode {
   return applyMarks(node, nested, key);
 }
 
-function renderListItemContent(nodes: JSONContent[] | undefined, keyPrefix: string): ReactNode {
+function renderListItemContent(
+  nodes: JSONContent[] | undefined,
+  keyPrefix: string,
+  pathPrefix: string,
+  context: NewsArticleBodyRenderContext,
+): ReactNode {
   if (!nodes?.length) {
     return null;
   }
 
   return nodes.map((node, index) => {
     const key = `${keyPrefix}-${index}`;
+    const path = `${pathPrefix}.${index}`;
 
     if (node.type === "paragraph") {
       return (
@@ -191,13 +209,15 @@ function renderListItemContent(nodes: JSONContent[] | undefined, keyPrefix: stri
       );
     }
 
-    return renderBlockNode(node, key);
+    return renderBlockNode(node, key, path, context);
   });
 }
 
 function renderTableCellContent(
   nodes: JSONContent[] | undefined,
   keyPrefix: string,
+  pathPrefix: string,
+  context: NewsArticleBodyRenderContext,
 ): ReactNode {
   if (!nodes?.length) {
     return null;
@@ -205,6 +225,7 @@ function renderTableCellContent(
 
   return nodes.map((node, index) => {
     const key = `${keyPrefix}-${index}`;
+    const path = `${pathPrefix}.${index}`;
 
     if (node.type === "paragraph") {
       return (
@@ -220,7 +241,7 @@ function renderTableCellContent(
       );
     }
 
-    return renderBlockNode(node, key);
+    return renderBlockNode(node, key, path, context);
   });
 }
 
@@ -280,7 +301,54 @@ function getTableCellRenderProps(node: JSONContent) {
   };
 }
 
-function renderBlockNode(node: JSONContent, key: string): ReactNode {
+function renderTableOfContents(
+  items: NewsBodyHeadingItem[],
+  key: string,
+): ReactNode {
+  const displayItems = buildNewsTableOfContentsDisplayItems(items);
+
+  if (displayItems.length === 0) {
+    return null;
+  }
+
+  return (
+    <nav
+      key={key}
+      aria-label="Table of contents"
+      className="rounded-[0.5rem] border border-[var(--border-light)] bg-[var(--bg-subtle)] px-5 py-5 sm:px-6"
+    >
+      <p className="font-heading text-base font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
+        Table of Contents
+      </p>
+      <ol className="mt-4 space-y-1.5">
+        {displayItems.map((item) => (
+          <li key={`${key}-${item.path}`}>
+            <a
+              href={`#${item.id}`}
+              className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 text-sm leading-6 text-[var(--text-secondary)] transition-colors hover:text-[var(--brand)]"
+              style={{ paddingInlineStart: `${item.depth * 1}rem` }}
+            >
+              <span
+                aria-hidden="true"
+                className="font-semibold tabular-nums text-[var(--text-faint)]"
+              >
+                {item.numbering}.
+              </span>
+              <span>{item.textContent}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
+function renderBlockNode(
+  node: JSONContent,
+  key: string,
+  path: string,
+  context: NewsArticleBodyRenderContext,
+): ReactNode {
   switch (node.type) {
     case "paragraph":
       return (
@@ -303,10 +371,11 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
         getTextAlignmentClassName(node),
       );
       const content = renderInlineNodes(node.content, key);
+      const id = context.headingAnchorMap.get(path);
 
       if (headingLevel === 1) {
         return (
-          <h1 key={key} className={className}>
+          <h1 key={key} id={id} className={className}>
             {content}
           </h1>
         );
@@ -314,7 +383,7 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
 
       if (headingLevel === 3) {
         return (
-          <h3 key={key} className={className}>
+          <h3 key={key} id={id} className={className}>
             {content}
           </h3>
         );
@@ -322,7 +391,7 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
 
       if (headingLevel === 4) {
         return (
-          <h4 key={key} className={className}>
+          <h4 key={key} id={id} className={className}>
             {content}
           </h4>
         );
@@ -330,7 +399,7 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
 
       if (headingLevel === 5) {
         return (
-          <h5 key={key} className={className}>
+          <h5 key={key} id={id} className={className}>
             {content}
           </h5>
         );
@@ -338,14 +407,14 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
 
       if (headingLevel === 6) {
         return (
-          <h6 key={key} className={className}>
+          <h6 key={key} id={id} className={className}>
             {content}
           </h6>
         );
       }
 
       return (
-        <h2 key={key} className={className}>
+        <h2 key={key} id={id} className={className}>
           {content}
         </h2>
       );
@@ -358,7 +427,14 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
         >
           {(node.content ?? []).map((child, index) =>
             child.type === "listItem" ? (
-              <li key={`${key}-${index}`}>{renderListItemContent(child.content, `${key}-${index}`)}</li>
+              <li key={`${key}-${index}`}>
+                {renderListItemContent(
+                  child.content,
+                  `${key}-${index}`,
+                  `${path}.${index}`,
+                  context,
+                )}
+              </li>
             ) : null,
           )}
         </ul>
@@ -371,7 +447,14 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
         >
           {(node.content ?? []).map((child, index) =>
             child.type === "listItem" ? (
-              <li key={`${key}-${index}`}>{renderListItemContent(child.content, `${key}-${index}`)}</li>
+              <li key={`${key}-${index}`}>
+                {renderListItemContent(
+                  child.content,
+                  `${key}-${index}`,
+                  `${path}.${index}`,
+                  context,
+                )}
+              </li>
             ) : null,
           )}
         </ol>
@@ -382,7 +465,11 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
           key={key}
           className="border-l-4 border-[var(--border-orange)] bg-[var(--bg-subtle)] px-5 py-4 text-base italic leading-8 text-[var(--text-secondary)]"
         >
-          <div className="space-y-4">{(node.content ?? []).map((child, index) => renderBlockNode(child, `${key}-${index}`))}</div>
+          <div className="space-y-4">
+            {(node.content ?? []).map((child, index) =>
+              renderBlockNode(child, `${key}-${index}`, `${path}.${index}`, context),
+            )}
+          </div>
         </blockquote>
       );
     case "codeBlock":
@@ -432,7 +519,12 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
                             rowSpan={cellProps.rowSpan}
                           >
                             <div className="space-y-2">
-                              {renderTableCellContent(cell.content, cellKey)}
+                              {renderTableCellContent(
+                                cell.content,
+                                cellKey,
+                                `${path}.${rowIndex}.${cellIndex}`,
+                                context,
+                              )}
                             </div>
                           </th>
                         );
@@ -450,7 +542,12 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
                           rowSpan={cellProps.rowSpan}
                         >
                           <div className="space-y-2">
-                            {renderTableCellContent(cell.content, cellKey)}
+                            {renderTableCellContent(
+                              cell.content,
+                              cellKey,
+                              `${path}.${rowIndex}.${cellIndex}`,
+                              context,
+                            )}
                           </div>
                         </td>
                       );
@@ -462,6 +559,8 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
           </table>
         </div>
       );
+    case NEWS_TABLE_OF_CONTENTS_NODE_NAME:
+      return renderTableOfContents(context.tableOfContentsItems, key);
     case "image": {
       const src =
         typeof node.attrs?.src === "string" ? node.attrs.src.trim() : "";
@@ -533,6 +632,13 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
 
 export function NewsArticleBody({ body }: { body: JSONContent }) {
   const blocks = body.content ?? [];
+  const headingItems = extractNewsBodyHeadingItems(body);
+  const renderContext: NewsArticleBodyRenderContext = {
+    headingAnchorMap: new Map(
+      headingItems.map((item) => [item.path, item.id] as const),
+    ),
+    tableOfContentsItems: extractNewsTableOfContentsItems(body),
+  };
 
   if (blocks.length === 0) {
     return null;
@@ -540,7 +646,9 @@ export function NewsArticleBody({ body }: { body: JSONContent }) {
 
   return (
     <div className="space-y-6">
-      {blocks.map((node, index) => renderBlockNode(node, `block-${index}`))}
+      {blocks.map((node, index) =>
+        renderBlockNode(node, `block-${index}`, `${index}`, renderContext),
+      )}
     </div>
   );
 }

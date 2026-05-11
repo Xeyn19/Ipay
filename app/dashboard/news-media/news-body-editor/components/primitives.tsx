@@ -92,6 +92,7 @@ export function ToolbarMenuButton({
 export function ToolbarSplitMenuButton({
   ariaLabel,
   ariaMenuLabel,
+  isActive = false,
   menuDisabled = false,
   icon,
   isOpen,
@@ -101,6 +102,7 @@ export function ToolbarSplitMenuButton({
 }: {
   ariaLabel: string;
   ariaMenuLabel: string;
+  isActive?: boolean;
   menuDisabled?: boolean;
   icon: ReactNode;
   isOpen: boolean;
@@ -108,13 +110,13 @@ export function ToolbarSplitMenuButton({
   onMenuClick: () => void;
   primaryDisabled?: boolean;
 }) {
-  const isActive = isOpen;
+  const isVisuallyActive = isOpen || isActive;
   const isFullyDisabled = primaryDisabled && menuDisabled;
 
   return (
     <div
       className={`inline-flex h-8 overflow-hidden rounded-lg border transition-colors ${
-        isActive
+        isVisuallyActive
           ? "border-[var(--border-orange)] bg-[var(--brand-pale)] text-[var(--brand)]"
           : "border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
       } ${isFullyDisabled ? "opacity-50" : ""}`}

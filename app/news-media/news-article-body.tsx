@@ -11,7 +11,10 @@ import {
   NEWS_TABLE_OF_CONTENTS_NODE_NAME,
   type NewsBodyHeadingItem,
 } from "@/app/lib/news-body-table-of-contents";
-import { buildInlineTextStyle } from "@/app/lib/news-body-text-styles";
+import {
+  DEFAULT_HIGHLIGHT_COLOR,
+  buildInlineTextStyle,
+} from "@/app/lib/news-body-text-styles";
 import { getNewsBodyText } from "@/app/lib/news-media";
 
 const headingClassNames = {
@@ -145,6 +148,25 @@ function applyMarks(node: JSONContent, content: ReactNode, key: string) {
           >
             {result}
           </code>
+        );
+      }
+
+      if (mark.type === "highlight") {
+        const backgroundColor =
+          typeof mark.attrs?.color === "string" && mark.attrs.color.trim()
+            ? mark.attrs.color
+            : DEFAULT_HIGHLIGHT_COLOR;
+
+        return (
+          <mark
+            key={markKey}
+            style={{
+              backgroundColor,
+              color: "inherit",
+            }}
+          >
+            {result}
+          </mark>
         );
       }
 

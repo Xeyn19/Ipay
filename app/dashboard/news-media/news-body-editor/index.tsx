@@ -10,6 +10,8 @@ import {
   ChevronDown,
   Code2,
   Droplets,
+  Eraser,
+  Highlighter,
   Image as ImageIcon,
   ImagePlus as ImagePlusIcon,
   ImageUp,
@@ -32,10 +34,15 @@ import {
   Strikethrough,
 } from "lucide-react";
 import {
+  HIGHLIGHT_COLOR_OPTIONS,
   FONT_FAMILY_OPTIONS,
   FONT_SIZE_OPTIONS,
 } from "@/app/lib/news-body-text-styles";
-import type { HeadingLevel, NewsBodyEditorProps, TopLevelMenuKey } from "./types";
+import type {
+  HeadingLevel,
+  NewsBodyEditorProps,
+  TopLevelMenuKey,
+} from "./types";
 import {
   EDITOR_IMAGE_ALLOWED_MIME_TYPES,
   IMAGE_BUBBLE_MENU_PLUGIN_KEY,
@@ -71,6 +78,7 @@ import {
   ToolbarButton,
   ToolbarMenuButton,
   ToolbarMenuPanel,
+  ToolbarSplitMenuButton,
   ToolbarSeparator,
 } from "./components/primitives";
 
@@ -94,6 +102,18 @@ const topLevelMenus: Array<{ key: TopLevelMenuKey; label: string }> = [
   { key: "format", label: "Format" },
 ];
 
+function HighlightMenuIcon({
+  color,
+  className = "h-4 w-4",
+}: {
+  color: string;
+  className?: string;
+}) {
+  return (
+    <Highlighter className={className} style={{ color }} aria-hidden="true" />
+  );
+}
+
 function HeadingMenuItems({
   controller,
 }: {
@@ -105,7 +125,9 @@ function HeadingMenuItems({
     <MenuItem
       key={option.value}
       isActive={derivedState.selectedHeading === option.value}
-      onClick={() => commands.runAction(() => commands.applyHeading(option.value))}
+      onClick={() =>
+        commands.runAction(() => commands.applyHeading(option.value))
+      }
     >
       <span
         className={
@@ -136,7 +158,9 @@ function FontFamilyMenuItems({
     <MenuItem
       key={option.label}
       isActive={derivedState.selectedFontFamily === option.value}
-      onClick={() => commands.runAction(() => font.setFontFamilyValue(option.value))}
+      onClick={() =>
+        commands.runAction(() => font.setFontFamilyValue(option.value))
+      }
     >
       <span style={{ fontFamily: option.value }}>{option.label}</span>
     </MenuItem>
@@ -162,7 +186,9 @@ function FontSizeMenuItems({
               ? derivedState.selectedFontSize === null
               : derivedState.selectedFontSize === option.value
           }
-          onClick={() => commands.runAction(() => font.setFontSizeValue(option.value))}
+          onClick={() =>
+            commands.runAction(() => font.setFontSizeValue(option.value))
+          }
         >
           {option.label}
         </MenuItem>
@@ -213,11 +239,46 @@ function TextAlignmentMenuItems({
   ));
 }
 
-function EditMenu({
+function HighlightMenuItems({
   controller,
+  labelMode,
 }: {
   controller: NewsBodyEditorController;
+  labelMode: "marker" | "short";
 }) {
+  const { commands, derivedState, highlight } = controller;
+
+  return (
+    <>
+      {HIGHLIGHT_COLOR_OPTIONS.map((option) => {
+        return (
+          <MenuItem
+            key={option.value}
+            icon={<HighlightMenuIcon color={option.value} />}
+            isActive={derivedState.selectedHighlightColor === option.value}
+            onClick={() =>
+              commands.runAction(() =>
+                highlight.applyHighlightColor(option.value),
+              )
+            }
+          >
+            {option.label}
+          </MenuItem>
+        );
+      })}
+      <MenuSeparator />
+      <MenuItem
+        icon={<Eraser className="h-4 w-4" />}
+        disabled={!derivedState.isHighlightActive}
+        onClick={() => commands.runAction(highlight.unsetHighlight)}
+      >
+        Remove Highlight
+      </MenuItem>
+    </>
+  );
+}
+
+function EditMenu({ controller }: { controller: NewsBodyEditorController }) {
   const { commands, derivedState, editor } = controller;
 
   return (
@@ -226,7 +287,9 @@ function EditMenu({
         icon={<Undo2 className="h-4 w-4" />}
         shortcut="Ctrl + Z"
         disabled={!derivedState.editorState.canUndo}
-        onClick={() => commands.runAction(() => editor?.chain().focus().undo().run())}
+        onClick={() =>
+          commands.runAction(() => editor?.chain().focus().undo().run())
+        }
       >
         Undo
       </MenuItem>
@@ -234,7 +297,9 @@ function EditMenu({
         icon={<Redo2 className="h-4 w-4" />}
         shortcut="Ctrl + Y"
         disabled={!derivedState.editorState.canRedo}
-        onClick={() => commands.runAction(() => editor?.chain().focus().redo().run())}
+        onClick={() =>
+          commands.runAction(() => editor?.chain().focus().redo().run())
+        }
       >
         Redo
       </MenuItem>
@@ -256,11 +321,7 @@ function ViewMenu() {
   return <EmptyMenuItem />;
 }
 
-function InsertMenu({
-  controller,
-}: {
-  controller: NewsBodyEditorController;
-}) {
+function InsertMenu({ controller }: { controller: NewsBodyEditorController }) {
   const { commands, derivedState, editor, image } = controller;
 
   return (
@@ -274,7 +335,9 @@ function InsertMenu({
               disabled={!editor || image.isUploadingImage}
               onClick={image.openUploadFromComputer}
             >
-              {image.isUploadingImage ? "Uploading image..." : "Upload From Computer"}
+              {image.isUploadingImage
+                ? "Uploading image..."
+                : "Upload From Computer"}
             </MenuItem>
             <MenuItem
               icon={<ImagePlusIcon className="h-4 w-4" />}
@@ -308,7 +371,9 @@ function InsertMenu({
         icon={<Quote className="h-4 w-4" />}
         isActive={derivedState.editorState.blockquote}
         onClick={() =>
-          commands.runAction(() => editor?.chain().focus().toggleBlockquote().run())
+          commands.runAction(() =>
+            editor?.chain().focus().toggleBlockquote().run(),
+          )
         }
       >
         Block Quote
@@ -317,7 +382,9 @@ function InsertMenu({
       <MenuItem
         icon={<Minus className="h-4 w-4" />}
         onClick={() =>
-          commands.runAction(() => editor?.chain().focus().setHorizontalRule().run())
+          commands.runAction(() =>
+            editor?.chain().focus().setHorizontalRule().run(),
+          )
         }
       >
         Horizontal Rule
@@ -332,11 +399,7 @@ function InsertMenu({
   );
 }
 
-function FormatMenu({
-  controller,
-}: {
-  controller: NewsBodyEditorController;
-}) {
+function FormatMenu({ controller }: { controller: NewsBodyEditorController }) {
   const { commands, derivedState, editor } = controller;
 
   return (
@@ -350,7 +413,9 @@ function FormatMenu({
               isActive={derivedState.editorState.bold}
               shortcut="Ctrl + B"
               onClick={() =>
-                commands.runAction(() => editor?.chain().focus().toggleBold().run())
+                commands.runAction(() =>
+                  editor?.chain().focus().toggleBold().run(),
+                )
               }
             >
               Bold
@@ -360,7 +425,9 @@ function FormatMenu({
               isActive={derivedState.editorState.italic}
               shortcut="Ctrl + I"
               onClick={() =>
-                commands.runAction(() => editor?.chain().focus().toggleItalic().run())
+                commands.runAction(() =>
+                  editor?.chain().focus().toggleItalic().run(),
+                )
               }
             >
               Italic
@@ -370,7 +437,9 @@ function FormatMenu({
               isActive={derivedState.editorState.underline}
               shortcut="Ctrl + U"
               onClick={() =>
-                commands.runAction(() => editor?.chain().focus().toggleUnderline().run())
+                commands.runAction(() =>
+                  editor?.chain().focus().toggleUnderline().run(),
+                )
               }
             >
               Underline
@@ -379,7 +448,9 @@ function FormatMenu({
               icon={<Strikethrough className="h-4 w-4" />}
               isActive={derivedState.editorState.strike}
               onClick={() =>
-                commands.runAction(() => editor?.chain().focus().toggleStrike().run())
+                commands.runAction(() =>
+                  editor?.chain().focus().toggleStrike().run(),
+                )
               }
             >
               Strike Through
@@ -410,7 +481,9 @@ function FormatMenu({
               icon={<Code2 className="h-4 w-4" />}
               isActive={derivedState.editorState.code}
               onClick={() =>
-                commands.runAction(() => editor?.chain().focus().toggleCode().run())
+                commands.runAction(() =>
+                  editor?.chain().focus().toggleCode().run(),
+                )
               }
             >
               Code
@@ -463,6 +536,22 @@ function FormatMenu({
             >
               Font Background Color
             </SubmenuItem>
+            <MenuSeparator />
+            <SubmenuItem
+              icon={
+                <HighlightMenuIcon
+                  color={controller.highlight.lastUsedHighlightColor}
+                />
+              }
+              submenu={
+                <HighlightMenuItems
+                  controller={controller}
+                  labelMode="marker"
+                />
+              }
+            >
+              Highlight
+            </SubmenuItem>
           </>
         }
       >
@@ -479,7 +568,9 @@ function FormatMenu({
         icon={<List className="h-4 w-4" />}
         isActive={derivedState.editorState.bulletList}
         onClick={() =>
-          commands.runAction(() => editor?.chain().focus().toggleBulletList().run())
+          commands.runAction(() =>
+            editor?.chain().focus().toggleBulletList().run(),
+          )
         }
       >
         Bulleted List
@@ -488,7 +579,9 @@ function FormatMenu({
         icon={<ListOrdered className="h-4 w-4" />}
         isActive={derivedState.editorState.orderedList}
         onClick={() =>
-          commands.runAction(() => editor?.chain().focus().toggleOrderedList().run())
+          commands.runAction(() =>
+            editor?.chain().focus().toggleOrderedList().run(),
+          )
         }
       >
         Numbered List
@@ -497,7 +590,9 @@ function FormatMenu({
         icon={<TaskListIcon className="h-4 w-4" />}
         isActive={derivedState.editorState.taskList}
         onClick={() =>
-          commands.runAction(() => editor?.chain().focus().toggleTaskList().run())
+          commands.runAction(() =>
+            editor?.chain().focus().toggleTaskList().run(),
+          )
         }
       >
         Task List
@@ -535,11 +630,7 @@ function TopLevelMenuContent({
   return <FormatMenu controller={controller} />;
 }
 
-function TopMenuBar({
-  controller,
-}: {
-  controller: NewsBodyEditorController;
-}) {
+function TopMenuBar({ controller }: { controller: NewsBodyEditorController }) {
   const { menu } = controller;
 
   return (
@@ -579,7 +670,7 @@ function ToolbarSection({
 }: {
   controller: NewsBodyEditorController;
 }) {
-  const { commands, derivedState, editor, menu } = controller;
+  const { commands, derivedState, editor, highlight, menu } = controller;
 
   return (
     <div className="relative z-10 flex flex-wrap items-center gap-1.5 border-b border-[var(--border-light)] bg-[var(--bg-subtle)] px-2.5 py-2.5">
@@ -654,7 +745,10 @@ function ToolbarSection({
 
         {menu.openMenu === "toolbar-font-size" ? (
           <ToolbarMenuPanel>
-            <FontSizeMenuItems controller={controller} includeStepActions={false} />
+            <FontSizeMenuItems
+              controller={controller}
+              includeStepActions={false}
+            />
           </ToolbarMenuPanel>
         ) : null}
       </div>
@@ -671,7 +765,11 @@ function ToolbarSection({
 
         {menu.openMenu === "toolbar-text-color" ? (
           <ToolbarMenuPanel>
-            <ColorMenuContent controller={controller} includeColorPicker mode="text" />
+            <ColorMenuContent
+              controller={controller}
+              includeColorPicker
+              mode="text"
+            />
           </ToolbarMenuPanel>
         ) : null}
       </div>
@@ -734,6 +832,29 @@ function ToolbarSection({
         {menu.openMenu === "toolbar-table" ? (
           <ToolbarMenuPanel className="min-w-[17rem]">
             <TableInsertPicker onInsert={commands.insertTable} />
+          </ToolbarMenuPanel>
+        ) : null}
+      </div>
+
+      <div className="relative">
+        <ToolbarSplitMenuButton
+          ariaLabel="Apply highlight"
+          ariaMenuLabel="Highlight color options"
+          icon={
+            <HighlightMenuIcon
+              color={highlight.lastUsedHighlightColor}
+              className="h-4 w-4"
+            />
+          }
+          isActive={derivedState.isHighlightActive}
+          isOpen={menu.openMenu === "toolbar-highlight"}
+          onClick={highlight.applyCurrentHighlightColor}
+          onMenuClick={() => menu.toggleMenu("toolbar-highlight")}
+        />
+
+        {menu.openMenu === "toolbar-highlight" ? (
+          <ToolbarMenuPanel className="min-w-48">
+            <HighlightMenuItems controller={controller} labelMode="short" />
           </ToolbarMenuPanel>
         ) : null}
       </div>
@@ -854,7 +975,8 @@ function NewsBodyEditorView({
 
             return {
               contextElement: tableElement,
-              getBoundingClientRect: () => getTableBubbleAnchorRect(tableElement),
+              getBoundingClientRect: () =>
+                getTableBubbleAnchorRect(tableElement),
             };
           }}
         >

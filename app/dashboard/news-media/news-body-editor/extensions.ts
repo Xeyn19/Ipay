@@ -2,6 +2,7 @@
 
 import { mergeAttributes } from "@tiptap/core";
 import FileHandler from "@tiptap/extension-file-handler";
+import Highlight from "@tiptap/extension-highlight";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { TableKit } from "@tiptap/extension-table";
 import TableOfContents from "@tiptap/extension-table-of-contents";
@@ -129,6 +130,9 @@ export function createNewsBodyEditorExtensions({
     FontFamily,
     Color,
     BackgroundColor,
+    Highlight.configure({
+      multicolor: true,
+    }),
     FileHandler.configure({
       allowedMimeTypes: [...EDITOR_IMAGE_ALLOWED_MIME_TYPES],
       onDrop: (currentEditor, files, pos) => {

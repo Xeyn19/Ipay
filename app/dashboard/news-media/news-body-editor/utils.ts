@@ -4,6 +4,7 @@ import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 import type { TextStyleAttributes as TiptapTextStyleAttributes } from "@tiptap/extension-text-style";
 import {
+  DEFAULT_HIGHLIGHT_COLOR,
   collectDocumentTextStyleColors,
   normalizeTextStyleAttributes,
   type NewsBodyTextStyleAttributes,
@@ -488,6 +489,18 @@ export function getCurrentTextStyle(
     fontSize:
       typeof attributes.fontSize === "string" ? attributes.fontSize : null,
   });
+}
+
+export function getCurrentHighlightColor(editor: Editor | null) {
+  if (!editor || !editor.isActive("highlight")) {
+    return null;
+  }
+
+  const { color } = editor.getAttributes("highlight") as { color?: unknown };
+
+  return typeof color === "string" && color.trim()
+    ? color
+    : DEFAULT_HIGHLIGHT_COLOR;
 }
 
 export function updateLink(editor: Editor | null) {

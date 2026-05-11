@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useRef, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useEditor, useEditorState, type JSONContent } from "@tiptap/react";
 import toast from "react-hot-toast";
 import { EMPTY_NEWS_BODY } from "@/app/lib/news-media";
-import { stepFontSizeValue } from "@/app/lib/news-body-text-styles";
+import {
+  DEFAULT_HIGHLIGHT_COLOR,
+  stepFontSizeValue,
+} from "@/app/lib/news-body-text-styles";
 import {
   createNewsBodyEditorExtensions,
   NEWS_TABLE_OF_CONTENTS_NODE_NAME,
@@ -16,6 +19,7 @@ import {
   collectDocumentEditorColors,
   getActiveTableContext,
   getCurrentHeading,
+  getCurrentHighlightColor,
   getCurrentTextAlignment,
   getCurrentTextStyle,
   isHeaderAxisActive,
@@ -67,6 +71,8 @@ function getEmptyEditorState(
     currentTextAlign: null,
     currentTextStyle: null,
     documentColors: collectDocumentEditorColors(initialContent ?? EMPTY_NEWS_BODY),
+    highlight: false,
+    highlightColor: null,
     italic: false,
     link: false,
     orderedList: false,
@@ -88,6 +94,9 @@ export function useNewsBodyEditor({
   const textColorInputRef = useRef<HTMLInputElement | null>(null);
   const backgroundColorInputRef = useRef<HTMLInputElement | null>(null);
   const cellBackgroundColorInputRef = useRef<HTMLInputElement | null>(null);
+  const [lastUsedHighlightColor, setLastUsedHighlightColor] = useState(
+    DEFAULT_HIGHLIGHT_COLOR,
+  );
   const menu = useEditorMenuState();
   const imageUpload = useImageUploadState({
     closeMenu: menu.closeMenu,
@@ -158,6 +167,8 @@ export function useNewsBodyEditor({
         currentTextAlign: getCurrentTextAlignment(currentEditor),
         currentTextStyle: getCurrentTextStyle(currentEditor),
         documentColors: collectDocumentEditorColors(currentEditor.getJSON()),
+        highlight: currentEditor.isActive("highlight"),
+        highlightColor: getCurrentHighlightColor(currentEditor),
         italic: currentEditor.isActive("italic"),
         link: currentEditor.isActive("link"),
         orderedList: currentEditor.isActive("orderedList"),
@@ -180,6 +191,7 @@ export function useNewsBodyEditor({
   const selectedFontFamily = selectedTextStyle?.fontFamily ?? null;
   const selectedTextColor = selectedTextStyle?.color ?? null;
   const selectedBackgroundColor = selectedTextStyle?.backgroundColor ?? null;
+  const selectedHighlightColor = resolvedEditorState.highlightColor ?? null;
   const selectedCellProperties = resolvedEditorState.currentCellProperties;
   const selectedCellBackgroundColor = selectedCellProperties.backgroundColor ?? null;
   const hasSelectedCellBackgroundColor =
@@ -201,6 +213,7 @@ export function useNewsBodyEditor({
   const currentRowIsHeader = resolvedEditorState.currentRowIsHeader ?? false;
   const isTableActive = resolvedEditorState.tableActive ?? false;
   const hasDirectionalMergeAction = Object.values(canMergeDirection).some(Boolean);
+  const isHighlightActive = resolvedEditorState.highlight ?? false;
 
   const table = useTableCellActions({
     activeCellPos,
@@ -250,6 +263,23 @@ export function useNewsBodyEditor({
   function runAction(action: () => void) {
     action();
     menu.closeMenu();
+  }
+
+  function applyHighlightColor(color: string) {
+    if (!editor) {
+      return;
+    }
+
+    setLastUsedHighlightColor(color);
+    editor.chain().focus().setHighlight({ color }).run();
+  }
+
+  function applyCurrentHighlightColor() {
+    applyHighlightColor(lastUsedHighlightColor);
+  }
+
+  function unsetHighlight() {
+    editor?.chain().focus().unsetHighlight().run();
   }
 
   function insertTableOfContents() {
@@ -408,6 +438,7 @@ export function useNewsBodyEditor({
       editorState: resolvedEditorState,
       hasDirectionalMergeAction,
       hasSelectedCellBackgroundColor,
+      isHighlightActive,
       isTableActive,
       selectedBackgroundColor,
       selectedCellBackgroundColor,
@@ -417,6 +448,7 @@ export function useNewsBodyEditor({
       selectedFontFamily,
       selectedFontSize,
       selectedHeading,
+      selectedHighlightColor,
       selectedImage,
       selectedTextAlignment,
       selectedTextColor,
@@ -424,6 +456,13 @@ export function useNewsBodyEditor({
     },
     editor,
     font,
+    highlight: {
+      applyCurrentHighlightColor,
+      applyHighlightColor,
+      lastUsedHighlightColor,
+      setLastUsedHighlightColor,
+      unsetHighlight,
+    },
     image: imageController,
     menu,
     refs: {

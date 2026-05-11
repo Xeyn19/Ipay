@@ -18,6 +18,11 @@ export type FontFamilyOption = {
   value: string;
 };
 
+export type HighlightColorOption = {
+  label: string;
+  value: string;
+};
+
 export const FONT_SIZE_OPTIONS: FontSizeOption[] = [
   { label: "10", value: "10px" },
   { label: "12", value: "12px" },
@@ -69,6 +74,17 @@ export const DEFAULT_TEXT_STYLE_COLORS = [
   "#8B5CF6",
   "#EC4899",
   "#DC2626",
+];
+
+export const DEFAULT_HIGHLIGHT_COLOR = "#FEF08A";
+
+export const HIGHLIGHT_COLOR_OPTIONS: HighlightColorOption[] = [
+  { label: "Yellow Marker", value: DEFAULT_HIGHLIGHT_COLOR },
+  { label: "Green Marker", value: "#BBF7D0" },
+  { label: "Pink Marker", value: "#F9A8D4" },
+  { label: "Blue Marker", value: "#BFDBFE" },
+  { label: "Red Marker", value: "#FECACA" },
+  { label: "Dark Green Marker", value: "#4ADE80" },
 ];
 
 function normalizeColorValue(value: string) {

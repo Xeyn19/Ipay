@@ -21,6 +21,7 @@ export type OpenMenu =
   | "toolbar-font-family"
   | "toolbar-text-color"
   | "toolbar-background-color"
+  | "toolbar-highlight"
   | "toolbar-table"
   | null;
 export type TopLevelMenuKey = Extract<
@@ -106,6 +107,8 @@ export type NewsBodyEditorSnapshot = {
   currentTextStyle: NewsBodyTextStyleAttributes | null;
   documentColors: DocumentEditorColors;
   italic: boolean;
+  highlight: boolean;
+  highlightColor: string | null;
   link: boolean;
   orderedList: boolean;
   selectedImage: SelectedImageState | null;

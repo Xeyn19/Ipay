@@ -29,7 +29,8 @@
     "nodemailer": "^8.0.7",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "react-hot-toast": "^2.6.0"
+    "react-hot-toast": "^2.6.0",
+    "tiptap-image-plus": "^3.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

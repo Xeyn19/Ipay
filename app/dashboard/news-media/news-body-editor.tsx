@@ -11,7 +11,6 @@ import {
 } from "react";
 import { mergeAttributes } from "@tiptap/core";
 import FileHandler from "@tiptap/extension-file-handler";
-import TiptapImage from "@tiptap/extension-image";
 import { TableKit } from "@tiptap/extension-table";
 import { TableCell } from "@tiptap/extension-table/cell";
 import { TableHeader } from "@tiptap/extension-table/header";
@@ -25,6 +24,7 @@ import {
 import { BubbleMenu } from "@tiptap/react/menus";
 import { CellSelection, TableMap } from "@tiptap/pm/tables";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import { NodeSelection } from "@tiptap/pm/state";
 import {
   BackgroundColor,
   Color,
@@ -52,12 +52,13 @@ import {
   Droplets,
   Eraser,
   Image as ImageIcon,
-  ImagePlus,
+  ImagePlus as ImagePlusIcon,
   ImageUp,
   Italic,
   Link,
   List,
   ListOrdered,
+  MessageSquare,
   Minus,
   PaintBucket,
   Palette,
@@ -79,6 +80,13 @@ import {
 import toast from "react-hot-toast";
 import { uploadNewsBodyImage } from "@/app/dashboard/news-media/actions";
 import {
+  getNewsBodyImageSizeLabel,
+  NEWS_BODY_IMAGE_SIZE_PRESETS,
+  normalizeNewsBodyImageAlignment,
+  normalizeNewsBodyImageWidth,
+  type NewsBodyImageAlignment,
+} from "@/app/lib/news-body-images";
+import {
   collectDocumentTextStyleColors,
   DEFAULT_TEXT_STYLE_COLORS,
   FONT_FAMILY_OPTIONS,
@@ -88,6 +96,7 @@ import {
   type NewsBodyTextStyleAttributes,
 } from "@/app/lib/news-body-text-styles";
 import { EMPTY_NEWS_BODY } from "@/app/lib/news-media";
+import { NewsBodyImage } from "./news-body-image-extension";
 import { dashboardInputClassName, NewsModal } from "./news-modal";
 
 type NewsBodyEditorProps = {
@@ -154,10 +163,18 @@ type TableAxis = "columns" | "rows";
 type MergeDirection = "up" | "right" | "down" | "left";
 type OpenTableBubbleSubmenu = TableAxis | "merge" | "cell-properties" | null;
 type OpenCellPropertiesMenu = "background-color" | null;
+type OpenImageBubbleSubmenu = "alignment" | "size" | null;
 type ActiveTableContext = {
   activeCellPos: number | null;
   activeTablePos: number | null;
   tableActive: boolean;
+};
+type SelectedImageState = {
+  alignment: NewsBodyImageAlignment;
+  alt: string;
+  pos: number;
+  src: string;
+  width: string;
 };
 type ToolbarSplitMenuButtonProps = {
   ariaLabel: string;
@@ -206,6 +223,7 @@ const EDITOR_IMAGE_ALLOWED_MIME_TYPES = [
 const TABLE_PICKER_LIMIT = 10;
 const DEFAULT_TABLE_DIMENSION = 3;
 const TABLE_BUBBLE_MENU_PLUGIN_KEY = "newsBodyEditorTableBubbleMenu";
+const IMAGE_BUBBLE_MENU_PLUGIN_KEY = "newsBodyEditorImageBubbleMenu";
 const EMPTY_MERGE_DIRECTION_AVAILABILITY: MergeDirectionAvailability = {
   down: false,
   left: false,
@@ -260,6 +278,28 @@ const textAlignmentOptions: Array<{
     icon: <AlignJustify className="h-4 w-4" />,
     label: "Justify",
     value: "justify",
+  },
+];
+
+const imageAlignmentOptions: Array<{
+  icon: ReactNode;
+  label: string;
+  value: NewsBodyImageAlignment;
+}> = [
+  {
+    icon: <AlignLeft className="h-4 w-4" />,
+    label: "Align left",
+    value: "left",
+  },
+  {
+    icon: <AlignCenter className="h-4 w-4" />,
+    label: "Align center",
+    value: "center",
+  },
+  {
+    icon: <AlignRight className="h-4 w-4" />,
+    label: "Align right",
+    value: "right",
   },
 ];
 
@@ -1467,6 +1507,38 @@ function getImageInsertTarget(editor: Editor) {
   return from === to ? from : { from, to };
 }
 
+function getSelectedImageState(editor: Editor | null): SelectedImageState | null {
+  if (!editor) {
+    return null;
+  }
+
+  const { selection } = editor.state;
+
+  if (!(selection instanceof NodeSelection) || selection.node.type.name !== "image") {
+    return null;
+  }
+
+  return {
+    alignment: normalizeNewsBodyImageAlignment(selection.node.attrs.alignment),
+    alt:
+      typeof selection.node.attrs.alt === "string" ? selection.node.attrs.alt : "",
+    pos: selection.from,
+    src:
+      typeof selection.node.attrs.src === "string" ? selection.node.attrs.src : "",
+    width: normalizeNewsBodyImageWidth(selection.node.attrs.width),
+  };
+}
+
+function getSelectedImageElement(editor: Editor | null) {
+  if (!editor) {
+    return null;
+  }
+
+  return editor.view.dom.querySelector(
+    ".news-body-editor__image-wrapper.is-selected .news-body-editor__image-container",
+  ) as HTMLElement | null;
+}
+
 function insertImageNode(
   editor: Editor,
   src: string,
@@ -1475,7 +1547,10 @@ function insertImageNode(
   const imageNode = {
     type: "image",
     attrs: {
+      alignment: "center",
+      alt: "",
       src,
+      width: "",
     },
   };
 
@@ -1629,12 +1704,16 @@ export function NewsBodyEditor({
   const [cellPaddingInputValue, setCellPaddingInputValue] = useState("");
   const [isImageUrlModalOpen, setIsImageUrlModalOpen] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [openImageBubbleSubmenu, setOpenImageBubbleSubmenu] =
+    useState<OpenImageBubbleSubmenu>(null);
+  const [isImageAltEditorOpen, setIsImageAltEditorOpen] = useState(false);
+  const [imageAltInputValue, setImageAltInputValue] = useState("");
 
   const editor = useEditor({
     content: initialContent ?? EMPTY_NEWS_BODY,
     extensions: [
       StarterKit,
-      TiptapImage,
+      NewsBodyImage,
       TableKit.configure({
         table: {
           renderWrapper: true,
@@ -1718,6 +1797,7 @@ export function NewsBodyEditor({
           italic: false,
           link: false,
           orderedList: false,
+          selectedImage: null as SelectedImageState | null,
           tableActive: false,
           strike: false,
           subscript: false,
@@ -1769,6 +1849,7 @@ export function NewsBodyEditor({
         italic: currentEditor.isActive("italic"),
         link: currentEditor.isActive("link"),
         orderedList: currentEditor.isActive("orderedList"),
+        selectedImage: getSelectedImageState(currentEditor),
         strike: currentEditor.isActive("strike"),
         subscript: currentEditor.isActive("subscript"),
         superscript: currentEditor.isActive("superscript"),
@@ -1803,6 +1884,7 @@ export function NewsBodyEditor({
     backgroundColors: [],
     textColors: [],
   };
+  const selectedImage = editorState?.selectedImage ?? null;
   const activeCellPos = editorState?.activeCellPos ?? null;
   const activeTablePos = editorState?.activeTablePos ?? null;
   const canMergeDirection =
@@ -1818,6 +1900,19 @@ export function NewsBodyEditor({
     Boolean,
   );
 
+  useEffect(() => {
+    if (!selectedImage) {
+      setOpenImageBubbleSubmenu(null);
+      setIsImageAltEditorOpen(false);
+      setImageAltInputValue("");
+      return;
+    }
+
+    setOpenImageBubbleSubmenu(null);
+    setIsImageAltEditorOpen(false);
+    setImageAltInputValue(selectedImage.alt);
+  }, [selectedImage?.alt, selectedImage?.pos]);
+
   function closeMenu() {
     setOpenMenu(null);
   }
@@ -1829,6 +1924,71 @@ export function NewsBodyEditor({
   function runAction(action: () => void) {
     action();
     closeMenu();
+  }
+
+  function closeImageBubbleSubmenu() {
+    setOpenImageBubbleSubmenu(null);
+  }
+
+  function toggleImageBubbleSubmenu(
+    menu: Exclude<OpenImageBubbleSubmenu, null>,
+  ) {
+    setIsImageAltEditorOpen(false);
+    setOpenImageBubbleSubmenu((currentMenu) =>
+      currentMenu === menu ? null : menu,
+    );
+  }
+
+  function updateSelectedImageAttributes(
+    attributes: Partial<{
+      alignment: NewsBodyImageAlignment;
+      alt: string;
+      width: string;
+    }>,
+  ) {
+    if (!editor || !selectedImage) {
+      return;
+    }
+
+    editor
+      .chain()
+      .focus()
+      .setNodeSelection(selectedImage.pos)
+      .updateAttributes("image", attributes)
+      .run();
+  }
+
+  function runImageBubbleAction(action: () => void) {
+    action();
+    closeImageBubbleSubmenu();
+    setIsImageAltEditorOpen(false);
+  }
+
+  function openImageAltEditor() {
+    if (!selectedImage) {
+      return;
+    }
+
+    setOpenImageBubbleSubmenu(null);
+    setImageAltInputValue(selectedImage.alt);
+    setIsImageAltEditorOpen(true);
+  }
+
+  function saveSelectedImageAlt() {
+    updateSelectedImageAttributes({
+      alt: imageAltInputValue.trim(),
+    });
+    setIsImageAltEditorOpen(false);
+  }
+
+  function deleteSelectedImage() {
+    if (!editor || !selectedImage) {
+      return;
+    }
+
+    editor.chain().focus().setNodeSelection(selectedImage.pos).deleteSelection().run();
+    closeImageBubbleSubmenu();
+    setIsImageAltEditorOpen(false);
   }
 
   function toggleTableBubbleSubmenu(
@@ -2577,6 +2737,39 @@ export function NewsBodyEditor({
     return <TableInsertPicker onInsert={insertTable} />;
   }
 
+  function renderImageAlignmentMenuContent() {
+    return imageAlignmentOptions.map((option) => (
+      <MenuItem
+        key={option.value}
+        icon={option.icon}
+        isActive={selectedImage?.alignment === option.value}
+        onClick={() =>
+          runImageBubbleAction(() =>
+            updateSelectedImageAttributes({ alignment: option.value }),
+          )
+        }
+      >
+        {option.label}
+      </MenuItem>
+    ));
+  }
+
+  function renderImageSizeMenuContent() {
+    return NEWS_BODY_IMAGE_SIZE_PRESETS.map((option) => (
+      <MenuItem
+        key={option.label}
+        isActive={selectedImage?.width === option.value}
+        onClick={() =>
+          runImageBubbleAction(() =>
+            updateSelectedImageAttributes({ width: option.value }),
+          )
+        }
+      >
+        {option.label}
+      </MenuItem>
+    ));
+  }
+
   function renderTableBubbleMenuPanel(
     content: ReactNode,
     className = "min-w-44",
@@ -2587,6 +2780,99 @@ export function NewsBodyEditor({
         className={`news-body-editor__table-bubble-submenu ${className}`}
       >
         {content}
+      </div>
+    );
+  }
+
+  function renderImageBubbleContent() {
+    if (!selectedImage) {
+      return null;
+    }
+
+    if (isImageAltEditorOpen) {
+      return (
+        <div className="news-body-editor__table-bubble news-body-editor__image-bubble news-body-editor__image-alt-bubble">
+          <input
+            autoFocus
+            type="text"
+            value={imageAltInputValue}
+            onChange={(event) => setImageAltInputValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                saveSelectedImageAlt();
+              }
+
+              if (event.key === "Escape") {
+                event.preventDefault();
+                setIsImageAltEditorOpen(false);
+              }
+            }}
+            placeholder="Describe this image"
+            className={`${dashboardInputClassName} news-body-editor__image-alt-input !mt-0`}
+          />
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={saveSelectedImageAlt}
+            className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border-orange)] bg-[var(--brand-pale)] px-3 text-sm font-semibold text-[var(--brand)] transition hover:bg-[var(--brand)]/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+          >
+            Save
+          </button>
+        </div>
+      );
+    }
+
+    const selectedAlignmentOption = imageAlignmentOptions.find(
+      (option) => option.value === selectedImage.alignment,
+    );
+
+    return (
+      <div className="news-body-editor__table-bubble news-body-editor__image-bubble">
+        <ToolbarButton ariaLabel="Edit image alt text" onClick={openImageAltEditor}>
+          <MessageSquare className="h-4 w-4" aria-hidden="true" />
+        </ToolbarButton>
+
+        <div
+          className="mx-0.5 h-7 w-px self-center bg-[var(--border-light)]"
+          aria-hidden="true"
+        />
+
+        <div className="relative">
+          <ToolbarMenuButton
+            ariaLabel="Image alignment options"
+            icon={selectedAlignmentOption?.icon ?? <AlignCenter className="h-4 w-4" />}
+            isOpen={openImageBubbleSubmenu === "alignment"}
+            onClick={() => toggleImageBubbleSubmenu("alignment")}
+          />
+
+          {openImageBubbleSubmenu === "alignment"
+            ? renderTableBubbleMenuPanel(renderImageAlignmentMenuContent(), "min-w-48")
+            : null}
+        </div>
+
+        <div className="relative">
+          <ToolbarMenuButton
+            ariaLabel="Image size options"
+            icon={<ImageUp className="h-4 w-4" aria-hidden="true" />}
+            isOpen={openImageBubbleSubmenu === "size"}
+            label={getNewsBodyImageSizeLabel(selectedImage.width)}
+            onClick={() => toggleImageBubbleSubmenu("size")}
+          />
+
+          {openImageBubbleSubmenu === "size"
+            ? renderTableBubbleMenuPanel(renderImageSizeMenuContent(), "min-w-40")
+            : null}
+        </div>
+
+        <div
+          className="mx-0.5 h-7 w-px self-center bg-[var(--border-light)]"
+          aria-hidden="true"
+        />
+
+        <ToolbarButton ariaLabel="Delete image" onClick={deleteSelectedImage}>
+          <Trash2 className="h-4 w-4" aria-hidden="true" />
+        </ToolbarButton>
       </div>
     );
   }
@@ -3056,7 +3342,7 @@ export function NewsBodyEditor({
                               : "Upload From Computer"}
                           </MenuItem>
                           <MenuItem
-                            icon={<ImagePlus className="h-4 w-4" />}
+                            icon={<ImagePlusIcon className="h-4 w-4" />}
                             disabled={!editor || isUploadingImage}
                             onClick={openImageUrlModal}
                           >
@@ -3441,6 +3727,14 @@ export function NewsBodyEditor({
           if (openTableBubbleSubmenu !== null) {
             closeTableBubbleSubmenu();
           }
+
+          if (openImageBubbleSubmenu !== null) {
+            closeImageBubbleSubmenu();
+          }
+
+          if (isImageAltEditorOpen) {
+            setIsImageAltEditorOpen(false);
+          }
         }}
       >
         <input
@@ -3489,6 +3783,45 @@ export function NewsBodyEditor({
           }}
         >
           {renderTableBubbleContent()}
+        </BubbleMenu>
+      ) : null}
+
+      {editor ? (
+        <BubbleMenu
+          editor={editor}
+          pluginKey={IMAGE_BUBBLE_MENU_PLUGIN_KEY}
+          appendTo={() => menuRef.current ?? document.body}
+          options={{
+            placement: "top",
+            offset: 10,
+            shift: true,
+          }}
+          shouldShow={({ editor: currentEditor, view }) => {
+            const activeElement =
+              typeof document !== "undefined" ? document.activeElement : null;
+            const bubbleHasFocus =
+              activeElement instanceof Node &&
+              Boolean(menuRef.current?.contains(activeElement));
+
+            return (
+              getSelectedImageState(currentEditor) !== null &&
+              (view.hasFocus() || bubbleHasFocus)
+            );
+          }}
+          getReferencedVirtualElement={() => {
+            const imageElement = getSelectedImageElement(editor);
+
+            if (!imageElement) {
+              return null;
+            }
+
+            return {
+              contextElement: imageElement,
+              getBoundingClientRect: () => imageElement.getBoundingClientRect(),
+            };
+          }}
+        >
+          {renderImageBubbleContent()}
         </BubbleMenu>
       ) : null}
 

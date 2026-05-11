@@ -1,5 +1,9 @@
 import type { JSONContent } from "@tiptap/react";
 import type { CSSProperties, ReactNode } from "react";
+import {
+  normalizeNewsBodyImageAlignment,
+  normalizeNewsBodyImageWidth,
+} from "@/app/lib/news-body-images";
 import { buildInlineTextStyle } from "@/app/lib/news-body-text-styles";
 import { getNewsBodyText } from "@/app/lib/news-media";
 
@@ -470,29 +474,45 @@ function renderBlockNode(node: JSONContent, key: string): ReactNode {
         typeof node.attrs?.alt === "string" ? node.attrs.alt : "Article image";
       const title =
         typeof node.attrs?.title === "string" ? node.attrs.title : undefined;
-      const width = getNumericNodeAttribute(node.attrs?.width);
+      const width = normalizeNewsBodyImageWidth(node.attrs?.width);
+      const legacyWidth = width ? undefined : getNumericNodeAttribute(node.attrs?.width);
       const height = getNumericNodeAttribute(node.attrs?.height);
+      const alignment = normalizeNewsBodyImageAlignment(node.attrs?.alignment);
+      const alignmentClassName =
+        alignment === "left"
+          ? "md:justify-start"
+          : alignment === "right"
+            ? "md:justify-end"
+            : "md:justify-center";
+      const figureStyle = {
+        "--news-body-image-width": width || "auto",
+      } as CSSProperties;
 
       return (
-        <figure key={key} className="overflow-hidden rounded-[1.75rem] border border-[var(--border-light)] bg-[var(--bg-subtle)]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt={alt}
-            title={title}
-            width={width}
-            height={height}
-            className={
-              width || height
-                ? "block max-w-full"
-                : "block h-auto w-full"
-            }
-            style={{
-              height: "auto",
-              maxWidth: "100%",
-            }}
-          />
-        </figure>
+        <div key={key} className={joinClassNames("flex w-full", alignmentClassName)}>
+          <figure
+            className="w-full overflow-hidden rounded-[1.75rem] border border-[var(--border-light)] bg-[var(--bg-subtle)] md:max-w-full md:[width:var(--news-body-image-width)]"
+            style={figureStyle}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt={alt}
+              title={title}
+              width={legacyWidth}
+              height={height}
+              className={
+                width
+                  ? "block h-auto w-full max-w-full"
+                  : "block h-auto w-full max-w-full md:w-auto"
+              }
+              style={{
+                height: "auto",
+                maxWidth: "100%",
+              }}
+            />
+          </figure>
+        </div>
       );
     }
     default: {

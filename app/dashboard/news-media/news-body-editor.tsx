@@ -29,6 +29,7 @@ import {
 import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
 import TextAlign from "@tiptap/extension-text-align";
+import Typography from "@tiptap/extension-typography";
 import StarterKit from "@tiptap/starter-kit";
 import {
   AlignCenter,
@@ -231,7 +232,7 @@ function ToolbarMenuButton({
       aria-haspopup="menu"
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
-      className={`inline-flex h-8 min-w-4 items-center justify-between gap-1.5 rounded-lg border px-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
+      className={`inline-flex h-8 min-w-4 items-center justify-between gap-1.5 rounded-lg border px-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
         isOpen || isActive
           ? "border-[var(--border-orange)] bg-[var(--brand-pale)] text-[var(--brand)]"
           : "border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
@@ -250,7 +251,8 @@ function ToolbarMenuButton({
         {label && <span className="truncate">{label}</span>}
       </span>
       <ChevronDown
-        className={`h-4 w-4 shrink-0 transition-transform ${
+        size={12}
+        className={`shrink-0 transition-transform ${
           isOpen ? "rotate-180" : ""
         }`}
         aria-hidden="true"
@@ -708,6 +710,7 @@ export function NewsBodyEditor({
       TiptapImage,
       Superscript,
       Subscript,
+      Typography,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TextStyle,
       FontSize,

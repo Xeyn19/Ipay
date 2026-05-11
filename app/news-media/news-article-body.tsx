@@ -111,63 +111,63 @@ function applyMarks(node: JSONContent, content: ReactNode, key: string) {
   return (node.marks ?? [])
     .filter((mark) => mark.type !== "textStyle")
     .reduce<ReactNode>((result, mark, markIndex) => {
-    const markKey = `${key}-mark-${markIndex}`;
+      const markKey = `${key}-mark-${markIndex}`;
 
-    if (mark.type === "bold") {
-      return <strong key={markKey}>{result}</strong>;
-    }
-
-    if (mark.type === "italic") {
-      return <em key={markKey}>{result}</em>;
-    }
-
-    if (mark.type === "underline") {
-      return <u key={markKey}>{result}</u>;
-    }
-
-    if (mark.type === "strike") {
-      return <s key={markKey}>{result}</s>;
-    }
-
-    if (mark.type === "superscript") {
-      return <sup key={markKey}>{result}</sup>;
-    }
-
-    if (mark.type === "subscript") {
-      return <sub key={markKey}>{result}</sub>;
-    }
-
-    if (mark.type === "code") {
-      return (
-        <code
-          key={markKey}
-          className="rounded-md bg-[var(--bg-subtle)] px-1.5 py-0.5 font-mono text-sm text-[var(--text-primary)]"
-        >
-          {result}
-        </code>
-      );
-    }
-
-    if (mark.type === "link") {
-      const href =
-        typeof mark.attrs?.href === "string" ? mark.attrs.href : undefined;
-
-      if (!href) {
-        return result;
+      if (mark.type === "bold") {
+        return <strong key={markKey}>{result}</strong>;
       }
 
-      return (
-        <a
-          key={markKey}
-          href={href}
-          target="_blank"
-          rel="noreferrer"
-          className="font-medium text-[var(--brand)] underline decoration-[var(--brand)]/35 underline-offset-4 transition-colors hover:decoration-[var(--brand)]"
-        >
-          {result}
-        </a>
-      );
-    }
+      if (mark.type === "italic") {
+        return <em key={markKey}>{result}</em>;
+      }
+
+      if (mark.type === "underline") {
+        return <u key={markKey}>{result}</u>;
+      }
+
+      if (mark.type === "strike") {
+        return <s key={markKey}>{result}</s>;
+      }
+
+      if (mark.type === "superscript") {
+        return <sup key={markKey}>{result}</sup>;
+      }
+
+      if (mark.type === "subscript") {
+        return <sub key={markKey}>{result}</sub>;
+      }
+
+      if (mark.type === "code") {
+        return (
+          <code
+            key={markKey}
+            className="rounded-md bg-[var(--bg-subtle)] px-1.5 py-0.5 font-mono text-sm text-[var(--text-primary)]"
+          >
+            {result}
+          </code>
+        );
+      }
+
+      if (mark.type === "link") {
+        const href =
+          typeof mark.attrs?.href === "string" ? mark.attrs.href : undefined;
+
+        if (!href) {
+          return result;
+        }
+
+        return (
+          <a
+            key={markKey}
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-[var(--brand)] underline decoration-[var(--brand)]/35 underline-offset-4 transition-colors hover:decoration-[var(--brand)]"
+          >
+            {result}
+          </a>
+        );
+      }
 
       return result;
     }, styledContent);
@@ -296,7 +296,7 @@ function getTableCellRenderProps(node: JSONContent) {
   return {
     className: joinClassNames(
       "min-w-32 border border-[var(--border-light)]",
-      padding ? undefined : "px-3 py-3.5",
+      padding ? undefined : "px-3.5 py-3",
       "align-top",
     ),
     colSpan,
@@ -369,7 +369,9 @@ function renderBlockNode(
     case "heading": {
       const level = Number(node.attrs?.level);
       const headingLevel =
-        level >= 1 && level <= 6 ? (level as keyof typeof headingClassNames) : 2;
+        level >= 1 && level <= 6
+          ? (level as keyof typeof headingClassNames)
+          : 2;
       const className = joinClassNames(
         headingClassNames[headingLevel],
         getTextAlignmentClassName(node),
@@ -501,7 +503,12 @@ function renderBlockNode(
         >
           <div className="space-y-4">
             {(node.content ?? []).map((child, index) =>
-              renderBlockNode(child, `${key}-${index}`, `${path}.${index}`, context),
+              renderBlockNode(
+                child,
+                `${key}-${index}`,
+                `${path}.${index}`,
+                context,
+              ),
             )}
           </div>
         </blockquote>
@@ -546,7 +553,7 @@ function renderBlockNode(
                               "bg-[var(--bg-subtle)] text-sm font-semibold text-[var(--text-primary)]",
                             )}
                             style={{
-                              textAlign: 'left', // override browser default
+                              textAlign: "left", // override browser default
                               ...cellProps.style, // explicit alignment from editor still wins
                             }}
                             colSpan={cellProps.colSpan}
@@ -608,7 +615,9 @@ function renderBlockNode(
       const title =
         typeof node.attrs?.title === "string" ? node.attrs.title : undefined;
       const width = normalizeNewsBodyImageWidth(node.attrs?.width);
-      const legacyWidth = width ? undefined : getNumericNodeAttribute(node.attrs?.width);
+      const legacyWidth = width
+        ? undefined
+        : getNumericNodeAttribute(node.attrs?.width);
       const height = getNumericNodeAttribute(node.attrs?.height);
       const alignment = normalizeNewsBodyImageAlignment(node.attrs?.alignment);
       const alignmentClassName =
@@ -622,7 +631,10 @@ function renderBlockNode(
       } as CSSProperties;
 
       return (
-        <div key={key} className={joinClassNames("flex w-full", alignmentClassName)}>
+        <div
+          key={key}
+          className={joinClassNames("flex w-full", alignmentClassName)}
+        >
           <figure
             className="w-full overflow-hidden rounded-[1.75rem] border border-[var(--border-light)] bg-[var(--bg-subtle)] md:max-w-full md:[width:var(--news-body-image-width)]"
             style={figureStyle}

@@ -11,6 +11,7 @@ import {
   Code2,
   Droplets,
   Eraser,
+  Maximize2,
   Highlighter,
   Image as ImageIcon,
   ImagePlus as ImagePlusIcon,
@@ -19,6 +20,7 @@ import {
   Link,
   List,
   ListOrdered,
+  Minimize2,
   Minus,
   PaintBucket,
   Quote,
@@ -31,8 +33,14 @@ import {
   Type,
   Underline,
   Undo2,
+  X,
   Strikethrough,
 } from "lucide-react";
+import { useId } from "react";
+import {
+  NEWS_ARTICLE_CONTENT_INSET_CLASS_NAME,
+  NEWS_ARTICLE_FRAME_CLASS_NAME,
+} from "@/app/lib/news-article-layout";
 import {
   HIGHLIGHT_COLOR_OPTIONS,
   FONT_FAMILY_OPTIONS,
@@ -71,7 +79,6 @@ import { ImageUrlModal } from "./components/ImageUrlModal";
 import { TableInsertPicker } from "./components/TableInsertPicker";
 import { TableOfContentsIcon, TaskListIcon } from "./components/icons";
 import {
-  EmptyMenuItem,
   MenuItem,
   MenuSeparator,
   SubmenuItem,
@@ -241,10 +248,8 @@ function TextAlignmentMenuItems({
 
 function HighlightMenuItems({
   controller,
-  labelMode,
 }: {
   controller: NewsBodyEditorController;
-  labelMode: "marker" | "short";
 }) {
   const { commands, derivedState, highlight } = controller;
 
@@ -317,8 +322,18 @@ function EditMenu({ controller }: { controller: NewsBodyEditorController }) {
   );
 }
 
-function ViewMenu() {
-  return <EmptyMenuItem />;
+function ViewMenu({ controller }: { controller: NewsBodyEditorController }) {
+  const { commands, fullscreen } = controller;
+
+  return (
+    <MenuItem
+      icon={<Maximize2 className="h-4 w-4" />}
+      isActive={fullscreen.isFullscreen}
+      onClick={() => commands.runAction(fullscreen.toggleFullscreen)}
+    >
+      Fullscreen Mode
+    </MenuItem>
+  );
 }
 
 function InsertMenu({ controller }: { controller: NewsBodyEditorController }) {
@@ -544,10 +559,7 @@ function FormatMenu({ controller }: { controller: NewsBodyEditorController }) {
                 />
               }
               submenu={
-                <HighlightMenuItems
-                  controller={controller}
-                  labelMode="marker"
-                />
+                <HighlightMenuItems controller={controller} />
               }
             >
               Highlight
@@ -620,7 +632,7 @@ function TopLevelMenuContent({
   }
 
   if (menuKey === "view") {
-    return <ViewMenu />;
+    return <ViewMenu controller={controller} />;
   }
 
   if (menuKey === "insert") {
@@ -854,7 +866,7 @@ function ToolbarSection({
 
         {menu.openMenu === "toolbar-highlight" ? (
           <ToolbarMenuPanel className="min-w-48">
-            <HighlightMenuItems controller={controller} labelMode="short" />
+            <HighlightMenuItems controller={controller} />
           </ToolbarMenuPanel>
         ) : null}
       </div>
@@ -867,19 +879,32 @@ function NewsBodyEditorView({
 }: {
   controller: NewsBodyEditorController;
 }) {
-  const { colors, commands, derivedState, editor, image, refs } = controller;
+  const { colors, commands, derivedState, editor, fullscreen, image, refs } =
+    controller;
   const menuRef = refs.menuRef;
   const textColorInputRef = refs.textColorInputRef;
   const backgroundColorInputRef = refs.backgroundColorInputRef;
   const cellBackgroundColorInputRef = refs.cellBackgroundColorInputRef;
   const imageInputRef = refs.imageInputRef;
+  const fullscreenTitleId = useId();
+  const fullscreenCardClassName = fullscreen.isFullscreen
+    ? "news-body-editor is-fullscreen relative flex min-h-0 w-full flex-1 flex-col overflow-visible rounded-2xl border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] transition focus-within:border-[var(--border-orange)] focus-within:ring-2 focus-within:ring-[color:var(--brand)]/15"
+    : "news-body-editor mt-2 overflow-visible rounded-xl border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-sm transition focus-within:border-[var(--border-orange)] focus-within:ring-2 focus-within:ring-[color:var(--brand)]/15";
+  const fullscreenContentFrameClassName = [
+    "news-body-editor__content-shell",
+    fullscreen.isFullscreen
+      ? `${NEWS_ARTICLE_FRAME_CLASS_NAME} ${NEWS_ARTICLE_CONTENT_INSET_CLASS_NAME} py-6 sm:py-8 lg:py-10`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-  return (
+  const editorSurface = (
     <div
       ref={(node) => {
         menuRef.current = node;
       }}
-      className="news-body-editor mt-2 overflow-visible rounded-xl border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-sm transition focus-within:border-[var(--border-orange)] focus-within:ring-2 focus-within:ring-[color:var(--brand)]/15"
+      className={fullscreenCardClassName}
     >
       <input
         ref={(node) => {
@@ -928,7 +953,10 @@ function NewsBodyEditorView({
       <TopMenuBar controller={controller} />
       <ToolbarSection controller={controller} />
 
-      <div onMouseDownCapture={commands.editorSurfaceMouseDownCapture}>
+      <div
+        className={fullscreen.isFullscreen ? "min-h-0 flex-1 overflow-y-auto" : ""}
+        onMouseDownCapture={commands.editorSurfaceMouseDownCapture}
+      >
         <input
           ref={(node) => {
             imageInputRef.current = node;
@@ -938,7 +966,9 @@ function NewsBodyEditorView({
           onChange={image.handleImageInputChange}
           className="sr-only"
         />
-        <EditorContent editor={editor} />
+        <div className={fullscreenContentFrameClassName}>
+          <EditorContent editor={editor} />
+        </div>
       </div>
 
       {editor ? (
@@ -1029,6 +1059,49 @@ function NewsBodyEditorView({
           onSubmit={image.handleInsertImageUrl}
         />
       ) : null}
+    </div>
+  );
+
+  if (!fullscreen.isFullscreen) {
+    return editorSurface;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[90] bg-[color:var(--bg-base)]/96 backdrop-blur-sm">
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={fullscreenTitleId}
+        className="flex h-full flex-col p-3 sm:p-4 lg:p-6"
+      >
+        <div className="mx-auto flex w-full max-w-[96rem] items-center justify-between gap-4 pb-3">
+          <div className="min-w-0">
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--text-faint)]">
+              Editor View
+            </p>
+            <h2
+              id={fullscreenTitleId}
+              className="font-heading text-lg font-semibold tracking-[-0.02em] text-[var(--text-primary)]"
+            >
+              Fullscreen mode
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            onClick={fullscreen.closeFullscreen}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--border-light)] bg-[var(--bg-elevated)] px-4 text-sm font-medium text-[var(--text-secondary)] shadow-sm transition hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)]"
+          >
+            <Minimize2 className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Exit fullscreen</span>
+            <X className="h-4 w-4 sm:hidden" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="mx-auto flex min-h-0 w-full max-w-[96rem] flex-1">
+          {editorSurface}
+        </div>
+      </section>
     </div>
   );
 }

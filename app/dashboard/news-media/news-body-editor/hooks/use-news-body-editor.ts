@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from "react";
 import { useEditor, useEditorState, type JSONContent } from "@tiptap/react";
 import toast from "react-hot-toast";
 import { EMPTY_NEWS_BODY } from "@/app/lib/news-media";
@@ -97,6 +103,7 @@ export function useNewsBodyEditor({
   const [lastUsedHighlightColor, setLastUsedHighlightColor] = useState(
     DEFAULT_HIGHLIGHT_COLOR,
   );
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const menu = useEditorMenuState();
   const imageUpload = useImageUploadState({
     closeMenu: menu.closeMenu,
@@ -265,6 +272,21 @@ export function useNewsBodyEditor({
     menu.closeMenu();
   }
 
+  const openFullscreen = useCallback(() => {
+    menu.closeAllMenus();
+    setIsFullscreen(true);
+  }, [menu]);
+
+  const closeFullscreen = useCallback(() => {
+    menu.closeAllMenus();
+    setIsFullscreen(false);
+  }, [menu]);
+
+  const toggleFullscreen = useCallback(() => {
+    menu.closeAllMenus();
+    setIsFullscreen((current) => !current);
+  }, [menu]);
+
   function applyHighlightColor(color: string) {
     if (!editor) {
       return;
@@ -331,6 +353,19 @@ export function useNewsBodyEditor({
   ]);
 
   useEffect(() => {
+    if (!isFullscreen) {
+      return;
+    }
+
+    const originalBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+    };
+  }, [isFullscreen]);
+
+  useEffect(() => {
     function applyStep(delta: number) {
       if (!editor) {
         return;
@@ -373,6 +408,12 @@ export function useNewsBodyEditor({
       }
 
       if (event.key === "Escape") {
+        if (isFullscreen) {
+          event.preventDefault();
+          closeFullscreen();
+          return;
+        }
+
         menu.setOpenMenu(null);
         menu.setOpenCellPropertiesMenu(null);
         menu.setOpenTableBubbleSubmenu(null);
@@ -386,7 +427,7 @@ export function useNewsBodyEditor({
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [editor, menu, selectedFontSize]);
+  }, [closeFullscreen, editor, isFullscreen, menu, selectedFontSize]);
 
   function handleEditorSurfaceMouseDownCapture() {
     if (menu.openMenu !== null) {
@@ -456,6 +497,12 @@ export function useNewsBodyEditor({
     },
     editor,
     font,
+    fullscreen: {
+      closeFullscreen,
+      isFullscreen,
+      openFullscreen,
+      toggleFullscreen,
+    },
     highlight: {
       applyCurrentHighlightColor,
       applyHighlightColor,

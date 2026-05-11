@@ -6,6 +6,15 @@
   white-space: pre-wrap;
 }
 
+.news-body-editor .news-body-editor__content-shell {
+  width: 100%;
+}
+
+.news-body-editor.is-fullscreen .news-body-editor__content {
+  min-height: max(32rem, calc(100vh - 18rem));
+  padding: 0;
+}
+
 .news-body-editor .news-body-editor__content > * + * {
   margin-top: 0.9rem;
 }

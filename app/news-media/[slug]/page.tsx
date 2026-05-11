@@ -19,6 +19,10 @@ import {
 } from "@/app/lib/news-media";
 import { createClient } from "@/app/lib/supabase-server";
 import { DEFAULT_THEME, THEME_COOKIE_KEY, isTheme } from "@/app/lib/theme";
+import {
+  NEWS_ARTICLE_FRAME_CLASS_NAME,
+  NEWS_ARTICLE_PAGE_CONTENT_CLASS_NAME,
+} from "@/app/lib/news-article-layout";
 import { NewsPostViewTracker } from "./news-post-view-tracker";
 import { PreviewSubmitButton } from "./preview-submit-button";
 import { NewsArticleBody } from "../news-article-body";
@@ -92,7 +96,9 @@ export default async function NewsArticlePage({
       <Navbar initialTheme={initialTheme} />
       {showPreviewBar ? (
         <div className="sticky top-[var(--nav-height)] z-40 border-b border-[var(--border-light)] bg-[color:var(--bg-elevated)]/95 backdrop-blur">
-          <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <div
+            className={`${NEWS_ARTICLE_FRAME_CLASS_NAME} flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8`}
+          >
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 href="/news-media"
@@ -131,7 +137,7 @@ export default async function NewsArticlePage({
       ) : null}
 
       <section className="px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
-        <div className="mx-auto max-w-5xl">
+        <div className={NEWS_ARTICLE_FRAME_CLASS_NAME}>
           <article>
             <div className="relative aspect-[16/9] w-full">
               <Image
@@ -144,7 +150,7 @@ export default async function NewsArticlePage({
               />
             </div>
 
-            <div className="px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+            <div className={NEWS_ARTICLE_PAGE_CONTENT_CLASS_NAME}>
 
                 <div className="flex flex-col gap-6">
                   <div className="flex flex-wrap items-center justify-center gap-2 text-sm font-medium text-[var(--text-muted)]">

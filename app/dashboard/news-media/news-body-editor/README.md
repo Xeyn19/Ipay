@@ -53,6 +53,7 @@ It is responsible for:
 
 - creating the editor controller with `useNewsBodyEditor`
 - rendering the top menu bar
+- rendering the fullscreen editor shell
 - rendering the toolbar row
 - rendering `EditorContent`
 - wiring the hidden color inputs
@@ -71,6 +72,7 @@ It is responsible for:
 - creating the Tiptap editor instance
 - subscribing to editor state with `useEditorState`
 - deriving the editor snapshot used by the UI
+- owning fullscreen state and body scroll locking
 - composing the focused hooks:
   - `useEditorMenuState`
   - `useFontActions`
@@ -161,6 +163,7 @@ Owns open/close state for:
 - image bubble submenus
 - cell properties submenu
 - image alt editor mode
+- cross-menu closing used before fullscreen transitions
 
 If you add a new dropdown or bubble submenu state, it probably belongs here.
 
@@ -244,6 +247,19 @@ Usually touch:
 - `index.tsx`
 - `hooks/use-editor-menu-state.ts` if it needs new open-state
 - `hooks/use-news-body-editor.ts` if it needs a new command or derived state
+
+### Fullscreen Mode
+
+The `View -> Fullscreen Mode` option is implemented as editor-local state.
+
+Key behavior:
+
+- the same Tiptap editor instance is reused in inline and fullscreen layouts
+- fullscreen is a fixed overlay above the dashboard chrome
+- page scroll is locked while fullscreen is open
+- the editable content is centered to the same width used by the published article page
+
+The article-width classes are shared through [app/lib/news-article-layout.ts](/D:/ChristianGutierrez/ipay/app/lib/news-article-layout.ts) so the editor and reader page do not drift apart over time.
 
 ### Add a new table action
 

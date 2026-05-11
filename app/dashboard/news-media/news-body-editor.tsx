@@ -11,6 +11,7 @@ import {
 } from "react";
 import { mergeAttributes } from "@tiptap/core";
 import FileHandler from "@tiptap/extension-file-handler";
+import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { TableKit } from "@tiptap/extension-table";
 import TableOfContents from "@tiptap/extension-table-of-contents";
 import { TableCell } from "@tiptap/extension-table/cell";
@@ -367,6 +368,31 @@ function TableOfContentsIcon({
       <path d="M5 17h10" />
       <circle cx="18" cy="12" r="1.25" fill="currentColor" stroke="none" />
       <circle cx="16" cy="17" r="1.25" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function TaskListIcon({
+  className = "h-4 w-4",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="4.5" y="5" width="4" height="4" rx="0.9" />
+      <path d="m5.7 6.9 1.1 1.2 1.8-2.2" />
+      <path d="M11.5 7h8" />
+      <rect x="4.5" y="15" width="4" height="4" rx="0.9" />
+      <path d="M11.5 17h8" />
     </svg>
   );
 }
@@ -1760,6 +1786,8 @@ export function NewsBodyEditor({
     content: initialContent ?? EMPTY_NEWS_BODY,
     extensions: [
       StarterKit,
+      TaskList,
+      TaskItem,
       NewsTableOfContents,
       TableOfContents.configure({
         anchorTypes: ["heading"],
@@ -1848,6 +1876,7 @@ export function NewsBodyEditor({
           italic: false,
           link: false,
           orderedList: false,
+          taskList: false,
           selectedImage: null as SelectedImageState | null,
           tableActive: false,
           strike: false,
@@ -1900,6 +1929,7 @@ export function NewsBodyEditor({
         italic: currentEditor.isActive("italic"),
         link: currentEditor.isActive("link"),
         orderedList: currentEditor.isActive("orderedList"),
+        taskList: currentEditor.isActive("taskList"),
         selectedImage: getSelectedImageState(currentEditor),
         strike: currentEditor.isActive("strike"),
         subscript: currentEditor.isActive("subscript"),
@@ -3628,6 +3658,17 @@ export function NewsBodyEditor({
                       }
                     >
                       Numbered List
+                    </MenuItem>
+                    <MenuItem
+                      icon={<TaskListIcon className="h-4 w-4" />}
+                      isActive={editorState?.taskList}
+                      onClick={() =>
+                        runAction(() =>
+                          editor?.chain().focus().toggleTaskList().run(),
+                        )
+                      }
+                    >
+                      Task List
                     </MenuItem>
                     <MenuSeparator />
                     <SubmenuItem

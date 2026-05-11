@@ -10,6 +10,7 @@
         "@tanstack/react-table": "^8.21.3",
         "@tiptap/extension-file-handler": "^3.23.1",
         "@tiptap/extension-image": "^3.23.1",
+        "@tiptap/extension-list": "^3.23.1",
         "@tiptap/extension-subscript": "^3.23.1",
         "@tiptap/extension-superscript": "^3.23.1",
         "@tiptap/extension-table": "^3.23.1",

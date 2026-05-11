@@ -71,6 +71,10 @@ function getTableCellHorizontalAlignment(node: JSONContent) {
   return undefined;
 }
 
+function isTaskItemChecked(node: JSONContent) {
+  return node.attrs?.checked === true || node.attrs?.checked === "true";
+}
+
 type NewsArticleBodyRenderContext = {
   headingAnchorMap: ReadonlyMap<string, string>;
   tableOfContentsItems: NewsBodyHeadingItem[];
@@ -458,6 +462,36 @@ function renderBlockNode(
             ) : null,
           )}
         </ol>
+      );
+    case "taskList":
+      return (
+        <ul
+          key={key}
+          className="space-y-3 pl-0 text-base leading-8 text-[var(--text-muted)]"
+        >
+          {(node.content ?? []).map((child, index) =>
+            child.type === "taskItem" ? (
+              <li key={`${key}-${index}`} className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={isTaskItemChecked(child)}
+                  readOnly
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  className="mt-[0.65rem] h-4 w-4 shrink-0 accent-[var(--brand)] pointer-events-none"
+                />
+                <div className="min-w-0 flex-1 space-y-3">
+                  {renderListItemContent(
+                    child.content,
+                    `${key}-${index}`,
+                    `${path}.${index}`,
+                    context,
+                  )}
+                </div>
+              </li>
+            ) : null,
+          )}
+        </ul>
       );
     case "blockquote":
       return (

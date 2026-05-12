@@ -44,6 +44,8 @@ export const EDITOR_IMAGE_ALLOWED_MIME_TYPES = [
 export const TABLE_BUBBLE_MENU_PLUGIN_KEY = "newsBodyEditorTableBubbleMenu";
 export const IMAGE_BUBBLE_MENU_PLUGIN_KEY = "newsBodyEditorImageBubbleMenu";
 export const LINK_BUBBLE_MENU_PLUGIN_KEY = "newsBodyEditorLinkBubbleMenu";
+export const TEXT_SELECTION_BUBBLE_MENU_PLUGIN_KEY =
+  "newsBodyEditorTextSelectionBubbleMenu";
 
 const CustomTableCell = TableCell.extend({
   addAttributes() {

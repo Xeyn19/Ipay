@@ -11,18 +11,21 @@ export function ToolbarButton({
   disabled = false,
   isActive = false,
   onClick,
+  title,
 }: {
   ariaLabel: string;
   children: ReactNode;
   disabled?: boolean;
   isActive?: boolean;
   onClick: () => void;
+  title?: string;
 }) {
   return (
     <button
       type="button"
       aria-label={ariaLabel}
       aria-pressed={isActive}
+      title={title}
       disabled={disabled}
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}

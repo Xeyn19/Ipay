@@ -11,17 +11,23 @@ import {
   AlignJustify,
   AlignLeft,
   AlignRight,
+  Bold,
   ChevronDown,
   ChevronRight,
   Columns3,
   Eraser,
   ImageUp,
+  Italic,
+  Link,
+  List,
+  ListOrdered,
   MessageSquare,
   Palette,
   Pencil,
   Rows3,
   TableCellsMerge,
   Trash2,
+  Underline,
 } from "lucide-react";
 import {
   DEFAULT_TEXT_STYLE_COLORS,
@@ -1104,6 +1110,84 @@ export function LinkPreviewBubble({
       >
         <UnlinkIcon />
       </button>
+    </div>
+  );
+}
+
+export function TextSelectionBubbleMenu({
+  controller,
+}: {
+  controller: NewsBodyEditorController;
+}) {
+  const { commands, derivedState, editor } = controller;
+
+  return (
+    <div className="news-body-editor__table-bubble">
+      <ToolbarButton
+        ariaLabel="Toggle bold"
+        isActive={derivedState.editorState.bold}
+        title="Bold"
+        onClick={() => editor?.chain().focus().toggleBold().run()}
+      >
+        <Bold className="h-4 w-4" aria-hidden="true" />
+      </ToolbarButton>
+
+      <ToolbarButton
+        ariaLabel="Toggle italic"
+        isActive={derivedState.editorState.italic}
+        title="Italic"
+        onClick={() => editor?.chain().focus().toggleItalic().run()}
+      >
+        <Italic className="h-4 w-4" aria-hidden="true" />
+      </ToolbarButton>
+
+      <ToolbarButton
+        ariaLabel="Toggle underline"
+        isActive={derivedState.editorState.underline}
+        title="Underline"
+        onClick={() => editor?.chain().focus().toggleUnderline().run()}
+      >
+        <Underline className="h-4 w-4" aria-hidden="true" />
+      </ToolbarButton>
+
+      <div
+        className="mx-0.5 h-7 w-px self-center bg-[var(--border-light)]"
+        aria-hidden="true"
+      />
+
+      <ToolbarButton
+        ariaLabel="Insert or edit link"
+        isActive={Boolean(
+          derivedState.activeLinkBubbleMode || derivedState.editorState.link,
+        )}
+        title="Link"
+        onClick={commands.openLinkBubble}
+      >
+        <Link className="h-4 w-4" aria-hidden="true" />
+      </ToolbarButton>
+
+      <div
+        className="mx-0.5 h-7 w-px self-center bg-[var(--border-light)]"
+        aria-hidden="true"
+      />
+
+      <ToolbarButton
+        ariaLabel="Toggle bulleted list"
+        isActive={derivedState.editorState.bulletList}
+        title="Bulleted List"
+        onClick={() => editor?.chain().focus().toggleBulletList().run()}
+      >
+        <List className="h-4 w-4" aria-hidden="true" />
+      </ToolbarButton>
+
+      <ToolbarButton
+        ariaLabel="Toggle numbered list"
+        isActive={derivedState.editorState.orderedList}
+        title="Numbered List"
+        onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+      >
+        <ListOrdered className="h-4 w-4" aria-hidden="true" />
+      </ToolbarButton>
     </div>
   );
 }

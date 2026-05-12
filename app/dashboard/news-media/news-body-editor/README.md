@@ -29,7 +29,7 @@ app/dashboard/news-media/
     types.ts                          # editor-local types
     utils.ts                          # pure editor helpers and ProseMirror/Tiptap utilities
     components/
-      bubble-menus.tsx                # table bubble menu, image bubble menu, color menu content
+      bubble-menus.tsx                # text, table, link, and image bubble menu UI plus color menu content
       icons.tsx                       # custom SVG icons only
       ImageUrlModal.tsx               # modal for inserting an image by URL
       primitives.tsx                  # shared editor UI primitives
@@ -60,6 +60,7 @@ It is responsible for:
 - rendering toolbar color menus and their inline picker views
 - wiring the hidden file input for image uploads
 - wiring the Tiptap `BubbleMenu` instances
+- enforcing bubble precedence for text selection vs linked text preview
 - wiring the link insert/edit bubble flow
 - rendering `ImageUrlModal`
 
@@ -148,7 +149,9 @@ This file groups the tightly coupled bubble/menu UI:
 
 - `ColorMenuContent`
 - inline color picker replacement views
+- `TextSelectionBubbleMenu`
 - `LinkBubbleMenu`
+- `LinkPreviewBubble`
 - `TableBubbleMenu`
 - table cell properties panel
 - `ImageBubbleMenu`

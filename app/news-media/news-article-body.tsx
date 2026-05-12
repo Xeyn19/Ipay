@@ -258,7 +258,7 @@ function renderTableCellContent(
         <div
           key={key}
           className={joinClassNames(
-            "text-sm leading-7 text-[var(--text-primary)]",
+            "text-sm leading-[1.5] text-[var(--text-primary)]",
             getTextAlignmentClassName(node),
           )}
         >
@@ -381,7 +381,7 @@ function renderBlockNode(
         <p
           key={key}
           className={joinClassNames(
-            "text-base leading-8 text-[var(--text-muted)]",
+            "text-base leading-[1.5] text-[var(--text-muted)]",
             getTextAlignmentClassName(node),
           )}
         >
@@ -451,7 +451,7 @@ function renderBlockNode(
       return (
         <ul
           key={key}
-          className="list-disc space-y-3 pl-6 text-base leading-8 text-[var(--text-muted)] marker:text-[var(--brand)]"
+          className="list-disc space-y-3 pl-6 text-base leading-[1.5] text-[var(--text-muted)] marker:text-[var(--brand)]"
         >
           {(node.content ?? []).map((child, index) =>
             child.type === "listItem" ? (
@@ -471,7 +471,7 @@ function renderBlockNode(
       return (
         <ol
           key={key}
-          className="list-decimal space-y-3 pl-6 text-base leading-8 text-[var(--text-muted)] marker:text-[var(--brand)]"
+          className="list-decimal space-y-3 pl-6 text-base leading-[1.5] text-[var(--text-muted)] marker:text-[var(--brand)]"
         >
           {(node.content ?? []).map((child, index) =>
             child.type === "listItem" ? (
@@ -491,7 +491,7 @@ function renderBlockNode(
       return (
         <ul
           key={key}
-          className="space-y-3 pl-0 text-base leading-8 text-[var(--text-muted)]"
+          className="space-y-3 pl-0 text-base leading-[1.5] text-[var(--text-muted)]"
         >
           {(node.content ?? []).map((child, index) =>
             child.type === "taskItem" ? (
@@ -521,7 +521,7 @@ function renderBlockNode(
       return (
         <blockquote
           key={key}
-          className="border-l-4 border-[var(--border-orange)] bg-[var(--bg-subtle)] px-5 py-4 text-base italic leading-8 text-[var(--text-secondary)]"
+          className="border-l-4 border-[var(--border-orange)] bg-[var(--bg-subtle)] px-5 py-4 text-base italic leading-[1.5] text-[var(--text-secondary)]"
         >
           <div className="space-y-4">
             {(node.content ?? []).map((child, index) =>
@@ -690,7 +690,10 @@ function renderBlockNode(
       }
 
       return (
-        <p key={key} className="text-base leading-8 text-[var(--text-muted)]">
+        <p
+          key={key}
+          className="text-base leading-[1.5] text-[var(--text-muted)]"
+        >
           {text}
         </p>
       );

@@ -16,6 +16,7 @@ import {
 import toast from "react-hot-toast";
 import { EMPTY_NEWS_BODY } from "@/app/lib/news-media";
 import {
+  DEFAULT_LINE_HEIGHT,
   DEFAULT_HIGHLIGHT_COLOR,
   stepFontSizeValue,
 } from "@/app/lib/news-body-text-styles";
@@ -303,6 +304,9 @@ export function useNewsBodyEditor({
   const selectedFontFamily = selectedTextStyle?.fontFamily ?? null;
   const selectedTextColor = selectedTextStyle?.color ?? null;
   const selectedBackgroundColor = selectedTextStyle?.backgroundColor ?? null;
+  const selectedLineHeight =
+    selectedTextStyle?.lineHeight ??
+    (selectedHeading === "paragraph" ? DEFAULT_LINE_HEIGHT : null);
   const selectedHighlightColor = resolvedEditorState.highlightColor ?? null;
   const selectedCellProperties = resolvedEditorState.currentCellProperties;
   const selectedCellBackgroundColor = selectedCellProperties.backgroundColor ?? null;
@@ -367,6 +371,7 @@ export function useNewsBodyEditor({
     cellBackgroundColorInputRef,
     closeMenu: menu.closeMenu,
     editor,
+    selectedHeading,
     selectedFontSize,
     setOpenCellPropertiesMenu: menu.setOpenCellPropertiesMenu,
     setSelectedTableCellBackgroundColor: table.setSelectedTableCellBackgroundColor,
@@ -913,6 +918,7 @@ export function useNewsBodyEditor({
       selectedHeading,
       selectedHighlightColor,
       selectedImage,
+      selectedLineHeight,
       selectedLink,
       selectedTextAlignment,
       selectedTextColor,

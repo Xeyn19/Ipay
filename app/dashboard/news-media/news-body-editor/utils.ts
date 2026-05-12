@@ -484,6 +484,12 @@ export function getCurrentTextStyle(
   const attributes = editor.getAttributes(
     "textStyle",
   ) as TiptapTextStyleAttributes;
+  const lineHeight =
+    typeof (attributes as TiptapTextStyleAttributes & { lineHeight?: unknown })
+      .lineHeight === "string"
+      ? (attributes as TiptapTextStyleAttributes & { lineHeight?: unknown })
+          .lineHeight
+      : null;
 
   return normalizeTextStyleAttributes({
     backgroundColor:
@@ -495,6 +501,7 @@ export function getCurrentTextStyle(
       typeof attributes.fontFamily === "string" ? attributes.fontFamily : null,
     fontSize:
       typeof attributes.fontSize === "string" ? attributes.fontSize : null,
+    lineHeight,
   });
 }
 

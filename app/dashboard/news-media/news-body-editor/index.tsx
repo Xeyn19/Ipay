@@ -45,6 +45,7 @@ import {
   HIGHLIGHT_COLOR_OPTIONS,
   FONT_FAMILY_OPTIONS,
   FONT_SIZE_OPTIONS,
+  LINE_HEIGHT_OPTIONS,
 } from "@/app/lib/news-body-text-styles";
 import type {
   HeadingLevel,
@@ -80,7 +81,11 @@ import {
 } from "./components/bubble-menus";
 import { ImageUrlModal } from "./components/ImageUrlModal";
 import { TableInsertPicker } from "./components/TableInsertPicker";
-import { TableOfContentsIcon, TaskListIcon } from "./components/icons";
+import {
+  LineHeightIcon,
+  TableOfContentsIcon,
+  TaskListIcon,
+} from "./components/icons";
 import {
   MenuItem,
   MenuSeparator,
@@ -242,6 +247,27 @@ function TextAlignmentMenuItems({
         commands.runAction(() =>
           editor?.chain().focus().setTextAlign(option.value).run(),
         )
+      }
+    >
+      {option.label}
+    </MenuItem>
+  ));
+}
+
+function LineHeightMenuItems({
+  controller,
+}: {
+  controller: NewsBodyEditorController;
+}) {
+  const { commands, derivedState, font } = controller;
+
+  return LINE_HEIGHT_OPTIONS.map((option) => (
+    <MenuItem
+      key={option.value}
+      icon={<LineHeightIcon className="h-4 w-4" />}
+      isActive={derivedState.selectedLineHeight === option.value}
+      onClick={() =>
+        commands.runAction(() => font.setLineHeightValue(option.value))
       }
     >
       {option.label}
@@ -619,6 +645,12 @@ function FormatMenu({ controller }: { controller: NewsBodyEditorController }) {
       >
         Text Alignment
       </SubmenuItem>
+      <SubmenuItem
+        icon={<LineHeightIcon className="h-4 w-4" />}
+        submenu={<LineHeightMenuItems controller={controller} />}
+      >
+        Line Height
+      </SubmenuItem>
     </>
   );
 }
@@ -687,6 +719,10 @@ function ToolbarSection({
   controller: NewsBodyEditorController;
 }) {
   const { commands, derivedState, editor, highlight, menu } = controller;
+  const activeAlignmentOption =
+    textAlignmentOptions.find(
+      (option) => option.value === derivedState.selectedTextAlignment,
+    ) ?? textAlignmentOptions[0];
 
   return (
     <div className="relative z-10 flex flex-wrap items-center gap-1.5 border-b border-[var(--border-light)] bg-[var(--bg-subtle)] px-2.5 py-2.5">
@@ -881,6 +917,40 @@ function ToolbarSection({
         {menu.openMenu === "toolbar-highlight" ? (
           <ToolbarMenuPanel className="min-w-48">
             <HighlightMenuItems controller={controller} />
+          </ToolbarMenuPanel>
+        ) : null}
+      </div>
+
+      <ToolbarSeparator />
+
+      <div className="relative">
+        <ToolbarMenuButton
+          ariaLabel="Text alignment options"
+          icon={activeAlignmentOption.icon}
+          isActive={derivedState.selectedTextAlignment !== null}
+          isOpen={menu.openMenu === "toolbar-text-alignment"}
+          onClick={() => menu.toggleMenu("toolbar-text-alignment")}
+        />
+
+        {menu.openMenu === "toolbar-text-alignment" ? (
+          <ToolbarMenuPanel className="min-w-48">
+            <TextAlignmentMenuItems controller={controller} />
+          </ToolbarMenuPanel>
+        ) : null}
+      </div>
+
+      <div className="relative">
+        <ToolbarMenuButton
+          ariaLabel="Line height options"
+          icon={<LineHeightIcon className="h-4 w-4" aria-hidden="true" />}
+          isActive={derivedState.selectedTextStyle?.lineHeight !== null}
+          isOpen={menu.openMenu === "toolbar-line-height"}
+          onClick={() => menu.toggleMenu("toolbar-line-height")}
+        />
+
+        {menu.openMenu === "toolbar-line-height" ? (
+          <ToolbarMenuPanel className="min-w-48">
+            <LineHeightMenuItems controller={controller} />
           </ToolbarMenuPanel>
         ) : null}
       </div>

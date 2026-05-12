@@ -22,6 +22,8 @@ export type OpenMenu =
   | "toolbar-text-color"
   | "toolbar-background-color"
   | "toolbar-highlight"
+  | "toolbar-text-alignment"
+  | "toolbar-line-height"
   | "toolbar-table"
   | null;
 export type TopLevelMenuKey = Extract<

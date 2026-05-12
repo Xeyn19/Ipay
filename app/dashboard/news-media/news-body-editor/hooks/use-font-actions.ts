@@ -2,8 +2,11 @@
 
 import type { ChangeEvent, RefObject } from "react";
 import type { Editor } from "@tiptap/react";
-import { stepFontSizeValue } from "@/app/lib/news-body-text-styles";
-import type { ColorMenuMode } from "../types";
+import {
+  DEFAULT_LINE_HEIGHT,
+  stepFontSizeValue,
+} from "@/app/lib/news-body-text-styles";
+import type { ColorMenuMode, HeadingLevel } from "../types";
 import { getSelectionComputedFontSize } from "../utils";
 
 type UseFontActionsOptions = {
@@ -11,6 +14,7 @@ type UseFontActionsOptions = {
   cellBackgroundColorInputRef: RefObject<HTMLInputElement | null>;
   closeMenu: () => void;
   editor: Editor | null;
+  selectedHeading: "paragraph" | HeadingLevel;
   selectedFontSize: string | null;
   setOpenCellPropertiesMenu: (value: "background-color" | null) => void;
   setSelectedTableCellBackgroundColor: (value: string) => void;
@@ -22,6 +26,7 @@ export function useFontActions({
   cellBackgroundColorInputRef,
   closeMenu,
   editor,
+  selectedHeading,
   selectedFontSize,
   setOpenCellPropertiesMenu,
   setSelectedTableCellBackgroundColor,
@@ -60,6 +65,21 @@ export function useFontActions({
 
   function unsetBackgroundColorValue() {
     editor?.chain().focus().unsetBackgroundColor().run();
+  }
+
+  function setLineHeightValue(value: string) {
+    if (!editor) {
+      return;
+    }
+
+    const chain = editor.chain().focus();
+
+    if (value === DEFAULT_LINE_HEIGHT && selectedHeading === "paragraph") {
+      chain.unsetLineHeight().run();
+      return;
+    }
+
+    chain.setLineHeight(value).run();
   }
 
   function stepFontSize(delta: number) {
@@ -118,6 +138,7 @@ export function useFontActions({
     setBackgroundColorValue,
     setFontFamilyValue,
     setFontSizeValue,
+    setLineHeightValue,
     setTextColorValue,
     stepFontSize,
     unsetBackgroundColorValue,

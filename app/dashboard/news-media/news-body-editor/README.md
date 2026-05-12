@@ -98,6 +98,7 @@ This is the Tiptap schema/config layer.
 It is responsible for:
 
 - the extension array returned by `createNewsBodyEditorExtensions`
+- registering text-style functionality such as alignment and line height
 - custom table cell/header behavior
 - file-drop and paste image handling
 - explicit link extension behavior such as autolink and paste-linking
@@ -178,6 +179,7 @@ Owns commands for:
 
 - font size
 - font family
+- line height
 - text color
 - background color
 - color picker dispatch

@@ -87,3 +87,30 @@ export function TaskListIcon({
     </svg>
   );
 }
+
+export function LineHeightIcon({
+  className = "h-4 w-4",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M7 5h12" />
+      <path d="M7 12h12" />
+      <path d="M7 19h12" />
+      <path d="m4 4 2-2 2 2" />
+      <path d="M6 2v8" />
+      <path d="m4 20 2 2 2-2" />
+      <path d="M6 14v8" />
+    </svg>
+  );
+}

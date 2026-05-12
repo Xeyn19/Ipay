@@ -61,7 +61,7 @@
 .news-body-editor .news-body-editor__content li,
 .news-body-editor .news-body-editor__content blockquote {
   font-size: 0.95rem;
-  line-height: 1.8;
+  line-height: 1.5;
   color: var(--text-primary);
 }
 

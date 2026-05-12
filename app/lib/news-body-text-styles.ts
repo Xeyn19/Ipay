@@ -6,6 +6,7 @@ export type NewsBodyTextStyleAttributes = {
   color?: string | null;
   fontFamily?: string | null;
   fontSize?: string | null;
+  lineHeight?: string | null;
 };
 
 export type FontSizeOption = {
@@ -19,6 +20,11 @@ export type FontFamilyOption = {
 };
 
 export type HighlightColorOption = {
+  label: string;
+  value: string;
+};
+
+export type LineHeightOption = {
   label: string;
   value: string;
 };
@@ -77,6 +83,7 @@ export const DEFAULT_TEXT_STYLE_COLORS = [
 ];
 
 export const DEFAULT_HIGHLIGHT_COLOR = "#FEF08A";
+export const DEFAULT_LINE_HEIGHT = "1.5";
 
 export const HIGHLIGHT_COLOR_OPTIONS: HighlightColorOption[] = [
   { label: "Yellow Marker", value: DEFAULT_HIGHLIGHT_COLOR },
@@ -85,6 +92,15 @@ export const HIGHLIGHT_COLOR_OPTIONS: HighlightColorOption[] = [
   { label: "Blue Marker", value: "#BFDBFE" },
   { label: "Red Marker", value: "#FECACA" },
   { label: "Dark Green Marker", value: "#4ADE80" },
+];
+
+export const LINE_HEIGHT_OPTIONS: LineHeightOption[] = [
+  { label: "1", value: "1" },
+  { label: "1.15", value: "1.15" },
+  { label: "1.5 (default)", value: DEFAULT_LINE_HEIGHT },
+  { label: "2", value: "2" },
+  { label: "2.5", value: "2.5" },
+  { label: "3", value: "3" },
 ];
 
 function normalizeColorValue(value: string) {
@@ -116,6 +132,32 @@ export function normalizeFontSizeValue(value: string | null | undefined) {
 
   const rounded = Number.isInteger(parsed) ? parsed : Number(parsed.toFixed(2));
   return `${rounded}px`;
+}
+
+export function parseLineHeightValue(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  if (!/^\d+(?:\.\d+)?$/.test(trimmed)) {
+    return null;
+  }
+
+  const parsed = Number.parseFloat(trimmed);
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+export function normalizeLineHeightValue(value: string | null | undefined) {
+  const parsed = parseLineHeightValue(value);
+
+  if (parsed === null) {
+    return null;
+  }
+
+  return Number.isInteger(parsed) ? `${parsed}` : `${parsed}`;
 }
 
 export function getFontSizeLabel(value: string | null | undefined) {
@@ -179,6 +221,10 @@ export function buildInlineTextStyle(
     style.backgroundColor = attributes.backgroundColor;
   }
 
+  if (attributes.lineHeight) {
+    style.lineHeight = attributes.lineHeight;
+  }
+
   return Object.keys(style).length > 0 ? style : undefined;
 }
 
@@ -205,6 +251,10 @@ export function normalizeTextStyleAttributes(
 
   if (attributes.backgroundColor) {
     normalized.backgroundColor = attributes.backgroundColor;
+  }
+
+  if (attributes.lineHeight) {
+    normalized.lineHeight = normalizeLineHeightValue(attributes.lineHeight);
   }
 
   return Object.keys(normalized).length > 0 ? normalized : null;

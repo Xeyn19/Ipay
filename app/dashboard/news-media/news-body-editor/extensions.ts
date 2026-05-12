@@ -14,6 +14,7 @@ import {
   Color,
   FontFamily,
   FontSize,
+  LineHeight,
   TextStyle,
 } from "@tiptap/extension-text-style";
 import Subscript from "@tiptap/extension-subscript";
@@ -135,6 +136,7 @@ export function createNewsBodyEditorExtensions({
     FontFamily,
     Color,
     BackgroundColor,
+    LineHeight,
     TiptapLink.configure({
       autolink: true,
       defaultProtocol: "https",

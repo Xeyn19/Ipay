@@ -687,37 +687,60 @@ function TopLevelMenuContent({
 }
 
 function TopMenuBar({ controller }: { controller: NewsBodyEditorController }) {
-  const { menu } = controller;
+  const { commands, fullscreen, menu } = controller;
 
   return (
-    <div className="relative z-20 flex flex-wrap gap-1 rounded-t-xl border-b border-[var(--border-light)] bg-[var(--bg-elevated)] px-2 py-2">
-      {topLevelMenus.map(({ key, label }) => (
-        <div key={key} className="relative">
-          <button
-            type="button"
-            aria-expanded={menu.openMenu === key}
-            aria-haspopup="menu"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => menu.toggleMenu(key)}
-            className={`inline-flex h-8 items-center gap-1 rounded-md px-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
-              menu.openMenu === key
-                ? "bg-[var(--brand-pale)] text-[var(--brand)]"
-                : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
-            }`}
-          >
-            {label}
-          </button>
-
-          {menu.openMenu === key ? (
-            <div
-              role="menu"
-              className="absolute left-0 z-30 mt-1 min-w-64 overflow-visible rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] py-1 shadow-[var(--shadow-card)]"
+    <div className="relative z-20 flex flex-wrap items-center gap-2 rounded-t-xl border-b border-[var(--border-light)] bg-[var(--bg-elevated)] px-2 py-2">
+      <div className="flex min-w-0 flex-1 flex-wrap gap-1">
+        {topLevelMenus.map(({ key, label }) => (
+          <div key={key} className="relative">
+            <button
+              type="button"
+              aria-expanded={menu.openMenu === key}
+              aria-haspopup="menu"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => menu.toggleMenu(key)}
+              className={`inline-flex h-8 items-center gap-1 rounded-md px-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
+                menu.openMenu === key
+                  ? "bg-[var(--brand-pale)] text-[var(--brand)]"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+              }`}
             >
-              <TopLevelMenuContent controller={controller} menuKey={key} />
-            </div>
-          ) : null}
-        </div>
-      ))}
+              {label}
+            </button>
+
+            {menu.openMenu === key ? (
+              <div
+                role="menu"
+                className="absolute left-0 z-30 mt-1 min-w-64 overflow-visible rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] py-1 shadow-[var(--shadow-card)]"
+              >
+                <TopLevelMenuContent controller={controller} menuKey={key} />
+              </div>
+            ) : null}
+          </div>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        aria-label={
+          fullscreen.isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
+        }
+        aria-pressed={fullscreen.isFullscreen}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => commands.runAction(fullscreen.toggleFullscreen)}
+        className={`ml-auto inline-flex h-8 shrink-0 items-center gap-2 rounded-md border px-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
+          fullscreen.isFullscreen
+            ? "border-[var(--border-orange)] bg-[var(--brand-pale)] text-[var(--brand)]"
+            : "border-[var(--border-light)] text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+        }`}
+      >
+        {fullscreen.isFullscreen ? (
+          <Minimize2 className="h-4 w-4" aria-hidden="true" />
+        ) : (
+          <Maximize2 className="h-4 w-4" aria-hidden="true" />
+        )}
+      </button>
     </div>
   );
 }

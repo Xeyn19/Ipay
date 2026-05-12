@@ -53,6 +53,7 @@ It is responsible for:
 
 - creating the editor controller with `useNewsBodyEditor`
 - rendering the top menu bar
+- rendering the menu-bar fullscreen shortcut on the far right
 - rendering the fullscreen editor shell
 - rendering the single-line toolbar row, including inline overflow dropdown behavior
 - rendering `EditorContent`
@@ -281,7 +282,7 @@ Usually touch:
 
 ### Fullscreen Mode
 
-The `View -> Fullscreen Mode` option is implemented as editor-local state.
+The `View -> Fullscreen Mode` option and the top-right menu bar fullscreen button are implemented as editor-local state.
 
 Key behavior:
 
@@ -289,6 +290,7 @@ Key behavior:
 - fullscreen is a fixed overlay above the dashboard chrome
 - page scroll is locked while fullscreen is open
 - the editable content is centered to the same width used by the published article page
+- both fullscreen entry points use the same toggle path, so menu state and overlay behavior stay in sync
 
 The article-width classes are shared through [app/lib/news-article-layout.ts](/D:/ChristianGutierrez/ipay/app/lib/news-article-layout.ts) so the editor and reader page do not drift apart over time.
 

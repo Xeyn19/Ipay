@@ -167,21 +167,26 @@ export function ColorMenuContent({
   const isTextColorMode = mode === "text";
   const isCellBackgroundMode = mode === "cell-background";
   const isTableBorderMode = mode === "table-border";
-  const activeColor = isTextColorMode
-    ? derivedState.selectedTextColor
-    : isCellBackgroundMode
-      ? derivedState.selectedCellBackgroundColor
-      : isTableBorderMode
-        ? derivedState.selectedTableBorderColor
-      : derivedState.selectedBackgroundColor;
+  let activeColor: string | null = derivedState.selectedBackgroundColor;
+
+  if (isTextColorMode) {
+    activeColor = derivedState.selectedTextColor;
+  } else if (isCellBackgroundMode) {
+    activeColor = derivedState.selectedCellBackgroundColor;
+  } else if (isTableBorderMode) {
+    activeColor = derivedState.selectedTableBorderColor;
+  }
+
   const documentPalette = isTextColorMode
     ? derivedState.documentColors.textColors
     : derivedState.documentColors.backgroundColors;
-  const canRemoveColor = isCellBackgroundMode
-    ? derivedState.hasSelectedCellBackgroundColor
-    : isTableBorderMode
-      ? derivedState.hasSelectedTableBorderColor
-    : Boolean(activeColor);
+  let canRemoveColor = Boolean(activeColor);
+
+  if (isCellBackgroundMode) {
+    canRemoveColor = derivedState.hasSelectedCellBackgroundColor;
+  } else if (isTableBorderMode) {
+    canRemoveColor = derivedState.hasSelectedTableBorderColor;
+  }
 
   return (
     <>
@@ -270,9 +275,10 @@ function TablePropertiesPanel({
   controller: NewsBodyEditorController;
 }) {
   const { derivedState, menu, table } = controller;
-  const borderColorButtonLabel = derivedState.hasMixedTableBorderColor
+  const hasMixedTableBorderColor = derivedState.hasMixedTableBorderColor;
+  const borderColorButtonLabel = hasMixedTableBorderColor
     ? "Mixed"
-    : derivedState.selectedTableBorderColor ?? "Select color";
+    : (derivedState.selectedTableBorderColor ?? "Select color");
 
   return (
     <div className="news-body-editor__table-bubble news-body-editor__cell-properties-bubble">
@@ -709,7 +715,6 @@ export function TableBubbleMenu({
 
       <ToolbarButton
         ariaLabel="Table properties"
-        isActive={menu.openTableBubbleSubmenu === "table-properties"}
         onClick={menu.openTablePropertiesView}
       >
         <TablePropertiesIcon />
@@ -717,7 +722,6 @@ export function TableBubbleMenu({
 
       <ToolbarButton
         ariaLabel="Cell properties"
-        isActive={menu.openTableBubbleSubmenu === "cell-properties"}
         onClick={menu.openCellPropertiesView}
       >
         <CellPropertiesGridIcon />

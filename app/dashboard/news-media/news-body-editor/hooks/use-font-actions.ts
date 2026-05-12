@@ -5,23 +5,19 @@ import {
   DEFAULT_LINE_HEIGHT,
   stepFontSizeValue,
 } from "@/app/lib/news-body-text-styles";
-import type { ColorMenuMode, HeadingLevel } from "../types";
+import type { HeadingLevel } from "../types";
 import { getSelectionComputedFontSize } from "../utils";
 
 type UseFontActionsOptions = {
   editor: Editor | null;
   selectedHeading: "paragraph" | HeadingLevel;
   selectedFontSize: string | null;
-  setSelectedTableBorderColorValue: (value: string) => void;
-  setSelectedTableCellBackgroundColorValue: (value: string) => void;
 };
 
 export function useFontActions({
   editor,
   selectedHeading,
   selectedFontSize,
-  setSelectedTableBorderColorValue,
-  setSelectedTableCellBackgroundColorValue,
 }: UseFontActionsOptions) {
   function setFontSizeValue(value: string | null) {
     if (!editor) {
@@ -83,20 +79,7 @@ export function useFontActions({
     editor.chain().focus().setFontSize(nextSize).run();
   }
 
-  function applyPickerColorValue(mode: ColorMenuMode, value: string) {
-    if (mode === "text") {
-      setTextColorValue(value);
-    } else if (mode === "background") {
-      setBackgroundColorValue(value);
-    } else if (mode === "table-border") {
-      setSelectedTableBorderColorValue(value);
-    } else {
-      setSelectedTableCellBackgroundColorValue(value);
-    }
-  }
-
   return {
-    applyPickerColorValue,
     setBackgroundColorValue,
     setFontFamilyValue,
     setFontSizeValue,

@@ -36,7 +36,7 @@ import {
   X,
   Strikethrough,
 } from "lucide-react";
-import { useId } from "react";
+import { memo, useId } from "react";
 import {
   NEWS_ARTICLE_CONTENT_INSET_CLASS_NAME,
   NEWS_ARTICLE_FRAME_CLASS_NAME,
@@ -65,6 +65,7 @@ import {
 import {
   getActiveTableContext,
   getActiveTableElement,
+  getColorInputValue,
   getHeadingLabel,
   getSelectedImageElement,
   getSelectedImageState,
@@ -862,7 +863,7 @@ function ToolbarSection({
 }: {
   controller: NewsBodyEditorController;
 }) {
-  const { commands, derivedState, editor, fullscreen, menu } = controller;
+  const { commands, derivedState, editor, font, fullscreen, menu } = controller;
   const isInlineMode = !fullscreen.isFullscreen;
   const isOverflowOpen = isToolbarOverflowMenuOpen(menu.openMenu);
   const isTextColorMenuOpen =
@@ -984,7 +985,15 @@ function ToolbarSection({
             {isTextColorMenuOpen ? (
               <ToolbarMenuPanel>
                 {menu.openMenu === "toolbar-text-color-picker" ? (
-                  <ColorPickerMenuContent controller={controller} mode="text" />
+                  <ColorPickerMenuContent
+                    initialColor={getColorInputValue(
+                      derivedState.selectedTextColor,
+                      "#111827",
+                    )}
+                    label="Text Color"
+                    onBack={() => menu.openColorPaletteView("text")}
+                    onCommit={font.setTextColorValue}
+                  />
                 ) : (
                   <ColorMenuContent
                     controller={controller}
@@ -1014,8 +1023,13 @@ function ToolbarSection({
               <ToolbarMenuPanel>
                 {menu.openMenu === "toolbar-background-color-picker" ? (
                   <ColorPickerMenuContent
-                    controller={controller}
-                    mode="background"
+                    initialColor={getColorInputValue(
+                      derivedState.selectedBackgroundColor,
+                      "#f8fafc",
+                    )}
+                    label="Text Background"
+                    onBack={() => menu.openColorPaletteView("background")}
+                    onCommit={font.setBackgroundColorValue}
                   />
                 ) : (
                   <ColorMenuContent
@@ -1225,10 +1239,15 @@ function NewsBodyEditorView({
             shift: true,
           }}
           shouldShow={({ editor: currentEditor, view }) => {
+            const activeElement =
+              typeof document !== "undefined" ? document.activeElement : null;
+            const bubbleHasFocus =
+              activeElement instanceof Node &&
+              Boolean(refs.menuRef.current?.contains(activeElement));
             const tableContext = getActiveTableContext(currentEditor);
 
             return (
-              view.hasFocus() &&
+              (view.hasFocus() || bubbleHasFocus) &&
               tableContext.tableActive &&
               getActiveTableElement(
                 currentEditor,
@@ -1349,8 +1368,10 @@ function NewsBodyEditorView({
   );
 }
 
-export function NewsBodyEditor(props: NewsBodyEditorProps) {
+export const NewsBodyEditor = memo(function NewsBodyEditor(
+  props: NewsBodyEditorProps,
+) {
   const controller = useNewsBodyEditor(props);
 
   return <NewsBodyEditorView controller={controller} />;
-}
+});

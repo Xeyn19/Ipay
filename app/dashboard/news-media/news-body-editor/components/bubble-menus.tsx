@@ -1,6 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
+import {
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import {
   AlignCenter,
   AlignJustify,
@@ -145,6 +150,25 @@ function getColorPickerFallback(mode: ColorMenuMode) {
   return "#f8fafc";
 }
 
+function getActiveColorValue(
+  controller: NewsBodyEditorController,
+  mode: ColorMenuMode,
+) {
+  if (mode === "text") {
+    return controller.derivedState.selectedTextColor;
+  }
+
+  if (mode === "cell-background") {
+    return controller.derivedState.selectedCellBackgroundColor;
+  }
+
+  if (mode === "table-border") {
+    return controller.derivedState.selectedTableBorderColor;
+  }
+
+  return controller.derivedState.selectedBackgroundColor;
+}
+
 function DocumentColorSection({
   activeColor,
   closeAfterSelect = true,
@@ -184,36 +208,40 @@ function DocumentColorSection({
 }
 
 export function ColorPickerMenuContent({
-  controller,
-  mode,
+  initialColor,
+  label,
+  onBack,
+  onCommit,
 }: {
-  controller: NewsBodyEditorController;
-  mode: ColorMenuMode;
+  initialColor: string;
+  label: string;
+  onBack: () => void;
+  onCommit: (color: string) => void;
 }) {
-  const { colors, derivedState, menu } = controller;
-  let activeColor: string | null = derivedState.selectedBackgroundColor;
+  const committedColorRef = useRef(initialColor);
+  const [draftColor, setDraftColor] = useState(initialColor);
 
-  if (mode === "text") {
-    activeColor = derivedState.selectedTextColor;
-  } else if (mode === "cell-background") {
-    activeColor = derivedState.selectedCellBackgroundColor;
-  } else if (mode === "table-border") {
-    activeColor = derivedState.selectedTableBorderColor;
+  function handlePickerInput(event: FormEvent<HTMLInputElement>) {
+    setDraftColor(event.currentTarget.value);
   }
 
-  const resolvedColor = getColorInputValue(
-    activeColor,
-    getColorPickerFallback(mode),
-  );
+  function commitDraftColor(value: string) {
+    if (value === committedColorRef.current) {
+      return;
+    }
+
+    committedColorRef.current = value;
+    onCommit(value);
+  }
 
   return (
     <div className="space-y-4 px-3 py-3">
       <div className="flex items-center gap-2">
         <button
           type="button"
-          aria-label={`Back to ${getColorMenuLabel(mode)} menu`}
+          aria-label={`Back to ${label} menu`}
           onMouseDown={(event) => event.preventDefault()}
-          onClick={() => menu.openColorPaletteView(mode)}
+          onClick={onBack}
           className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] transition hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
         >
           <ChevronRight className="h-4 w-4 rotate-180" aria-hidden="true" />
@@ -223,7 +251,7 @@ export function ColorPickerMenuContent({
             Color Picker
           </p>
           <p className="font-heading text-sm font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
-            {getColorMenuLabel(mode)}
+            {label}
           </p>
         </div>
       </div>
@@ -235,15 +263,15 @@ export function ColorPickerMenuContent({
         <div className="flex items-center gap-3">
           <input
             type="color"
-            aria-label={`${getColorMenuLabel(mode)} picker`}
-            value={resolvedColor}
-            onChange={(event) =>
-              colors.applyPickerColorValue(mode, event.target.value)
-            }
+            aria-label={`${label} picker`}
+            value={draftColor}
+            onInput={handlePickerInput}
+            onChange={(event) => commitDraftColor(event.target.value)}
+            onBlur={() => commitDraftColor(draftColor)}
             className="h-11 w-16 cursor-pointer rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] p-1"
           />
           <div className="min-w-0 flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-subtle)] px-3 py-2 text-sm font-medium uppercase tracking-[0.08em] text-[var(--text-primary)]">
-            {resolvedColor}
+            {draftColor}
           </div>
         </div>
       </div>
@@ -379,6 +407,10 @@ function TablePropertiesPanel({
   const borderColorButtonLabel = hasMixedTableBorderColor
     ? "Mixed"
     : (derivedState.selectedTableBorderColor ?? "Select color");
+  const tableBorderPickerColor = getColorInputValue(
+    getActiveColorValue(controller, "table-border"),
+    getColorPickerFallback("table-border"),
+  );
 
   return (
     <div className="news-body-editor__table-bubble news-body-editor__cell-properties-bubble">
@@ -440,8 +472,10 @@ function TablePropertiesPanel({
               <TableBubbleMenuPanel className="min-w-[17rem]">
                 {menu.openTablePropertiesMenu === "border-color-picker" ? (
                   <ColorPickerMenuContent
-                    controller={controller}
-                    mode="table-border"
+                    initialColor={tableBorderPickerColor}
+                    label={getColorMenuLabel("table-border")}
+                    onBack={() => menu.openColorPaletteView("table-border")}
+                    onCommit={table.commitSelectedTableBorderColorFromPicker}
                   />
                 ) : (
                   <ColorMenuContent
@@ -502,6 +536,10 @@ function CellPropertiesPanel({
     : derivedState.hasSelectedCellBackgroundColor
       ? "Mixed"
       : "Select color";
+  const cellBackgroundPickerColor = getColorInputValue(
+    getActiveColorValue(controller, "cell-background"),
+    getColorPickerFallback("cell-background"),
+  );
 
   return (
     <div className="news-body-editor__table-bubble news-body-editor__cell-properties-bubble">
@@ -563,8 +601,12 @@ function CellPropertiesPanel({
               <TableBubbleMenuPanel className="min-w-[17rem]">
                 {menu.openCellPropertiesMenu === "background-color-picker" ? (
                   <ColorPickerMenuContent
-                    controller={controller}
-                    mode="cell-background"
+                    initialColor={cellBackgroundPickerColor}
+                    label={getColorMenuLabel("cell-background")}
+                    onBack={() => menu.openColorPaletteView("cell-background")}
+                    onCommit={
+                      table.commitSelectedTableCellBackgroundColorFromPicker
+                    }
                   />
                 ) : (
                   <ColorMenuContent

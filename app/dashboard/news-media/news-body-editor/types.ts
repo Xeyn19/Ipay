@@ -161,7 +161,6 @@ export type NewsBodyEditorSnapshot = {
   currentTableProperties: TableSelectionState;
   currentTextAlign: TextAlignment;
   currentTextStyle: NewsBodyTextStyleAttributes | null;
-  documentColors: DocumentEditorColors;
   italic: boolean;
   highlight: boolean;
   highlightColor: string | null;

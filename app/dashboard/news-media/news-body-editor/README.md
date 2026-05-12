@@ -79,6 +79,7 @@ It is responsible for:
 - creating the Tiptap editor instance
 - subscribing to editor state with `useEditorState`
 - deriving the editor snapshot used by the UI
+- debouncing document-color palette extraction so full document scans stay off the typing hot path
 - owning link bubble insert/edit state and selection targets
 - owning fullscreen state and body scroll locking
 - composing the focused hooks:

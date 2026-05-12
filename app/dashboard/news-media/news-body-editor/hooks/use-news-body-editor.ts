@@ -86,9 +86,7 @@ function areSelectedLinksEqual(
   );
 }
 
-function getEmptyEditorState(
-  initialContent: JSONContent | null,
-): NewsBodyEditorSnapshot {
+function getEmptyEditorState(): NewsBodyEditorSnapshot {
   return {
     activeCellPos: null,
     activeTablePos: null,
@@ -121,7 +119,6 @@ function getEmptyEditorState(
     },
     currentTextAlign: null,
     currentTextStyle: null,
-    documentColors: collectDocumentEditorColors(initialContent ?? EMPTY_NEWS_BODY),
     highlight: false,
     highlightColor: null,
     italic: false,
@@ -142,7 +139,12 @@ export function useNewsBodyEditor({
   initialContent,
   onChange,
 }: NewsBodyEditorProps) {
+  const documentColorsTimeoutRef = useRef<number | null>(null);
+  const lastLinkSelectionSnapshotRef = useRef<LinkSelectionSnapshot | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const [documentColors, setDocumentColors] = useState(() =>
+    collectDocumentEditorColors(initialContent ?? EMPTY_NEWS_BODY),
+  );
   const [lastUsedHighlightColor, setLastUsedHighlightColor] = useState(
     DEFAULT_HIGHLIGHT_COLOR,
   );
@@ -156,13 +158,26 @@ export function useNewsBodyEditor({
   );
   const [activeLinkPreview, setActiveLinkPreview] =
     useState<SelectedLinkState | null>(null);
-  const [lastLinkSelectionSnapshot, setLastLinkSelectionSnapshot] =
-    useState<LinkSelectionSnapshot | null>(null);
   const [, setLinkOverlayPositionVersion] = useState(0);
   const menu = useEditorMenuState();
   const imageUpload = useImageUploadState({
     closeMenu: menu.closeMenu,
   });
+
+  function clearDocumentColorsTimeout() {
+    if (documentColorsTimeoutRef.current !== null) {
+      window.clearTimeout(documentColorsTimeoutRef.current);
+      documentColorsTimeoutRef.current = null;
+    }
+  }
+
+  function scheduleDocumentColorsUpdate(content: JSONContent) {
+    clearDocumentColorsTimeout();
+    documentColorsTimeoutRef.current = window.setTimeout(() => {
+      documentColorsTimeoutRef.current = null;
+      setDocumentColors(collectDocumentEditorColors(content));
+    }, 200);
+  }
 
   function saveLinkSelectionSnapshot(currentEditor: Editor | null) {
     const nextSnapshot = getLinkSelectionSnapshot(currentEditor);
@@ -171,22 +186,22 @@ export function useNewsBodyEditor({
       return;
     }
 
-    setLastLinkSelectionSnapshot((currentSnapshot) => {
-      if (
-        currentSnapshot &&
-        currentSnapshot.from === nextSnapshot.from &&
-        currentSnapshot.to === nextSnapshot.to &&
-        currentSnapshot.text === nextSnapshot.text &&
-        currentSnapshot.selectedLink?.from === nextSnapshot.selectedLink?.from &&
-        currentSnapshot.selectedLink?.to === nextSnapshot.selectedLink?.to &&
-        currentSnapshot.selectedLink?.href === nextSnapshot.selectedLink?.href &&
-        currentSnapshot.selectedLink?.text === nextSnapshot.selectedLink?.text
-      ) {
-        return currentSnapshot;
-      }
+    const currentSnapshot = lastLinkSelectionSnapshotRef.current;
 
-      return nextSnapshot;
-    });
+    if (
+      currentSnapshot &&
+      currentSnapshot.from === nextSnapshot.from &&
+      currentSnapshot.to === nextSnapshot.to &&
+      currentSnapshot.text === nextSnapshot.text &&
+      currentSnapshot.selectedLink?.from === nextSnapshot.selectedLink?.from &&
+      currentSnapshot.selectedLink?.to === nextSnapshot.selectedLink?.to &&
+      currentSnapshot.selectedLink?.href === nextSnapshot.selectedLink?.href &&
+      currentSnapshot.selectedLink?.text === nextSnapshot.selectedLink?.text
+    ) {
+      return;
+    }
+
+    lastLinkSelectionSnapshotRef.current = nextSnapshot;
   }
 
   function syncActiveLinkPreview(currentEditor: Editor | null) {
@@ -204,7 +219,7 @@ export function useNewsBodyEditor({
       return getLinkSelectionSnapshot(editor);
     }
 
-    return lastLinkSelectionSnapshot;
+    return lastLinkSelectionSnapshotRef.current;
   }
 
   const editor = useEditor({
@@ -216,6 +231,7 @@ export function useNewsBodyEditor({
     onUpdate: ({ editor: currentEditor }) => {
       const nextJson = currentEditor.getJSON();
       onChange(nextJson);
+      scheduleDocumentColorsUpdate(nextJson);
     },
     onFocus: ({ editor: currentEditor }) => {
       setHasInteractedWithEditor(true);
@@ -242,7 +258,7 @@ export function useNewsBodyEditor({
     editor,
     selector: ({ editor: currentEditor }): NewsBodyEditorSnapshot => {
       if (!currentEditor) {
-        return getEmptyEditorState(initialContent);
+        return getEmptyEditorState();
       }
 
       const activeTableContext = getActiveTableContext(currentEditor);
@@ -288,7 +304,6 @@ export function useNewsBodyEditor({
         ),
         currentTextAlign: getCurrentTextAlignment(currentEditor),
         currentTextStyle: getCurrentTextStyle(currentEditor),
-        documentColors: collectDocumentEditorColors(currentEditor.getJSON()),
         highlight: currentEditor.isActive("highlight"),
         highlightColor: getCurrentHighlightColor(currentEditor),
         italic: currentEditor.isActive("italic"),
@@ -305,7 +320,7 @@ export function useNewsBodyEditor({
       };
     },
   });
-  const resolvedEditorState = editorState ?? getEmptyEditorState(initialContent);
+  const resolvedEditorState = editorState ?? getEmptyEditorState();
 
   const selectedHeading = resolvedEditorState.currentHeading ?? "paragraph";
   const selectedTextAlignment = resolvedEditorState.currentTextAlign ?? null;
@@ -334,7 +349,6 @@ export function useNewsBodyEditor({
   const hasMixedTableBorderWidth =
     selectedTableProperties.hasMixedBorderWidth ?? false;
   const selectedTableBorderWidth = selectedTableProperties.borderWidth ?? null;
-  const documentColors = resolvedEditorState.documentColors;
   const selectedImage = resolvedEditorState.selectedImage;
   const selectedLink = resolvedEditorState.selectedLink;
   const activeCellPos = resolvedEditorState.activeCellPos;
@@ -391,9 +405,6 @@ export function useNewsBodyEditor({
     editor,
     selectedHeading,
     selectedFontSize,
-    setSelectedTableBorderColorValue: table.setSelectedTableBorderColorValue,
-    setSelectedTableCellBackgroundColorValue:
-      table.setSelectedTableCellBackgroundColorValue,
   });
 
   const activeLinkBubbleMode = menu.openLinkBubbleMode;
@@ -754,6 +765,14 @@ export function useNewsBodyEditor({
   }
 
   useEffect(() => {
+    return () => {
+      if (documentColorsTimeoutRef.current !== null) {
+        window.clearTimeout(documentColorsTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!editor || !isTableActive) {
       return;
     }
@@ -930,9 +949,6 @@ export function useNewsBodyEditor({
   }
 
   return {
-    colors: {
-      applyPickerColorValue: font.applyPickerColorValue,
-    },
     commands: {
       applyHeading: (value: "paragraph" | 1 | 2 | 3 | 4 | 5 | 6) =>
         applyHeading(editor, value),

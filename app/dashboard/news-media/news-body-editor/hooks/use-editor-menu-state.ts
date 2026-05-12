@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type {
+  ColorMenuMode,
   OpenCellPropertiesMenu,
   OpenImageBubbleSubmenu,
   OpenLinkBubbleMode,
@@ -105,6 +106,44 @@ export function useEditorMenuState() {
     );
   }
 
+  function openColorPickerView(mode: ColorMenuMode) {
+    if (mode === "text") {
+      setOpenMenu("toolbar-text-color-picker");
+      return;
+    }
+
+    if (mode === "background") {
+      setOpenMenu("toolbar-background-color-picker");
+      return;
+    }
+
+    if (mode === "cell-background") {
+      setOpenCellPropertiesMenu("background-color-picker");
+      return;
+    }
+
+    setOpenTablePropertiesMenu("border-color-picker");
+  }
+
+  function openColorPaletteView(mode: ColorMenuMode) {
+    if (mode === "text") {
+      setOpenMenu("toolbar-text-color");
+      return;
+    }
+
+    if (mode === "background") {
+      setOpenMenu("toolbar-background-color");
+      return;
+    }
+
+    if (mode === "cell-background") {
+      setOpenCellPropertiesMenu("background-color");
+      return;
+    }
+
+    setOpenTablePropertiesMenu("border-color");
+  }
+
   function closeAllMenus() {
     setOpenMenu(null);
     setOpenCellPropertiesMenu(null);
@@ -123,6 +162,8 @@ export function useEditorMenuState() {
     closeMenu,
     closeTablePropertiesView,
     closeTableBubbleSubmenu,
+    openColorPaletteView,
+    openColorPickerView,
     isImageAltEditorOpen,
     openCellPropertiesMenu,
     openCellPropertiesView,

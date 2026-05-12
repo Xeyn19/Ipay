@@ -1,6 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
+import {
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import {
   AlignCenter,
   AlignJustify,
@@ -32,6 +37,7 @@ import type {
   TableCellHorizontalAlignment,
 } from "../types";
 import type { NewsBodyEditorController } from "../hooks/use-news-body-editor";
+import { getColorInputValue } from "../utils";
 import { CellPropertiesGridIcon, TablePropertiesIcon } from "./icons";
 import {
   ColorGrid,
@@ -116,6 +122,53 @@ const imageAlignmentOptions: Array<{
   },
 ];
 
+function getColorMenuLabel(mode: ColorMenuMode) {
+  if (mode === "text") {
+    return "Text Color";
+  }
+
+  if (mode === "background") {
+    return "Text Background";
+  }
+
+  if (mode === "cell-background") {
+    return "Cell Background";
+  }
+
+  return "Table Border Color";
+}
+
+function getColorPickerFallback(mode: ColorMenuMode) {
+  if (mode === "text") {
+    return "#111827";
+  }
+
+  if (mode === "table-border") {
+    return "#d1d5db";
+  }
+
+  return "#f8fafc";
+}
+
+function getActiveColorValue(
+  controller: NewsBodyEditorController,
+  mode: ColorMenuMode,
+) {
+  if (mode === "text") {
+    return controller.derivedState.selectedTextColor;
+  }
+
+  if (mode === "cell-background") {
+    return controller.derivedState.selectedCellBackgroundColor;
+  }
+
+  if (mode === "table-border") {
+    return controller.derivedState.selectedTableBorderColor;
+  }
+
+  return controller.derivedState.selectedBackgroundColor;
+}
+
 function DocumentColorSection({
   activeColor,
   closeAfterSelect = true,
@@ -154,6 +207,78 @@ function DocumentColorSection({
   );
 }
 
+export function ColorPickerMenuContent({
+  initialColor,
+  label,
+  onBack,
+  onCommit,
+}: {
+  initialColor: string;
+  label: string;
+  onBack: () => void;
+  onCommit: (color: string) => void;
+}) {
+  const committedColorRef = useRef(initialColor);
+  const [draftColor, setDraftColor] = useState(initialColor);
+
+  function handlePickerInput(event: FormEvent<HTMLInputElement>) {
+    setDraftColor(event.currentTarget.value);
+  }
+
+  function commitDraftColor(value: string) {
+    if (value === committedColorRef.current) {
+      return;
+    }
+
+    committedColorRef.current = value;
+    onCommit(value);
+  }
+
+  return (
+    <div className="space-y-4 px-3 py-3">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          aria-label={`Back to ${label} menu`}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={onBack}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] transition hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+        >
+          <ChevronRight className="h-4 w-4 rotate-180" aria-hidden="true" />
+        </button>
+        <div className="min-w-0">
+          <p className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[var(--text-faint)]">
+            Color Picker
+          </p>
+          <p className="font-heading text-sm font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
+            {label}
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[var(--text-faint)]">
+          Pick Color
+        </p>
+        <div className="flex items-center gap-3">
+          <input
+            type="color"
+            aria-label={`${label} picker`}
+            value={draftColor}
+            onInput={handlePickerInput}
+            onChange={(event) => commitDraftColor(event.target.value)}
+            onBlur={() => commitDraftColor(draftColor)}
+            className="h-11 w-16 cursor-pointer rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] p-1"
+          />
+          <div className="min-w-0 flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-subtle)] px-3 py-2 text-sm font-medium uppercase tracking-[0.08em] text-[var(--text-primary)]">
+            {draftColor}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ColorMenuContent({
   controller,
   includeColorPicker,
@@ -163,7 +288,7 @@ export function ColorMenuContent({
   includeColorPicker: boolean;
   mode: ColorMenuMode;
 }) {
-  const { colors, commands, derivedState, font, table } = controller;
+  const { commands, derivedState, font, menu, table } = controller;
   const isTextColorMode = mode === "text";
   const isCellBackgroundMode = mode === "cell-background";
   const isTableBorderMode = mode === "table-border";
@@ -259,7 +384,7 @@ export function ColorMenuContent({
           <MenuSeparator />
           <MenuItem
             icon={<Palette className="h-4 w-4" />}
-            onClick={() => colors.openColorPicker(mode)}
+            onClick={() => menu.openColorPickerView(mode)}
           >
             Color Picker
           </MenuItem>
@@ -275,10 +400,17 @@ function TablePropertiesPanel({
   controller: NewsBodyEditorController;
 }) {
   const { derivedState, menu, table } = controller;
+  const isBorderColorMenuOpen =
+    menu.openTablePropertiesMenu === "border-color" ||
+    menu.openTablePropertiesMenu === "border-color-picker";
   const hasMixedTableBorderColor = derivedState.hasMixedTableBorderColor;
   const borderColorButtonLabel = hasMixedTableBorderColor
     ? "Mixed"
     : (derivedState.selectedTableBorderColor ?? "Select color");
+  const tableBorderPickerColor = getColorInputValue(
+    getActiveColorValue(controller, "table-border"),
+    getColorPickerFallback("table-border"),
+  );
 
   return (
     <div className="news-body-editor__table-bubble news-body-editor__cell-properties-bubble">
@@ -306,12 +438,12 @@ function TablePropertiesPanel({
             <button
               type="button"
               aria-label="Table border color options"
-              aria-expanded={menu.openTablePropertiesMenu === "border-color"}
+              aria-expanded={isBorderColorMenuOpen}
               aria-haspopup="menu"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => menu.toggleTablePropertiesMenu("border-color")}
               className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-left text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
-                menu.openTablePropertiesMenu === "border-color"
+                isBorderColorMenuOpen
                   ? "border-[var(--border-orange)] bg-[var(--brand-pale)] text-[var(--brand)]"
                   : "border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
               }`}
@@ -328,7 +460,7 @@ function TablePropertiesPanel({
               </span>
               <ChevronDown
                 className={`h-4 w-4 shrink-0 transition-transform ${
-                  menu.openTablePropertiesMenu === "border-color"
+                  isBorderColorMenuOpen
                     ? "rotate-180"
                     : ""
                 }`}
@@ -336,13 +468,22 @@ function TablePropertiesPanel({
               />
             </button>
 
-            {menu.openTablePropertiesMenu === "border-color" ? (
+            {isBorderColorMenuOpen ? (
               <TableBubbleMenuPanel className="min-w-[17rem]">
-                <ColorMenuContent
-                  controller={controller}
-                  includeColorPicker
-                  mode="table-border"
-                />
+                {menu.openTablePropertiesMenu === "border-color-picker" ? (
+                  <ColorPickerMenuContent
+                    initialColor={tableBorderPickerColor}
+                    label={getColorMenuLabel("table-border")}
+                    onBack={() => menu.openColorPaletteView("table-border")}
+                    onCommit={table.commitSelectedTableBorderColorFromPicker}
+                  />
+                ) : (
+                  <ColorMenuContent
+                    controller={controller}
+                    includeColorPicker
+                    mode="table-border"
+                  />
+                )}
               </TableBubbleMenuPanel>
             ) : null}
           </div>
@@ -387,11 +528,18 @@ function CellPropertiesPanel({
   controller: NewsBodyEditorController;
 }) {
   const { derivedState, menu, table } = controller;
+  const isBackgroundColorMenuOpen =
+    menu.openCellPropertiesMenu === "background-color" ||
+    menu.openCellPropertiesMenu === "background-color-picker";
   const backgroundButtonLabel = derivedState.selectedCellBackgroundColor
     ? derivedState.selectedCellBackgroundColor
     : derivedState.hasSelectedCellBackgroundColor
       ? "Mixed"
       : "Select color";
+  const cellBackgroundPickerColor = getColorInputValue(
+    getActiveColorValue(controller, "cell-background"),
+    getColorPickerFallback("cell-background"),
+  );
 
   return (
     <div className="news-body-editor__table-bubble news-body-editor__cell-properties-bubble">
@@ -419,12 +567,12 @@ function CellPropertiesPanel({
             <button
               type="button"
               aria-label="Cell background color options"
-              aria-expanded={menu.openCellPropertiesMenu === "background-color"}
+              aria-expanded={isBackgroundColorMenuOpen}
               aria-haspopup="menu"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => menu.toggleCellPropertiesMenu("background-color")}
               className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-left text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
-                menu.openCellPropertiesMenu === "background-color"
+                isBackgroundColorMenuOpen
                   ? "border-[var(--border-orange)] bg-[var(--brand-pale)] text-[var(--brand)]"
                   : "border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
               }`}
@@ -441,7 +589,7 @@ function CellPropertiesPanel({
               </span>
               <ChevronDown
                 className={`h-4 w-4 shrink-0 transition-transform ${
-                  menu.openCellPropertiesMenu === "background-color"
+                  isBackgroundColorMenuOpen
                     ? "rotate-180"
                     : ""
                 }`}
@@ -449,13 +597,24 @@ function CellPropertiesPanel({
               />
             </button>
 
-            {menu.openCellPropertiesMenu === "background-color" ? (
+            {isBackgroundColorMenuOpen ? (
               <TableBubbleMenuPanel className="min-w-[17rem]">
-                <ColorMenuContent
-                  controller={controller}
-                  includeColorPicker
-                  mode="cell-background"
-                />
+                {menu.openCellPropertiesMenu === "background-color-picker" ? (
+                  <ColorPickerMenuContent
+                    initialColor={cellBackgroundPickerColor}
+                    label={getColorMenuLabel("cell-background")}
+                    onBack={() => menu.openColorPaletteView("cell-background")}
+                    onCommit={
+                      table.commitSelectedTableCellBackgroundColorFromPicker
+                    }
+                  />
+                ) : (
+                  <ColorMenuContent
+                    controller={controller}
+                    includeColorPicker
+                    mode="cell-background"
+                  />
+                )}
               </TableBubbleMenuPanel>
             ) : null}
           </div>

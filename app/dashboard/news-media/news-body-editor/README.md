@@ -56,7 +56,7 @@ It is responsible for:
 - rendering the fullscreen editor shell
 - rendering the single-line toolbar row, including inline overflow dropdown behavior
 - rendering `EditorContent`
-- wiring the hidden color inputs
+- rendering toolbar color menus and their inline picker views
 - wiring the hidden file input for image uploads
 - wiring the Tiptap `BubbleMenu` instances
 - wiring the link insert/edit bubble flow
@@ -79,6 +79,7 @@ It is responsible for:
 - creating the Tiptap editor instance
 - subscribing to editor state with `useEditorState`
 - deriving the editor snapshot used by the UI
+- debouncing document-color palette extraction so full document scans stay off the typing hot path
 - owning link bubble insert/edit state and selection targets
 - owning fullscreen state and body scroll locking
 - composing the focused hooks:
@@ -145,6 +146,7 @@ If new editor behavior needs document inspection, selection math, or value norma
 This file groups the tightly coupled bubble/menu UI:
 
 - `ColorMenuContent`
+- inline color picker replacement views
 - `LinkBubbleMenu`
 - `TableBubbleMenu`
 - table cell properties panel
@@ -188,6 +190,7 @@ Owns open/close state for:
 - table properties submenu
 - image bubble submenus
 - cell properties submenu
+- inline color picker replacement views
 - image alt editor mode
 - cross-menu closing used before fullscreen transitions
 
@@ -202,7 +205,7 @@ Owns commands for:
 - line height
 - text color
 - background color
-- color picker dispatch
+- direct color application for toolbar and table/cell picker views
 
 ### `hooks/use-image-actions.ts`
 

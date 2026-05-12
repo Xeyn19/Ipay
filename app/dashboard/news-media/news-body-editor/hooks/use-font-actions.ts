@@ -1,42 +1,23 @@
 "use client";
 
-import type { ChangeEvent, RefObject } from "react";
 import type { Editor } from "@tiptap/react";
 import {
   DEFAULT_LINE_HEIGHT,
   stepFontSizeValue,
 } from "@/app/lib/news-body-text-styles";
-import type { ColorMenuMode, HeadingLevel } from "../types";
+import type { HeadingLevel } from "../types";
 import { getSelectionComputedFontSize } from "../utils";
 
 type UseFontActionsOptions = {
-  backgroundColorInputRef: RefObject<HTMLInputElement | null>;
-  cellBackgroundColorInputRef: RefObject<HTMLInputElement | null>;
-  closeMenu: () => void;
   editor: Editor | null;
   selectedHeading: "paragraph" | HeadingLevel;
   selectedFontSize: string | null;
-  setOpenCellPropertiesMenu: (value: "background-color" | null) => void;
-  setOpenTablePropertiesMenu: (value: "border-color" | null) => void;
-  setSelectedTableBorderColor: (value: string) => void;
-  setSelectedTableCellBackgroundColor: (value: string) => void;
-  tableBorderColorInputRef: RefObject<HTMLInputElement | null>;
-  textColorInputRef: RefObject<HTMLInputElement | null>;
 };
 
 export function useFontActions({
-  backgroundColorInputRef,
-  cellBackgroundColorInputRef,
-  closeMenu,
   editor,
   selectedHeading,
   selectedFontSize,
-  setOpenCellPropertiesMenu,
-  setOpenTablePropertiesMenu,
-  setSelectedTableBorderColor,
-  setSelectedTableCellBackgroundColor,
-  tableBorderColorInputRef,
-  textColorInputRef,
 }: UseFontActionsOptions) {
   function setFontSizeValue(value: string | null) {
     if (!editor) {
@@ -98,61 +79,7 @@ export function useFontActions({
     editor.chain().focus().setFontSize(nextSize).run();
   }
 
-  function openColorPicker(mode: ColorMenuMode) {
-    if (mode === "text") {
-      textColorInputRef.current?.click();
-      return;
-    }
-
-    if (mode === "cell-background") {
-      cellBackgroundColorInputRef.current?.click();
-      return;
-    }
-
-    if (mode === "table-border") {
-      tableBorderColorInputRef.current?.click();
-      return;
-    }
-
-    backgroundColorInputRef.current?.click();
-  }
-
-  function handleColorPickerChange(
-    event: ChangeEvent<HTMLInputElement>,
-    mode: ColorMenuMode,
-  ) {
-    const value = event.target.value;
-
-    if (!value) {
-      return;
-    }
-
-    if (mode === "text") {
-      setTextColorValue(value);
-    } else if (mode === "background") {
-      setBackgroundColorValue(value);
-    } else if (mode === "table-border") {
-      setSelectedTableBorderColor(value);
-    } else {
-      setSelectedTableCellBackgroundColor(value);
-    }
-
-    if (mode === "cell-background") {
-      setOpenCellPropertiesMenu(null);
-      return;
-    }
-
-    if (mode === "table-border") {
-      setOpenTablePropertiesMenu(null);
-      return;
-    }
-
-    closeMenu();
-  }
-
   return {
-    handleColorPickerChange,
-    openColorPicker,
     setBackgroundColorValue,
     setFontFamilyValue,
     setFontSizeValue,

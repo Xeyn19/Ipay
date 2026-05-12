@@ -51,6 +51,11 @@ type UseTableCellActionsOptions = {
   ) => void;
 };
 
+type TableAttributeUpdateOptions = {
+  refocusEditor?: boolean;
+  scrollIntoView?: boolean;
+};
+
 export function useTableCellActions({
   activeCellPos,
   activeTablePos,
@@ -126,6 +131,10 @@ export function useTableCellActions({
   function setSelectedTableCellAttribute(
     attribute: keyof TableCellStyleAttributes,
     value: string | null,
+    {
+      refocusEditor = true,
+      scrollIntoView = true,
+    }: TableAttributeUpdateOptions = {},
   ) {
     if (!editor || activeCellPos === null) {
       return;
@@ -171,13 +180,22 @@ export function useTableCellActions({
       return;
     }
 
-    editor.view.dispatch(transaction.scrollIntoView());
-    editor.view.focus();
+    editor.view.dispatch(
+      scrollIntoView ? transaction.scrollIntoView() : transaction,
+    );
+
+    if (refocusEditor) {
+      editor.view.focus();
+    }
   }
 
   function updateTableBorderCells(
     attribute: "borderColor" | "borderWidth",
     value: string | null,
+    {
+      refocusEditor = true,
+      scrollIntoView = true,
+    }: TableAttributeUpdateOptions = {},
   ) {
     if (!editor || activeTablePos === null) {
       return;
@@ -246,12 +264,28 @@ export function useTableCellActions({
       return;
     }
 
-    editor.view.dispatch(transaction.scrollIntoView());
-    editor.view.focus();
+    editor.view.dispatch(
+      scrollIntoView ? transaction.scrollIntoView() : transaction,
+    );
+
+    if (refocusEditor) {
+      editor.view.focus();
+    }
+  }
+
+  function setSelectedTableBorderColorValue(value: string) {
+    updateTableBorderCells("borderColor", value);
+  }
+
+  function commitSelectedTableBorderColorFromPicker(value: string) {
+    updateTableBorderCells("borderColor", value, {
+      refocusEditor: false,
+      scrollIntoView: false,
+    });
   }
 
   function setSelectedTableBorderColor(value: string) {
-    updateTableBorderCells("borderColor", value);
+    setSelectedTableBorderColorValue(value);
     setOpenTablePropertiesMenu(null);
   }
 
@@ -260,8 +294,19 @@ export function useTableCellActions({
     setOpenTablePropertiesMenu(null);
   }
 
-  function setSelectedTableCellBackgroundColor(value: string) {
+  function setSelectedTableCellBackgroundColorValue(value: string) {
     setSelectedTableCellAttribute("backgroundColor", value);
+  }
+
+  function commitSelectedTableCellBackgroundColorFromPicker(value: string) {
+    setSelectedTableCellAttribute("backgroundColor", value, {
+      refocusEditor: false,
+      scrollIntoView: false,
+    });
+  }
+
+  function setSelectedTableCellBackgroundColor(value: string) {
+    setSelectedTableCellBackgroundColorValue(value);
     setOpenCellPropertiesMenu(null);
   }
 
@@ -461,7 +506,11 @@ export function useTableCellActions({
         value,
       }),
     setSelectedTableBorderColor,
+    setSelectedTableBorderColorValue,
     setSelectedTableCellBackgroundColor,
+    setSelectedTableCellBackgroundColorValue,
+    commitSelectedTableBorderColorFromPicker,
+    commitSelectedTableCellBackgroundColorFromPicker,
     setSelectedTableCellHorizontalAlignment,
     setTableBorderWidthInputValue: (value: string) =>
       setTableBorderWidthInputState({

@@ -54,7 +54,7 @@ It is responsible for:
 - creating the editor controller with `useNewsBodyEditor`
 - rendering the top menu bar
 - rendering the fullscreen editor shell
-- rendering the toolbar row
+- rendering the single-line toolbar row, including inline overflow dropdown behavior
 - rendering `EditorContent`
 - wiring the hidden color inputs
 - wiring the hidden file input for image uploads
@@ -63,6 +63,12 @@ It is responsible for:
 - rendering `ImageUrlModal`
 
 If you need to add a new top-level menu item, toolbar button, or toolbar dropdown, this is usually the first file to change.
+
+The toolbar behavior is intentionally split by layout:
+
+- in the normal inline editor, the toolbar stays on one line and moves secondary controls into a right-side overflow dropdown
+- in fullscreen mode, the same secondary controls stay visible inline on the toolbar row
+- if inline width gets tight, the primary toolbar strip scrolls horizontally instead of wrapping
 
 ### `hooks/use-news-body-editor.ts`
 
@@ -165,6 +171,7 @@ This file is intentionally narrow now. It only contains custom SVG icon componen
 Owns open/close state for:
 
 - top menus
+- toolbar overflow dropdown and its nested toolbar submenus
 - table bubble submenus
 - image bubble submenus
 - cell properties submenu

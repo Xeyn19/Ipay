@@ -85,6 +85,7 @@ import {
   LineHeightIcon,
   TableOfContentsIcon,
   TaskListIcon,
+  VerticalEllipsisIcon,
 } from "./components/icons";
 import {
   MenuItem,
@@ -116,6 +117,13 @@ const topLevelMenus: Array<{ key: TopLevelMenuKey; label: string }> = [
   { key: "insert", label: "Insert" },
   { key: "format", label: "Format" },
 ];
+
+const toolbarOverflowMenuKeys = [
+  "toolbar-overflow",
+  "toolbar-overflow-highlight",
+  "toolbar-overflow-text-alignment",
+  "toolbar-overflow-line-height",
+] as const;
 
 function HighlightMenuIcon({
   color,
@@ -681,7 +689,7 @@ function TopMenuBar({ controller }: { controller: NewsBodyEditorController }) {
   const { menu } = controller;
 
   return (
-    <div className="relative z-20 flex flex-wrap gap-1 rounded-t-xl border-b border-[var(--border-light)] bg-[var(--bg-elevated)] px-3 py-2">
+    <div className="relative z-20 flex flex-wrap gap-1 rounded-t-xl border-b border-[var(--border-light)] bg-[var(--bg-elevated)] px-2 py-2">
       {topLevelMenus.map(({ key, label }) => (
         <div key={key} className="relative">
           <button
@@ -713,191 +721,52 @@ function TopMenuBar({ controller }: { controller: NewsBodyEditorController }) {
   );
 }
 
-function ToolbarSection({
+function isToolbarOverflowMenuOpen(openMenu: NewsBodyEditorController["menu"]["openMenu"]) {
+  return toolbarOverflowMenuKeys.includes(
+    openMenu as (typeof toolbarOverflowMenuKeys)[number],
+  );
+}
+
+function SecondaryToolbarControls({
   controller,
+  mode,
 }: {
   controller: NewsBodyEditorController;
+  mode: "inline" | "overflow";
 }) {
   const { commands, derivedState, editor, highlight, menu } = controller;
   const activeAlignmentOption =
     textAlignmentOptions.find(
       (option) => option.value === derivedState.selectedTextAlignment,
     ) ?? textAlignmentOptions[0];
+  const menuKeys =
+    mode === "overflow"
+      ? {
+          highlight: "toolbar-overflow-highlight" as const,
+          lineHeight: "toolbar-overflow-line-height" as const,
+          textAlignment: "toolbar-overflow-text-alignment" as const,
+        }
+      : {
+          highlight: "toolbar-highlight" as const,
+          lineHeight: "toolbar-line-height" as const,
+          textAlignment: "toolbar-text-alignment" as const,
+        };
+
+  function runListAction(action: () => void) {
+    if (mode === "overflow") {
+      commands.runAction(action);
+      return;
+    }
+
+    action();
+  }
 
   return (
-    <div className="relative z-10 flex flex-wrap items-center gap-1.5 border-b border-[var(--border-light)] bg-[var(--bg-subtle)] px-2.5 py-2.5">
-      <ToolbarButton
-        ariaLabel="Undo"
-        disabled={!derivedState.editorState.canUndo}
-        onClick={() => editor?.chain().focus().undo().run()}
-      >
-        <Undo2 className="h-4 w-4" aria-hidden="true" />
-      </ToolbarButton>
-      <ToolbarButton
-        ariaLabel="Redo"
-        disabled={!derivedState.editorState.canRedo}
-        onClick={() => editor?.chain().focus().redo().run()}
-      >
-        <Redo2 className="h-4 w-4" aria-hidden="true" />
-      </ToolbarButton>
-
-      <ToolbarSeparator />
-
-      <div className="relative">
-        <button
-          type="button"
-          aria-expanded={menu.openMenu === "heading"}
-          aria-haspopup="menu"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => menu.toggleMenu("heading")}
-          className="inline-flex h-8 min-w-32 items-center justify-between gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-2.5 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
-        >
-          {getHeadingLabel(derivedState.selectedHeading)}
-          <ChevronDown
-            className={`h-4 w-4 transition-transform ${
-              menu.openMenu === "heading" ? "rotate-180" : ""
-            }`}
-            aria-hidden="true"
-          />
-        </button>
-
-        {menu.openMenu === "heading" ? (
-          <ToolbarMenuPanel className="min-w-44">
-            <HeadingMenuItems controller={controller} />
-          </ToolbarMenuPanel>
-        ) : null}
-      </div>
-
-      <ToolbarSeparator />
-
-      <div className="relative">
-        <ToolbarMenuButton
-          ariaLabel="Font family options"
-          icon={<Type className="h-4 w-4" aria-hidden="true" />}
-          isActive={derivedState.selectedFontFamily !== null}
-          isOpen={menu.openMenu === "toolbar-font-family"}
-          onClick={() => menu.toggleMenu("toolbar-font-family")}
-        />
-
-        {menu.openMenu === "toolbar-font-family" ? (
-          <ToolbarMenuPanel>
-            <FontFamilyMenuItems controller={controller} />
-          </ToolbarMenuPanel>
-        ) : null}
-      </div>
-
-      <div className="relative">
-        <ToolbarMenuButton
-          ariaLabel="Font size options"
-          icon={<TextCursorInput className="h-4 w-4" aria-hidden="true" />}
-          isActive={derivedState.selectedFontSize !== null}
-          isOpen={menu.openMenu === "toolbar-font-size"}
-          onClick={() => menu.toggleMenu("toolbar-font-size")}
-        />
-
-        {menu.openMenu === "toolbar-font-size" ? (
-          <ToolbarMenuPanel>
-            <FontSizeMenuItems
-              controller={controller}
-              includeStepActions={false}
-            />
-          </ToolbarMenuPanel>
-        ) : null}
-      </div>
-
-      <div className="relative">
-        <ToolbarMenuButton
-          ariaLabel="Text color options"
-          icon={<Droplets className="h-4 w-4" aria-hidden="true" />}
-          isActive={derivedState.selectedTextColor !== null}
-          isOpen={menu.openMenu === "toolbar-text-color"}
-          swatchColor={derivedState.selectedTextColor}
-          onClick={() => menu.toggleMenu("toolbar-text-color")}
-        />
-
-        {menu.openMenu === "toolbar-text-color" ? (
-          <ToolbarMenuPanel>
-            <ColorMenuContent
-              controller={controller}
-              includeColorPicker
-              mode="text"
-            />
-          </ToolbarMenuPanel>
-        ) : null}
-      </div>
-
-      <div className="relative">
-        <ToolbarMenuButton
-          ariaLabel="Text background color options"
-          icon={<PaintBucket className="h-4 w-4" aria-hidden="true" />}
-          isActive={derivedState.selectedBackgroundColor !== null}
-          isOpen={menu.openMenu === "toolbar-background-color"}
-          swatchColor={derivedState.selectedBackgroundColor}
-          onClick={() => menu.toggleMenu("toolbar-background-color")}
-        />
-
-        {menu.openMenu === "toolbar-background-color" ? (
-          <ToolbarMenuPanel>
-            <ColorMenuContent
-              controller={controller}
-              includeColorPicker
-              mode="background"
-            />
-          </ToolbarMenuPanel>
-        ) : null}
-      </div>
-
-      <ToolbarSeparator />
-
-      <ToolbarButton
-        ariaLabel="Toggle bold"
-        isActive={derivedState.editorState.bold}
-        onClick={() => editor?.chain().focus().toggleBold().run()}
-      >
-        <Bold className="h-4 w-4" aria-hidden="true" />
-      </ToolbarButton>
-      <ToolbarButton
-        ariaLabel="Toggle italic"
-        isActive={derivedState.editorState.italic}
-        onClick={() => editor?.chain().focus().toggleItalic().run()}
-      >
-        <Italic className="h-4 w-4" aria-hidden="true" />
-      </ToolbarButton>
-      <ToolbarButton
-        ariaLabel="Toggle underline"
-        isActive={derivedState.editorState.underline}
-        onClick={() => editor?.chain().focus().toggleUnderline().run()}
-      >
-        <Underline className="h-4 w-4" aria-hidden="true" />
-      </ToolbarButton>
-
-      <ToolbarSeparator />
-
-      <ToolbarButton
-        ariaLabel="Insert or edit link"
-        isActive={Boolean(
-          derivedState.activeLinkBubbleMode || derivedState.editorState.link,
-        )}
-        onClick={commands.openLinkBubble}
-      >
-        <Link className="h-4 w-4" aria-hidden="true" />
-      </ToolbarButton>
-
-      <div className="relative">
-        <ToolbarMenuButton
-          ariaLabel="Table options"
-          icon={<Table2 className="h-4 w-4" aria-hidden="true" />}
-          isOpen={menu.openMenu === "toolbar-table"}
-          onClick={() => menu.toggleMenu("toolbar-table")}
-        />
-
-        {menu.openMenu === "toolbar-table" ? (
-          <ToolbarMenuPanel className="min-w-[17rem]">
-            <TableInsertPicker onInsert={commands.insertTable} />
-          </ToolbarMenuPanel>
-        ) : null}
-      </div>
-
+    <div
+      className={`flex items-center whitespace-nowrap ${
+        mode === "overflow" ? "gap-1" : "gap-1.5"
+      }`}
+    >
       <div className="relative">
         <ToolbarSplitMenuButton
           ariaLabel="Apply highlight"
@@ -909,12 +778,12 @@ function ToolbarSection({
             />
           }
           isActive={derivedState.isHighlightActive}
-          isOpen={menu.openMenu === "toolbar-highlight"}
+          isOpen={menu.openMenu === menuKeys.highlight}
           onClick={highlight.applyCurrentHighlightColor}
-          onMenuClick={() => menu.toggleMenu("toolbar-highlight")}
+          onMenuClick={() => menu.toggleMenu(menuKeys.highlight)}
         />
 
-        {menu.openMenu === "toolbar-highlight" ? (
+        {menu.openMenu === menuKeys.highlight ? (
           <ToolbarMenuPanel className="min-w-48">
             <HighlightMenuItems controller={controller} />
           </ToolbarMenuPanel>
@@ -928,11 +797,11 @@ function ToolbarSection({
           ariaLabel="Text alignment options"
           icon={activeAlignmentOption.icon}
           isActive={derivedState.selectedTextAlignment !== null}
-          isOpen={menu.openMenu === "toolbar-text-alignment"}
-          onClick={() => menu.toggleMenu("toolbar-text-alignment")}
+          isOpen={menu.openMenu === menuKeys.textAlignment}
+          onClick={() => menu.toggleMenu(menuKeys.textAlignment)}
         />
 
-        {menu.openMenu === "toolbar-text-alignment" ? (
+        {menu.openMenu === menuKeys.textAlignment ? (
           <ToolbarMenuPanel className="min-w-48">
             <TextAlignmentMenuItems controller={controller} />
           </ToolbarMenuPanel>
@@ -944,15 +813,274 @@ function ToolbarSection({
           ariaLabel="Line height options"
           icon={<LineHeightIcon className="h-4 w-4" aria-hidden="true" />}
           isActive={derivedState.selectedTextStyle?.lineHeight !== null}
-          isOpen={menu.openMenu === "toolbar-line-height"}
-          onClick={() => menu.toggleMenu("toolbar-line-height")}
+          isOpen={menu.openMenu === menuKeys.lineHeight}
+          onClick={() => menu.toggleMenu(menuKeys.lineHeight)}
         />
 
-        {menu.openMenu === "toolbar-line-height" ? (
+        {menu.openMenu === menuKeys.lineHeight ? (
           <ToolbarMenuPanel className="min-w-48">
             <LineHeightMenuItems controller={controller} />
           </ToolbarMenuPanel>
         ) : null}
+      </div>
+
+      <ToolbarSeparator />
+
+      <ToolbarButton
+        ariaLabel="Toggle bulleted list"
+        isActive={derivedState.editorState.bulletList}
+        onClick={() =>
+          runListAction(() => editor?.chain().focus().toggleBulletList().run())
+        }
+      >
+        <List className="h-4 w-4" aria-hidden="true" />
+      </ToolbarButton>
+      <ToolbarButton
+        ariaLabel="Toggle numbered list"
+        isActive={derivedState.editorState.orderedList}
+        onClick={() =>
+          runListAction(() => editor?.chain().focus().toggleOrderedList().run())
+        }
+      >
+        <ListOrdered className="h-4 w-4" aria-hidden="true" />
+      </ToolbarButton>
+      <ToolbarButton
+        ariaLabel="Toggle task list"
+        isActive={derivedState.editorState.taskList}
+        onClick={() =>
+          runListAction(() => editor?.chain().focus().toggleTaskList().run())
+        }
+      >
+        <TaskListIcon className="h-4 w-4" aria-hidden="true" />
+      </ToolbarButton>
+    </div>
+  );
+}
+
+function ToolbarSection({
+  controller,
+}: {
+  controller: NewsBodyEditorController;
+}) {
+  const { commands, derivedState, editor, fullscreen, menu } = controller;
+  const isInlineMode = !fullscreen.isFullscreen;
+  const isOverflowOpen = isToolbarOverflowMenuOpen(menu.openMenu);
+
+  function toggleOverflowPanel() {
+    if (isOverflowOpen) {
+      menu.closeMenu();
+      return;
+    }
+
+    menu.setOpenMenu("toolbar-overflow");
+  }
+
+  return (
+    <div className="relative z-10 flex items-center gap-2 border-b border-[var(--border-light)] bg-[var(--bg-subtle)] px-1.5 py-2">
+      <div className="min-w-0 flex-1">
+        <div
+          className={`flex min-w-max items-center whitespace-nowrap gap-1`}
+        >
+          <ToolbarButton
+            ariaLabel="Undo"
+            disabled={!derivedState.editorState.canUndo}
+            onClick={() => editor?.chain().focus().undo().run()}
+          >
+            <Undo2 className="h-4 w-4" aria-hidden="true" />
+          </ToolbarButton>
+          <ToolbarButton
+            ariaLabel="Redo"
+            disabled={!derivedState.editorState.canRedo}
+            onClick={() => editor?.chain().focus().redo().run()}
+          >
+            <Redo2 className="h-4 w-4" aria-hidden="true" />
+          </ToolbarButton>
+
+          <ToolbarSeparator />
+
+          <div className="relative">
+            <button
+              type="button"
+              aria-expanded={menu.openMenu === "heading"}
+              aria-haspopup="menu"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => menu.toggleMenu("heading")}
+              className={`inline-flex h-8 items-center justify-between gap-1 min-w-24 px-1.5 rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]`}
+            >
+              {getHeadingLabel(derivedState.selectedHeading)}
+              <ChevronDown
+                size={12}
+                className={`transition-transform ${
+                  menu.openMenu === "heading" ? "rotate-180" : ""
+                }`}
+                aria-hidden="true"
+              />
+            </button>
+
+            {menu.openMenu === "heading" ? (
+              <ToolbarMenuPanel className="min-w-44">
+                <HeadingMenuItems controller={controller} />
+              </ToolbarMenuPanel>
+            ) : null}
+          </div>
+
+          <ToolbarSeparator />
+
+          <div className="relative">
+            <ToolbarMenuButton
+              ariaLabel="Font family options"
+              icon={<Type className="h-4 w-4" aria-hidden="true" />}
+              isActive={derivedState.selectedFontFamily !== null}
+              isOpen={menu.openMenu === "toolbar-font-family"}
+              onClick={() => menu.toggleMenu("toolbar-font-family")}
+            />
+
+            {menu.openMenu === "toolbar-font-family" ? (
+              <ToolbarMenuPanel>
+                <FontFamilyMenuItems controller={controller} />
+              </ToolbarMenuPanel>
+            ) : null}
+          </div>
+
+          <div className="relative">
+            <ToolbarMenuButton
+              ariaLabel="Font size options"
+              icon={<TextCursorInput className="h-4 w-4" aria-hidden="true" />}
+              isActive={derivedState.selectedFontSize !== null}
+              isOpen={menu.openMenu === "toolbar-font-size"}
+              onClick={() => menu.toggleMenu("toolbar-font-size")}
+            />
+
+            {menu.openMenu === "toolbar-font-size" ? (
+              <ToolbarMenuPanel>
+                <FontSizeMenuItems
+                  controller={controller}
+                  includeStepActions={false}
+                />
+              </ToolbarMenuPanel>
+            ) : null}
+          </div>
+
+          <div className="relative">
+            <ToolbarMenuButton
+              ariaLabel="Text color options"
+              icon={<Droplets className="h-4 w-4" aria-hidden="true" />}
+              isActive={derivedState.selectedTextColor !== null}
+              isOpen={menu.openMenu === "toolbar-text-color"}
+              swatchColor={derivedState.selectedTextColor}
+              onClick={() => menu.toggleMenu("toolbar-text-color")}
+            />
+
+            {menu.openMenu === "toolbar-text-color" ? (
+              <ToolbarMenuPanel>
+                <ColorMenuContent
+                  controller={controller}
+                  includeColorPicker
+                  mode="text"
+                />
+              </ToolbarMenuPanel>
+            ) : null}
+          </div>
+
+          <div className="relative">
+            <ToolbarMenuButton
+              ariaLabel="Text background color options"
+              icon={<PaintBucket className="h-4 w-4" aria-hidden="true" />}
+              isActive={derivedState.selectedBackgroundColor !== null}
+              isOpen={menu.openMenu === "toolbar-background-color"}
+              swatchColor={derivedState.selectedBackgroundColor}
+              onClick={() => menu.toggleMenu("toolbar-background-color")}
+            />
+
+            {menu.openMenu === "toolbar-background-color" ? (
+              <ToolbarMenuPanel>
+                <ColorMenuContent
+                  controller={controller}
+                  includeColorPicker
+                  mode="background"
+                />
+              </ToolbarMenuPanel>
+            ) : null}
+          </div>
+
+          <ToolbarSeparator />
+
+          <ToolbarButton
+            ariaLabel="Toggle bold"
+            isActive={derivedState.editorState.bold}
+            onClick={() => editor?.chain().focus().toggleBold().run()}
+          >
+            <Bold className="h-4 w-4" aria-hidden="true" />
+          </ToolbarButton>
+          <ToolbarButton
+            ariaLabel="Toggle italic"
+            isActive={derivedState.editorState.italic}
+            onClick={() => editor?.chain().focus().toggleItalic().run()}
+          >
+            <Italic className="h-4 w-4" aria-hidden="true" />
+          </ToolbarButton>
+          <ToolbarButton
+            ariaLabel="Toggle underline"
+            isActive={derivedState.editorState.underline}
+            onClick={() => editor?.chain().focus().toggleUnderline().run()}
+          >
+            <Underline className="h-4 w-4" aria-hidden="true" />
+          </ToolbarButton>
+
+          <ToolbarSeparator />
+
+          <ToolbarButton
+            ariaLabel="Insert or edit link"
+            isActive={Boolean(
+              derivedState.activeLinkBubbleMode || derivedState.editorState.link,
+            )}
+            onClick={commands.openLinkBubble}
+          >
+            <Link className="h-4 w-4" aria-hidden="true" />
+          </ToolbarButton>
+
+          <div className="relative">
+            <ToolbarMenuButton
+              ariaLabel="Table options"
+              icon={<Table2 className="h-4 w-4" aria-hidden="true" />}
+              isOpen={menu.openMenu === "toolbar-table"}
+              onClick={() => menu.toggleMenu("toolbar-table")}
+            />
+
+            {menu.openMenu === "toolbar-table" ? (
+              <ToolbarMenuPanel className="min-w-[17rem]">
+                <TableInsertPicker onInsert={commands.insertTable} />
+              </ToolbarMenuPanel>
+            ) : null}
+          </div>
+          {isInlineMode ? (
+            <>
+              <ToolbarSeparator />
+              <div className="relative shrink-0">
+                <ToolbarMenuButton
+                  ariaLabel="More formatting options"
+                  icon={<VerticalEllipsisIcon className="h-4 w-4" />}
+                  isOpen={isOverflowOpen}
+                  onClick={toggleOverflowPanel}
+                />
+
+                {isOverflowOpen ? (
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-full z-30 mt-1 flex items-center gap-1 overflow-visible whitespace-nowrap rounded-xl border border-[var(--border-light)] bg-[var(--bg-elevated)] p-2 shadow-[var(--shadow-card)]"
+                  >
+                    <SecondaryToolbarControls controller={controller} mode="overflow" />
+                  </div>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <>
+              <ToolbarSeparator />
+              <SecondaryToolbarControls controller={controller} mode="inline" />
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -62,7 +62,7 @@ export function ToolbarMenuButton({
       aria-haspopup="menu"
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
-      className={`inline-flex h-8 min-w-4 items-center justify-between gap-1.5 rounded-lg border px-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
+      className={`inline-flex h-8 min-w-4 items-center justify-between gap-1 rounded-lg border px-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
         isOpen || isActive
           ? "border-[var(--border-orange)] bg-[var(--brand-pale)] text-[var(--brand)]"
           : "border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
@@ -127,7 +127,7 @@ export function ToolbarSplitMenuButton({
         disabled={primaryDisabled}
         onMouseDown={(event) => event.preventDefault()}
         onClick={onClick}
-        className="inline-flex h-full min-w-8 items-center justify-center px-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-inset disabled:cursor-not-allowed"
+        className="inline-flex h-full min-w-8 items-center justify-center px-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-inset disabled:cursor-not-allowed"
       >
         {icon}
       </button>
@@ -139,7 +139,7 @@ export function ToolbarSplitMenuButton({
         disabled={menuDisabled}
         onMouseDown={(event) => event.preventDefault()}
         onClick={onMenuClick}
-        className="inline-flex h-full w-7 items-center justify-center border-l border-current/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-inset disabled:cursor-not-allowed"
+        className="inline-flex h-full w-4 items-center justify-center border-l border-current/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-inset disabled:cursor-not-allowed"
       >
         <ChevronDown
           size={12}

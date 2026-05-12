@@ -17,6 +17,12 @@ import {
   normalizeNewsBodyImageAlignment,
   normalizeNewsBodyImageWidth,
 } from "@/app/lib/news-body-images";
+import {
+  NEWS_TABLE_BORDER_COLOR_CSS_VARIABLE,
+  NEWS_TABLE_BORDER_WIDTH_CSS_VARIABLE,
+  normalizeNewsTableBorderColor,
+  normalizeNewsTableBorderWidthValue,
+} from "@/app/lib/news-table-styles";
 import { NEWS_TABLE_OF_CONTENTS_NODE_NAME } from "@/app/lib/news-body-table-of-contents";
 import type {
   ActiveTableContext,
@@ -33,6 +39,8 @@ import type {
   TableCellSelectionState,
   TableCellStyleAttributes,
   TableGeometry,
+  TableSelectionState,
+  TableStyleAttributes,
   TextAlignment,
 } from "./types";
 
@@ -91,6 +99,8 @@ export function getTableCellStyleAttributes(
   if (!node) {
     return {
       backgroundColor: null,
+      borderColor: null,
+      borderWidth: null,
       horizontalAlign: null,
       padding: null,
     };
@@ -101,8 +111,22 @@ export function getTableCellStyleAttributes(
       typeof node.attrs.backgroundColor === "string"
         ? node.attrs.backgroundColor
         : null,
+    borderColor:
+      typeof node.attrs.borderColor === "string" ? node.attrs.borderColor : null,
+    borderWidth: normalizeNewsTableBorderWidthValue(node.attrs.borderWidth),
     horizontalAlign: parseTableCellHorizontalAlignment(node.attrs.horizontalAlign),
     padding: normalizeTableCellPaddingValue(node.attrs.padding),
+  };
+}
+
+export function getTableBorderStyleAttributes(
+  node: ProseMirrorNode | null,
+): Pick<TableCellStyleAttributes, "borderColor" | "borderWidth"> {
+  const styles = getTableCellStyleAttributes(node);
+
+  return {
+    borderColor: styles.borderColor ?? null,
+    borderWidth: styles.borderWidth ?? null,
   };
 }
 
@@ -120,6 +144,15 @@ export function buildTableCellStyleValue(
     styles.push(`background-color: ${attributes.backgroundColor}`);
   }
 
+  if (attributes.borderColor) {
+    styles.push(`border-color: ${attributes.borderColor}`);
+  }
+
+  if (attributes.borderWidth) {
+    styles.push(`border-style: solid`);
+    styles.push(`border-width: ${attributes.borderWidth}`);
+  }
+
   if (attributes.padding) {
     styles.push(`padding: ${attributes.padding}`);
   }
@@ -131,10 +164,83 @@ export function buildTableCellStyleValue(
   return styles.length > 0 ? styles.join("; ") : undefined;
 }
 
+export function getStyleDeclarationValue(
+  style: string | null | undefined,
+  propertyName: string,
+) {
+  if (!style?.trim()) {
+    return undefined;
+  }
+
+  const normalizedPropertyName = propertyName.trim().replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&",
+  );
+  const match = style.match(
+    new RegExp(`(?:^|;)\\s*${normalizedPropertyName}\\s*:\\s*([^;]+)`, "i"),
+  );
+
+  return match?.[1]?.trim() || undefined;
+}
+
+export function setStyleDeclarationValue(
+  style: string | null | undefined,
+  propertyName: string,
+  value: string | null,
+) {
+  const declarations = new Map<string, string>();
+
+  for (const declaration of style?.split(";") ?? []) {
+    const trimmedDeclaration = declaration.trim();
+
+    if (!trimmedDeclaration) {
+      continue;
+    }
+
+    const separatorIndex = trimmedDeclaration.indexOf(":");
+
+    if (separatorIndex <= 0) {
+      continue;
+    }
+
+    const key = trimmedDeclaration.slice(0, separatorIndex).trim().toLowerCase();
+    const declarationValue = trimmedDeclaration.slice(separatorIndex + 1).trim();
+
+    if (key && declarationValue) {
+      declarations.set(key, declarationValue);
+    }
+  }
+
+  const normalizedPropertyName = propertyName.trim().toLowerCase();
+
+  if (value === null) {
+    declarations.delete(normalizedPropertyName);
+  } else {
+    declarations.set(normalizedPropertyName, value.trim());
+  }
+
+  const nextStyle = Array.from(declarations.entries())
+    .map(([key, declarationValue]) => `${key}: ${declarationValue}`)
+    .join("; ");
+
+  return nextStyle || undefined;
+}
+
 export const tableCellAttributeConfig = {
   backgroundColor: {
     default: null,
     parseHTML: (element: HTMLElement) => element.style.backgroundColor || null,
+    rendered: false,
+  },
+  borderColor: {
+    default: null,
+    parseHTML: (element: HTMLElement) => element.style.borderColor || null,
+    rendered: false,
+  },
+  borderWidth: {
+    default: null,
+    parseHTML: (element: HTMLElement) =>
+      normalizeNewsTableBorderWidthValue(element.style.borderWidth),
     rendered: false,
   },
   horizontalAlign: {
@@ -150,6 +256,29 @@ export const tableCellAttributeConfig = {
     rendered: false,
   },
 };
+
+export function getTableStyleAttributes(
+  node: ProseMirrorNode | null,
+): TableStyleAttributes {
+  if (!node) {
+    return {
+      borderColor: null,
+      borderWidth: null,
+    };
+  }
+
+  const style =
+    typeof node.attrs.style === "string" ? node.attrs.style : undefined;
+
+  return {
+    borderColor: normalizeNewsTableBorderColor(
+      getStyleDeclarationValue(style, NEWS_TABLE_BORDER_COLOR_CSS_VARIABLE),
+    ),
+    borderWidth: normalizeNewsTableBorderWidthValue(
+      getStyleDeclarationValue(style, NEWS_TABLE_BORDER_WIDTH_CSS_VARIABLE),
+    ),
+  };
+}
 
 export function clampTableDimension(value: number) {
   return Math.min(10, Math.max(1, value));
@@ -775,6 +904,37 @@ export function collectDocumentEditorColors(body: JSONContent | null | undefined
       }
     }
 
+    if (
+      (node.type === "tableCell" || node.type === "tableHeader") &&
+      typeof node.attrs?.borderColor === "string"
+    ) {
+      const color = node.attrs.borderColor.trim();
+      const normalized = color.toLowerCase();
+
+      if (color && !seenBackgroundColors.has(normalized)) {
+        seenBackgroundColors.add(normalized);
+        backgroundColors.push(color);
+      }
+    }
+
+    if (node.type === "table") {
+      const borderColor = normalizeNewsTableBorderColor(
+        getStyleDeclarationValue(
+          typeof node.attrs?.style === "string" ? node.attrs.style : undefined,
+          NEWS_TABLE_BORDER_COLOR_CSS_VARIABLE,
+        ),
+      );
+
+      if (borderColor) {
+        const normalized = borderColor.toLowerCase();
+
+        if (!seenBackgroundColors.has(normalized)) {
+          seenBackgroundColors.add(normalized);
+          backgroundColors.push(borderColor);
+        }
+      }
+    }
+
     for (const child of node.content ?? []) {
       visit(child);
     }
@@ -816,6 +976,21 @@ export function getSelectedTableCellPositions(
   return tableStructure.tableMap
     .cellsInRect(rect)
     .map((relativePos) => tablePos + 1 + relativePos);
+}
+
+export function getAllTableCellPositions(
+  doc: ProseMirrorNode,
+  tablePos: number | null,
+) {
+  const tableStructure = getTableStructure(doc, tablePos);
+
+  if (!tableStructure || tablePos === null) {
+    return [];
+  }
+
+  return Array.from(new Set(tableStructure.tableMap.map)).map(
+    (relativePos) => tablePos + 1 + relativePos,
+  );
 }
 
 export function getCommonTableCellValue<T>(values: T[], fallback: T) {
@@ -861,6 +1036,65 @@ export function getSelectedTableCellState(
     hasBackgroundColor: backgroundColors.some((value) => Boolean(value)),
     horizontalAlign: getCommonTableCellValue(horizontalAlignments, "left"),
     padding: getCommonTableCellValue(paddings, null),
+  };
+}
+
+export function getSelectedTableState(
+  editor: Editor | null,
+  tablePos: number | null,
+): TableSelectionState {
+  if (!editor || tablePos === null) {
+    return {
+      borderColor: null,
+      borderWidth: null,
+      hasBorderColor: false,
+      hasMixedBorderColor: false,
+      hasMixedBorderWidth: false,
+    };
+  }
+
+  const tableNode = editor.state.doc.nodeAt(tablePos);
+  const legacyTableStyles = getTableStyleAttributes(tableNode);
+  const positions = getAllTableCellPositions(editor.state.doc, tablePos);
+  const cells = positions
+    .map((position) => editor.state.doc.nodeAt(position))
+    .filter((node): node is ProseMirrorNode => node !== null);
+
+  if (cells.length === 0) {
+    return {
+      borderColor: legacyTableStyles.borderColor ?? null,
+      borderWidth: legacyTableStyles.borderWidth ?? null,
+      hasBorderColor: Boolean(legacyTableStyles.borderColor),
+      hasMixedBorderColor: false,
+      hasMixedBorderWidth: false,
+    };
+  }
+
+  const styles = cells.map((cell) => getTableCellStyleAttributes(cell));
+  const borderColors = styles.map((style) => style.borderColor ?? null);
+  const borderWidths = styles.map((style) => style.borderWidth ?? null);
+  const hasCellBorderColor = borderColors.some((value) => Boolean(value));
+  const hasCellBorderWidth = borderWidths.some((value) => Boolean(value));
+  const selectedBorderColor = getCommonTableCellValue(borderColors, null);
+  const selectedBorderWidth = getCommonTableCellValue(borderWidths, null);
+  const hasMixedBorderColor =
+    borderColors.length > 0 && selectedBorderColor === null && hasCellBorderColor;
+  const hasMixedBorderWidth =
+    borderWidths.length > 0 && selectedBorderWidth === null && hasCellBorderWidth;
+
+  return {
+    borderColor:
+      hasCellBorderColor || hasMixedBorderColor
+        ? selectedBorderColor
+        : legacyTableStyles.borderColor ?? null,
+    borderWidth:
+      hasCellBorderWidth || hasMixedBorderWidth
+        ? selectedBorderWidth
+        : legacyTableStyles.borderWidth ?? null,
+    hasBorderColor:
+      hasCellBorderColor || Boolean(legacyTableStyles.borderColor),
+    hasMixedBorderColor,
+    hasMixedBorderWidth,
   };
 }
 

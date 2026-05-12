@@ -47,10 +47,12 @@ import {
   getSelectedImageState,
   getSelectedLinkState,
   getSelectedTableCellState,
+  getSelectedTableState,
   getSelectionComputedFontSize,
   hasTableOfContentsNode,
   isHeaderAxisActive,
   normalizeLinkUrl,
+  setStyleDeclarationValue,
 } from "../utils";
 import { useEditorMenuState } from "./use-editor-menu-state";
 import { useFontActions } from "./use-font-actions";
@@ -110,6 +112,13 @@ function getEmptyEditorState(
     currentColumnIsHeader: false,
     currentHeading: "paragraph",
     currentRowIsHeader: false,
+    currentTableProperties: {
+      borderColor: null,
+      borderWidth: null,
+      hasBorderColor: false,
+      hasMixedBorderColor: false,
+      hasMixedBorderWidth: false,
+    },
     currentTextAlign: null,
     currentTextStyle: null,
     documentColors: collectDocumentEditorColors(initialContent ?? EMPTY_NEWS_BODY),
@@ -137,6 +146,7 @@ export function useNewsBodyEditor({
   const textColorInputRef = useRef<HTMLInputElement | null>(null);
   const backgroundColorInputRef = useRef<HTMLInputElement | null>(null);
   const cellBackgroundColorInputRef = useRef<HTMLInputElement | null>(null);
+  const tableBorderColorInputRef = useRef<HTMLInputElement | null>(null);
   const [lastUsedHighlightColor, setLastUsedHighlightColor] = useState(
     DEFAULT_HIGHLIGHT_COLOR,
   );
@@ -276,6 +286,10 @@ export function useNewsBodyEditor({
         currentColumnIsHeader,
         currentHeading: getCurrentHeading(currentEditor),
         currentRowIsHeader,
+        currentTableProperties: getSelectedTableState(
+          currentEditor,
+          activeTableContext.activeTablePos,
+        ),
         currentTextAlign: getCurrentTextAlignment(currentEditor),
         currentTextStyle: getCurrentTextStyle(currentEditor),
         documentColors: collectDocumentEditorColors(currentEditor.getJSON()),
@@ -309,12 +323,21 @@ export function useNewsBodyEditor({
     (selectedHeading === "paragraph" ? DEFAULT_LINE_HEIGHT : null);
   const selectedHighlightColor = resolvedEditorState.highlightColor ?? null;
   const selectedCellProperties = resolvedEditorState.currentCellProperties;
+  const selectedTableProperties = resolvedEditorState.currentTableProperties;
   const selectedCellBackgroundColor = selectedCellProperties.backgroundColor ?? null;
   const hasSelectedCellBackgroundColor =
     selectedCellProperties.hasBackgroundColor ?? false;
   const selectedCellPadding = selectedCellProperties.padding ?? null;
   const selectedCellHorizontalAlignment =
     selectedCellProperties.horizontalAlign ?? "left";
+  const selectedTableBorderColor = selectedTableProperties.borderColor ?? null;
+  const hasSelectedTableBorderColor =
+    selectedTableProperties.hasBorderColor ?? false;
+  const hasMixedTableBorderColor =
+    selectedTableProperties.hasMixedBorderColor ?? false;
+  const hasMixedTableBorderWidth =
+    selectedTableProperties.hasMixedBorderWidth ?? false;
+  const selectedTableBorderWidth = selectedTableProperties.borderWidth ?? null;
   const documentColors = resolvedEditorState.documentColors;
   const selectedImage = resolvedEditorState.selectedImage;
   const selectedLink = resolvedEditorState.selectedLink;
@@ -340,7 +363,9 @@ export function useNewsBodyEditor({
     isTableActive,
     openTableBubbleSubmenu: menu.openTableBubbleSubmenu,
     selectedCellPadding,
+    selectedTableBorderWidth,
     setOpenCellPropertiesMenu: menu.setOpenCellPropertiesMenu,
+    setOpenTablePropertiesMenu: menu.setOpenTablePropertiesMenu,
     setOpenTableBubbleSubmenu: menu.setOpenTableBubbleSubmenu,
   });
 
@@ -374,7 +399,10 @@ export function useNewsBodyEditor({
     selectedHeading,
     selectedFontSize,
     setOpenCellPropertiesMenu: menu.setOpenCellPropertiesMenu,
+    setOpenTablePropertiesMenu: menu.setOpenTablePropertiesMenu,
+    setSelectedTableBorderColor: table.setSelectedTableBorderColor,
     setSelectedTableCellBackgroundColor: table.setSelectedTableCellBackgroundColor,
+    tableBorderColorInputRef,
     textColorInputRef,
   });
 
@@ -689,7 +717,7 @@ export function useNewsBodyEditor({
       return;
     }
 
-    editor
+    const didInsertTable = editor
       .chain()
       .focus()
       .insertTable({
@@ -698,6 +726,40 @@ export function useNewsBodyEditor({
         withHeaderRow: true,
       })
       .run();
+
+    if (!didInsertTable) {
+      return;
+    }
+
+    const { activeTablePos } = getActiveTableContext(editor);
+
+    if (activeTablePos !== null) {
+      const tableNode = editor.state.doc.nodeAt(activeTablePos);
+
+      if (tableNode) {
+        const nextStyle = setStyleDeclarationValue(
+          typeof tableNode.attrs.style === "string" ? tableNode.attrs.style : null,
+          "width",
+          "100%",
+        );
+        const styleWithoutMinWidth = setStyleDeclarationValue(
+          nextStyle,
+          "min-width",
+          null,
+        );
+        const transaction = editor.state.tr.setNodeMarkup(
+          activeTablePos,
+          undefined,
+          {
+            ...tableNode.attrs,
+            style: styleWithoutMinWidth,
+          },
+        );
+
+        editor.view.dispatch(transaction);
+      }
+    }
+
     menu.closeMenu();
   }
 
@@ -713,6 +775,7 @@ export function useNewsBodyEditor({
     activeTablePos,
     menu.openTableBubbleSubmenu,
     menu.openCellPropertiesMenu,
+    menu.openTablePropertiesMenu,
   ]);
 
   useEffect(() => {
@@ -906,6 +969,9 @@ export function useNewsBodyEditor({
       editorState: resolvedEditorState,
       hasDirectionalMergeAction,
       hasSelectedCellBackgroundColor,
+      hasMixedTableBorderColor,
+      hasMixedTableBorderWidth,
+      hasSelectedTableBorderColor,
       isHighlightActive,
       isTableActive,
       selectedBackgroundColor,
@@ -920,6 +986,9 @@ export function useNewsBodyEditor({
       selectedImage,
       selectedLineHeight,
       selectedLink,
+      selectedTableBorderColor,
+      selectedTableBorderWidth,
+      selectedTableProperties,
       selectedTextAlignment,
       selectedTextColor,
       selectedTextStyle,
@@ -970,6 +1039,7 @@ export function useNewsBodyEditor({
       cellBackgroundColorInputRef,
       imageInputRef: imageUpload.imageInputRef,
       menuRef,
+      tableBorderColorInputRef,
       textColorInputRef,
     },
     table,

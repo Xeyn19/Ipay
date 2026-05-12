@@ -40,12 +40,18 @@ export type MergeDirection = "up" | "right" | "down" | "left";
 export type OpenTableBubbleSubmenu =
   | TableAxis
   | "merge"
+  | "table-properties"
   | "cell-properties"
   | null;
 export type OpenCellPropertiesMenu = "background-color" | null;
+export type OpenTablePropertiesMenu = "border-color" | null;
 export type OpenImageBubbleSubmenu = "alignment" | "size" | null;
 export type OpenLinkBubbleMode = "insert" | "edit" | null;
-export type ColorMenuMode = "text" | "background" | "cell-background";
+export type ColorMenuMode =
+  | "text"
+  | "background"
+  | "cell-background"
+  | "table-border";
 
 export type ActiveTableContext = {
   activeCellPos: number | null;
@@ -95,8 +101,15 @@ export type TableGeometry = {
 
 export type TableCellStyleAttributes = {
   backgroundColor?: string | null;
+  borderColor?: string | null;
+  borderWidth?: string | null;
   horizontalAlign?: TableCellHorizontalAlignment | null;
   padding?: string | null;
+};
+
+export type TableStyleAttributes = {
+  borderColor?: string | null;
+  borderWidth?: string | null;
 };
 
 export type TableCellSelectionState = {
@@ -104,6 +117,14 @@ export type TableCellSelectionState = {
   hasBackgroundColor: boolean;
   horizontalAlign: TableCellHorizontalAlignment;
   padding: string | null;
+};
+
+export type TableSelectionState = {
+  borderColor: string | null;
+  borderWidth: string | null;
+  hasBorderColor: boolean;
+  hasMixedBorderColor: boolean;
+  hasMixedBorderWidth: boolean;
 };
 
 export type DocumentEditorColors = {
@@ -129,6 +150,7 @@ export type NewsBodyEditorSnapshot = {
   currentColumnIsHeader: boolean;
   currentHeading: "paragraph" | HeadingLevel;
   currentRowIsHeader: boolean;
+  currentTableProperties: TableSelectionState;
   currentTextAlign: TextAlignment;
   currentTextStyle: NewsBodyTextStyleAttributes | null;
   documentColors: DocumentEditorColors;

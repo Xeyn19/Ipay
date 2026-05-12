@@ -1097,6 +1097,7 @@ function NewsBodyEditorView({
   const textColorInputRef = refs.textColorInputRef;
   const backgroundColorInputRef = refs.backgroundColorInputRef;
   const cellBackgroundColorInputRef = refs.cellBackgroundColorInputRef;
+  const tableBorderColorInputRef = refs.tableBorderColorInputRef;
   const imageInputRef = refs.imageInputRef;
   const fullscreenTitleId = useId();
   const fullscreenCardClassName = fullscreen.isFullscreen
@@ -1160,6 +1161,20 @@ function NewsBodyEditorView({
         onChange={(event) =>
           colors.handleColorPickerChange(event, "cell-background")
         }
+      />
+      <input
+        ref={(node) => {
+          tableBorderColorInputRef.current = node;
+        }}
+        type="color"
+        className="sr-only"
+        aria-hidden="true"
+        tabIndex={-1}
+        value={getColorInputValue(
+          derivedState.selectedTableBorderColor,
+          "#d1d5db",
+        )}
+        onChange={(event) => colors.handleColorPickerChange(event, "table-border")}
       />
 
       <TopMenuBar controller={controller} />

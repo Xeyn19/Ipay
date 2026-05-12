@@ -117,9 +117,13 @@ If you add a new Tiptap extension, this is the primary place to register it.
 Table width behavior is intentionally owned by Tiptap:
 
 - `TableKit.configure({ table: { resizable: true, renderWrapper: true } })` enables the resize node view
+- newly inserted tables are normalized to `width: 100%`, so they start at the full editor width with evenly split columns
+- typing inside table cells is expected to wrap within the current column width, including long unbroken strings
 - saved table widths live in the table/cell attrs that Tiptap manages, especially `colwidth`
+- manual column resizing is still supported and saved after insertion
 - HTML export uses Tiptap's `<colgroup>` plus table `width` or `min-width`
 - the public renderer in `app/news-media/news-article-body.tsx` mirrors that same width model when rendering saved JSON
+- existing saved tables are not retroactively normalized; the equal-width default only applies to newly inserted tables
 
 ### `utils.ts`
 
@@ -181,6 +185,7 @@ Owns open/close state for:
 - top menus
 - toolbar overflow dropdown and its nested toolbar submenus
 - table bubble submenus
+- table properties submenu
 - image bubble submenus
 - cell properties submenu
 - image alt editor mode
@@ -218,6 +223,7 @@ It contains:
 Owns table-cell-specific logic such as:
 
 - selected cell attribute updates
+- selected table border color and width updates
 - merge and split actions
 - row/column selection helpers
 - header toggles

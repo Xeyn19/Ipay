@@ -5,6 +5,12 @@ import {
   normalizeNewsBodyImageWidth,
 } from "@/app/lib/news-body-images";
 import {
+  NEWS_TABLE_BORDER_COLOR_CSS_VARIABLE,
+  NEWS_TABLE_BORDER_WIDTH_CSS_VARIABLE,
+  normalizeNewsTableBorderColor,
+  normalizeNewsTableBorderWidthValue,
+} from "@/app/lib/news-table-styles";
+import {
   buildNewsTableOfContentsDisplayItems,
   extractNewsBodyHeadingItems,
   extractNewsTableOfContentsItems,
@@ -258,7 +264,7 @@ function renderTableCellContent(
         <div
           key={key}
           className={joinClassNames(
-            "min-w-0 whitespace-normal break-words text-sm leading-[1.5] text-[var(--text-primary)]",
+            "min-w-0 whitespace-normal break-words [overflow-wrap:anywhere] [word-break:break-word] text-sm leading-[1.5] text-[var(--text-primary)]",
             getTextAlignmentClassName(node),
           )}
         >
@@ -291,7 +297,7 @@ const DEFAULT_TABLE_CELL_MIN_WIDTH = 25;
 
 function getStyleDeclarationValue(
   style: unknown,
-  propertyName: "min-width" | "width",
+  propertyName: string,
 ) {
   if (typeof style !== "string" || !style.trim()) {
     return undefined;
@@ -309,12 +315,14 @@ function getTableColumnWidths(node: JSONContent) {
     (child) => child.type === "tableRow",
   );
   const widths: Array<number | undefined> = [];
+  let hasMeasuredWidth = false;
   let totalWidth = 0;
   let hasFixedWidth = firstRow !== undefined;
 
   if (!firstRow) {
     return {
       hasFixedWidth: false,
+      hasMeasuredWidth: false,
       totalWidth: 0,
       widths,
     };
@@ -336,7 +344,9 @@ function getTableColumnWidths(node: JSONContent) {
       widths.push(width);
       totalWidth += width ?? DEFAULT_TABLE_CELL_MIN_WIDTH;
 
-      if (!width) {
+      if (width) {
+        hasMeasuredWidth = true;
+      } else {
         hasFixedWidth = false;
       }
     }
@@ -344,19 +354,27 @@ function getTableColumnWidths(node: JSONContent) {
 
   return {
     hasFixedWidth,
+    hasMeasuredWidth,
     totalWidth,
     widths,
   };
 }
 
 function getTableRenderProps(node: JSONContent) {
-  const { hasFixedWidth, totalWidth, widths } = getTableColumnWidths(node);
+  const { hasFixedWidth, hasMeasuredWidth, totalWidth, widths } =
+    getTableColumnWidths(node);
   const style: CSSProperties = {};
   let className = "border-collapse table-fixed";
   const explicitWidth = getStyleDeclarationValue(node.attrs?.style, "width");
   const explicitMinWidth = getStyleDeclarationValue(
     node.attrs?.style,
     "min-width",
+  );
+  const tableBorderColor = normalizeNewsTableBorderColor(
+    getStyleDeclarationValue(node.attrs?.style, NEWS_TABLE_BORDER_COLOR_CSS_VARIABLE),
+  );
+  const tableBorderWidth = normalizeNewsTableBorderWidthValue(
+    getStyleDeclarationValue(node.attrs?.style, NEWS_TABLE_BORDER_WIDTH_CSS_VARIABLE),
   );
   const hasExplicitTableWidth =
     explicitWidth !== undefined || explicitMinWidth !== undefined;
@@ -379,6 +397,9 @@ function getTableRenderProps(node: JSONContent) {
     className = `${className} w-full`;
   }
 
+  const hasEqualWidthColumns =
+    explicitWidth === "100%" && widths.length > 0 && !hasMeasuredWidth;
+
   return {
     className,
     colGroup:
@@ -387,18 +408,36 @@ function getTableRenderProps(node: JSONContent) {
             key: `col-${index}`,
             style: width
               ? { width: `${Math.max(width, DEFAULT_TABLE_CELL_MIN_WIDTH)}px` }
+              : hasEqualWidthColumns
+                ? { width: `${100 / widths.length}%` }
               : { minWidth: `${DEFAULT_TABLE_CELL_MIN_WIDTH}px` },
           }))
         : null,
     style: Object.keys(style).length > 0 ? style : undefined,
+    tableBorderColor,
+    tableBorderWidth,
   };
 }
 
-function getTableCellRenderProps(node: JSONContent) {
+function getTableCellRenderProps(
+  node: JSONContent,
+  tableBorderStyles?: {
+    borderColor: string | null;
+    borderWidth: string | null;
+  },
+) {
   const horizontalAlign = getTableCellHorizontalAlignment(node);
   const backgroundColor =
     typeof node.attrs?.backgroundColor === "string"
       ? node.attrs.backgroundColor
+      : undefined;
+  const borderColor =
+    typeof node.attrs?.borderColor === "string"
+      ? node.attrs.borderColor
+      : undefined;
+  const borderWidth =
+    typeof node.attrs?.borderWidth === "string"
+      ? normalizeNewsTableBorderWidthValue(node.attrs.borderWidth)
       : undefined;
   const padding =
     typeof node.attrs?.padding === "string" ? node.attrs.padding : undefined;
@@ -422,9 +461,23 @@ function getTableCellRenderProps(node: JSONContent) {
     style.textAlign = horizontalAlign;
   }
 
+  if (borderColor) {
+    style.borderColor = borderColor;
+  } else if (tableBorderStyles?.borderColor) {
+    style.borderColor = tableBorderStyles.borderColor;
+  }
+
+  if (borderWidth) {
+    style.borderStyle = "solid";
+    style.borderWidth = borderWidth;
+  } else if (tableBorderStyles?.borderWidth) {
+    style.borderStyle = "solid";
+    style.borderWidth = tableBorderStyles.borderWidth;
+  }
+
   return {
     className: joinClassNames(
-      "border border-[var(--border-light)] whitespace-normal break-words",
+      "min-w-0 border border-[var(--border-light)] whitespace-normal break-words [overflow-wrap:anywhere] [word-break:break-word]",
       padding ? undefined : "px-3.5 py-3",
       "align-top",
     ),
@@ -679,7 +732,10 @@ function renderBlockNode(
                   <tr key={`${key}-${rowIndex}`}>
                     {(row.content ?? []).map((cell, cellIndex) => {
                       const cellKey = `${key}-${rowIndex}-${cellIndex}`;
-                      const cellProps = getTableCellRenderProps(cell);
+                      const cellProps = getTableCellRenderProps(cell, {
+                        borderColor: tableRenderProps.tableBorderColor ?? null,
+                        borderWidth: tableRenderProps.tableBorderWidth ?? null,
+                      });
 
                       if (cell.type === "tableHeader") {
                         return (
@@ -696,7 +752,7 @@ function renderBlockNode(
                             colSpan={cellProps.colSpan}
                             rowSpan={cellProps.rowSpan}
                           >
-                            <div className="min-w-0 space-y-2 whitespace-normal break-words">
+                            <div className="min-w-0 space-y-2 whitespace-normal break-words [overflow-wrap:anywhere] [word-break:break-word]">
                               {renderTableCellContent(
                                 cell.content,
                                 cellKey,
@@ -719,7 +775,7 @@ function renderBlockNode(
                           colSpan={cellProps.colSpan}
                           rowSpan={cellProps.rowSpan}
                         >
-                          <div className="min-w-0 space-y-2 whitespace-normal break-words">
+                          <div className="min-w-0 space-y-2 whitespace-normal break-words [overflow-wrap:anywhere] [word-break:break-word]">
                             {renderTableCellContent(
                               cell.content,
                               cellKey,

@@ -17,7 +17,10 @@ type UseFontActionsOptions = {
   selectedHeading: "paragraph" | HeadingLevel;
   selectedFontSize: string | null;
   setOpenCellPropertiesMenu: (value: "background-color" | null) => void;
+  setOpenTablePropertiesMenu: (value: "border-color" | null) => void;
+  setSelectedTableBorderColor: (value: string) => void;
   setSelectedTableCellBackgroundColor: (value: string) => void;
+  tableBorderColorInputRef: RefObject<HTMLInputElement | null>;
   textColorInputRef: RefObject<HTMLInputElement | null>;
 };
 
@@ -29,7 +32,10 @@ export function useFontActions({
   selectedHeading,
   selectedFontSize,
   setOpenCellPropertiesMenu,
+  setOpenTablePropertiesMenu,
+  setSelectedTableBorderColor,
   setSelectedTableCellBackgroundColor,
+  tableBorderColorInputRef,
   textColorInputRef,
 }: UseFontActionsOptions) {
   function setFontSizeValue(value: string | null) {
@@ -103,6 +109,11 @@ export function useFontActions({
       return;
     }
 
+    if (mode === "table-border") {
+      tableBorderColorInputRef.current?.click();
+      return;
+    }
+
     backgroundColorInputRef.current?.click();
   }
 
@@ -120,12 +131,19 @@ export function useFontActions({
       setTextColorValue(value);
     } else if (mode === "background") {
       setBackgroundColorValue(value);
+    } else if (mode === "table-border") {
+      setSelectedTableBorderColor(value);
     } else {
       setSelectedTableCellBackgroundColor(value);
     }
 
     if (mode === "cell-background") {
       setOpenCellPropertiesMenu(null);
+      return;
+    }
+
+    if (mode === "table-border") {
+      setOpenTablePropertiesMenu(null);
       return;
     }
 

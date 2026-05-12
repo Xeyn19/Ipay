@@ -28,6 +28,7 @@ import { NewsBodyImage } from "../news-body-image-extension";
 import { NewsTableOfContents } from "../news-body-table-of-contents-extension";
 import {
   buildTableCellStyleValue,
+  getTableBorderStyleAttributes,
   getImageInsertTarget,
   shouldAutoLinkUrl,
   getTableCellStyleAttributes,
@@ -54,7 +55,10 @@ const CustomTableCell = TableCell.extend({
   renderHTML({ node, HTMLAttributes }) {
     const { style, ...rest } = HTMLAttributes;
     const nextStyle = buildTableCellStyleValue(
-      getTableCellStyleAttributes(node),
+      {
+        ...getTableCellStyleAttributes(node),
+        ...getTableBorderStyleAttributes(node),
+      },
       typeof style === "string" ? style : null,
     );
 
@@ -80,7 +84,10 @@ const CustomTableHeader = TableHeader.extend({
   renderHTML({ node, HTMLAttributes }) {
     const { style, ...rest } = HTMLAttributes;
     const nextStyle = buildTableCellStyleValue(
-      getTableCellStyleAttributes(node),
+      {
+        ...getTableCellStyleAttributes(node),
+        ...getTableBorderStyleAttributes(node),
+      },
       typeof style === "string" ? style : null,
     );
 

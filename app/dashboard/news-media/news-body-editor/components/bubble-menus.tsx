@@ -32,7 +32,7 @@ import type {
   TableCellHorizontalAlignment,
 } from "../types";
 import type { NewsBodyEditorController } from "../hooks/use-news-body-editor";
-import { CellPropertiesGridIcon } from "./icons";
+import { CellPropertiesGridIcon, TablePropertiesIcon } from "./icons";
 import {
   ColorGrid,
   MenuItem,
@@ -166,16 +166,21 @@ export function ColorMenuContent({
   const { colors, commands, derivedState, font, table } = controller;
   const isTextColorMode = mode === "text";
   const isCellBackgroundMode = mode === "cell-background";
+  const isTableBorderMode = mode === "table-border";
   const activeColor = isTextColorMode
     ? derivedState.selectedTextColor
     : isCellBackgroundMode
       ? derivedState.selectedCellBackgroundColor
+      : isTableBorderMode
+        ? derivedState.selectedTableBorderColor
       : derivedState.selectedBackgroundColor;
   const documentPalette = isTextColorMode
     ? derivedState.documentColors.textColors
     : derivedState.documentColors.backgroundColors;
   const canRemoveColor = isCellBackgroundMode
     ? derivedState.hasSelectedCellBackgroundColor
+    : isTableBorderMode
+      ? derivedState.hasSelectedTableBorderColor
     : Boolean(activeColor);
 
   return (
@@ -186,6 +191,8 @@ export function ColorMenuContent({
         onClick={() =>
           isCellBackgroundMode
             ? table.unsetSelectedTableCellBackgroundColor()
+            : isTableBorderMode
+              ? table.unsetSelectedTableBorderColor()
             : commands.runAction(() =>
                 isTextColorMode
                   ? font.unsetTextColorValue()
@@ -205,6 +212,11 @@ export function ColorMenuContent({
             return;
           }
 
+          if (isTableBorderMode) {
+            table.setSelectedTableBorderColor(color);
+            return;
+          }
+
           commands.runAction(() =>
             isTextColorMode
               ? font.setTextColorValue(color)
@@ -215,12 +227,17 @@ export function ColorMenuContent({
       <MenuSectionLabel>Document Colors</MenuSectionLabel>
       <DocumentColorSection
         activeColor={activeColor}
-        closeAfterSelect={!isCellBackgroundMode}
+        closeAfterSelect={!isCellBackgroundMode && !isTableBorderMode}
         colors={documentPalette}
         controller={controller}
         onSelect={(color) => {
           if (isCellBackgroundMode) {
             table.setSelectedTableCellBackgroundColor(color);
+            return;
+          }
+
+          if (isTableBorderMode) {
+            table.setSelectedTableBorderColor(color);
             return;
           }
 
@@ -244,6 +261,117 @@ export function ColorMenuContent({
         </>
       ) : null}
     </>
+  );
+}
+
+function TablePropertiesPanel({
+  controller,
+}: {
+  controller: NewsBodyEditorController;
+}) {
+  const { derivedState, menu, table } = controller;
+  const borderColorButtonLabel = derivedState.hasMixedTableBorderColor
+    ? "Mixed"
+    : derivedState.selectedTableBorderColor ?? "Select color";
+
+  return (
+    <div className="news-body-editor__table-bubble news-body-editor__cell-properties-bubble">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          aria-label="Back to table actions"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={menu.closeTablePropertiesView}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] transition hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+        >
+          <ChevronRight className="h-4 w-4 rotate-180" aria-hidden="true" />
+        </button>
+        <p className="font-heading text-sm font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
+          Table Properties
+        </p>
+      </div>
+
+      <div className="news-body-editor__cell-properties-grid">
+        <div className="space-y-2">
+          <p className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[var(--text-faint)]">
+            Border Color
+          </p>
+          <div className="relative">
+            <button
+              type="button"
+              aria-label="Table border color options"
+              aria-expanded={menu.openTablePropertiesMenu === "border-color"}
+              aria-haspopup="menu"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => menu.toggleTablePropertiesMenu("border-color")}
+              className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-left text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
+                menu.openTablePropertiesMenu === "border-color"
+                  ? "border-[var(--border-orange)] bg-[var(--brand-pale)] text-[var(--brand)]"
+                  : "border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+              }`}
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                <span
+                  className="h-4 w-4 shrink-0 rounded-md border border-black/10"
+                  style={{
+                    backgroundColor:
+                      derivedState.selectedTableBorderColor ?? "var(--bg-subtle)",
+                  }}
+                />
+                <span className="truncate">{borderColorButtonLabel}</span>
+              </span>
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 transition-transform ${
+                  menu.openTablePropertiesMenu === "border-color"
+                    ? "rotate-180"
+                    : ""
+                }`}
+                aria-hidden="true"
+              />
+            </button>
+
+            {menu.openTablePropertiesMenu === "border-color" ? (
+              <TableBubbleMenuPanel className="min-w-[17rem]">
+                <ColorMenuContent
+                  controller={controller}
+                  includeColorPicker
+                  mode="table-border"
+                />
+              </TableBubbleMenuPanel>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[var(--text-faint)]">
+            Border Size
+          </p>
+          <div className="relative">
+            <input
+              type="text"
+              inputMode="decimal"
+              aria-label="Table border size in pixels"
+              placeholder="border size"
+              value={table.tableBorderWidthInputValue}
+              onChange={(event) =>
+                table.setTableBorderWidthInputValue(event.target.value)
+              }
+              onBlur={table.commitTableBorderWidthInput}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  table.commitTableBorderWidthInput();
+                }
+              }}
+              className={`${dashboardInputClassName} !mt-0`}
+            />
+            <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              px
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -384,6 +512,10 @@ export function TableBubbleMenu({
   controller: NewsBodyEditorController;
 }) {
   const { derivedState, editor, menu, table } = controller;
+
+  if (menu.openTableBubbleSubmenu === "table-properties") {
+    return <TablePropertiesPanel controller={controller} />;
+  }
 
   if (menu.openTableBubbleSubmenu === "cell-properties") {
     return <CellPropertiesPanel controller={controller} />;
@@ -576,7 +708,16 @@ export function TableBubbleMenu({
       />
 
       <ToolbarButton
+        ariaLabel="Table properties"
+        isActive={menu.openTableBubbleSubmenu === "table-properties"}
+        onClick={menu.openTablePropertiesView}
+      >
+        <TablePropertiesIcon />
+      </ToolbarButton>
+
+      <ToolbarButton
         ariaLabel="Cell properties"
+        isActive={menu.openTableBubbleSubmenu === "cell-properties"}
         onClick={menu.openCellPropertiesView}
       >
         <CellPropertiesGridIcon />

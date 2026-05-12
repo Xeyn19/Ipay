@@ -38,6 +38,31 @@ export function CellPropertiesGridIcon({
   );
 }
 
+export function TablePropertiesIcon({
+  className = "h-4 w-4",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3.5" y="5" width="17" height="14" rx="2" />
+      <path d="M3.5 10h17" />
+      <path d="M11 10v9" />
+      <path d="M15.5 3.5v5" />
+      <path d="M18.5 4.75h-6" />
+    </svg>
+  );
+}
+
 export function TableOfContentsIcon({
   className = "h-4 w-4",
 }: {

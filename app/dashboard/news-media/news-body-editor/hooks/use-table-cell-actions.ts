@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { CellSelection } from "@tiptap/pm/tables";
 import toast from "react-hot-toast";
+import {
+  NEWS_TABLE_BORDER_COLOR_CSS_VARIABLE,
+  NEWS_TABLE_BORDER_WIDTH_CSS_VARIABLE,
+  getNewsTableBorderWidthInputValue,
+} from "@/app/lib/news-table-styles";
 import type {
   MergeDirection,
   TableAxis,
@@ -11,9 +16,11 @@ import type {
   TableCellStyleAttributes,
 } from "../types";
 import {
+  getAllTableCellPositions,
   getAdjacentCellPos,
   getSelectedTableCellPositions,
   getTableCellPaddingInputValue,
+  setStyleDeclarationValue,
 } from "../utils";
 
 type UseTableCellActionsOptions = {
@@ -22,11 +29,25 @@ type UseTableCellActionsOptions = {
   closeTableBubbleSubmenu: () => void;
   editor: Editor | null;
   isTableActive: boolean;
-  openTableBubbleSubmenu: "columns" | "rows" | "merge" | "cell-properties" | null;
+  openTableBubbleSubmenu:
+    | "columns"
+    | "rows"
+    | "merge"
+    | "table-properties"
+    | "cell-properties"
+    | null;
   selectedCellPadding: string | null;
+  selectedTableBorderWidth: string | null;
   setOpenCellPropertiesMenu: (value: "background-color" | null) => void;
+  setOpenTablePropertiesMenu: (value: "border-color" | null) => void;
   setOpenTableBubbleSubmenu: (
-    value: "columns" | "rows" | "merge" | "cell-properties" | null,
+    value:
+      | "columns"
+      | "rows"
+      | "merge"
+      | "table-properties"
+      | "cell-properties"
+      | null,
   ) => void;
 };
 
@@ -38,7 +59,9 @@ export function useTableCellActions({
   isTableActive,
   openTableBubbleSubmenu,
   selectedCellPadding,
+  selectedTableBorderWidth,
   setOpenCellPropertiesMenu,
+  setOpenTablePropertiesMenu,
   setOpenTableBubbleSubmenu,
 }: UseTableCellActionsOptions) {
   const cellPaddingSourceValue = getTableCellPaddingInputValue(selectedCellPadding);
@@ -54,19 +77,46 @@ export function useTableCellActions({
     cellPaddingInputState.sourceKey === cellPaddingSourceKey
       ? cellPaddingInputState.value
       : cellPaddingSourceValue;
+  const tableBorderWidthSourceValue =
+    getNewsTableBorderWidthInputValue(selectedTableBorderWidth);
+  const tableBorderWidthSourceKey = `${activeTablePos ?? "none"}:${tableBorderWidthSourceValue}`;
+  const [tableBorderWidthInputState, setTableBorderWidthInputState] = useState<{
+    sourceKey: string;
+    value: string;
+  }>({
+    sourceKey: tableBorderWidthSourceKey,
+    value: tableBorderWidthSourceValue,
+  });
+  const tableBorderWidthInputValue =
+    tableBorderWidthInputState.sourceKey === tableBorderWidthSourceKey
+      ? tableBorderWidthInputState.value
+      : tableBorderWidthSourceValue;
 
   useEffect(() => {
     if (!isTableActive) {
       setOpenCellPropertiesMenu(null);
+      setOpenTablePropertiesMenu(null);
       setOpenTableBubbleSubmenu(null);
     }
-  }, [isTableActive, activeTablePos, setOpenCellPropertiesMenu, setOpenTableBubbleSubmenu]);
+  }, [
+    isTableActive,
+    activeTablePos,
+    setOpenCellPropertiesMenu,
+    setOpenTablePropertiesMenu,
+    setOpenTableBubbleSubmenu,
+  ]);
 
   useEffect(() => {
     if (openTableBubbleSubmenu !== "cell-properties") {
       setOpenCellPropertiesMenu(null);
     }
   }, [openTableBubbleSubmenu, setOpenCellPropertiesMenu]);
+
+  useEffect(() => {
+    if (openTableBubbleSubmenu !== "table-properties") {
+      setOpenTablePropertiesMenu(null);
+    }
+  }, [openTableBubbleSubmenu, setOpenTablePropertiesMenu]);
 
   function runTableBubbleAction(action: () => void) {
     action();
@@ -125,6 +175,91 @@ export function useTableCellActions({
     editor.view.focus();
   }
 
+  function updateTableBorderCells(
+    attribute: "borderColor" | "borderWidth",
+    value: string | null,
+  ) {
+    if (!editor || activeTablePos === null) {
+      return;
+    }
+
+    const tableNode = editor.state.doc.nodeAt(activeTablePos);
+
+    if (!tableNode) {
+      return;
+    }
+
+    const positions = getAllTableCellPositions(editor.state.doc, activeTablePos);
+
+    if (positions.length === 0) {
+      return;
+    }
+
+    let transaction = editor.state.tr;
+    let didChange = false;
+
+    for (const position of positions) {
+      const cellNode = transaction.doc.nodeAt(position);
+
+      if (!cellNode) {
+        continue;
+      }
+
+      const currentValue =
+        typeof cellNode.attrs[attribute] === "string"
+          ? cellNode.attrs[attribute]
+          : null;
+
+      if (currentValue === value) {
+        continue;
+      }
+
+      transaction = transaction.setNodeMarkup(position, undefined, {
+        ...cellNode.attrs,
+        [attribute]: value,
+      });
+      didChange = true;
+    }
+
+    const currentStyle =
+      typeof tableNode.attrs.style === "string" ? tableNode.attrs.style : null;
+    const styleWithoutBorderColor = setStyleDeclarationValue(
+      currentStyle,
+      NEWS_TABLE_BORDER_COLOR_CSS_VARIABLE,
+      null,
+    );
+    const styleWithoutBorderDeclarations = setStyleDeclarationValue(
+      styleWithoutBorderColor,
+      NEWS_TABLE_BORDER_WIDTH_CSS_VARIABLE,
+      null,
+    );
+
+    if ((currentStyle ?? undefined) !== styleWithoutBorderDeclarations) {
+      transaction = transaction.setNodeMarkup(activeTablePos, undefined, {
+        ...tableNode.attrs,
+        style: styleWithoutBorderDeclarations,
+      });
+      didChange = true;
+    }
+
+    if (!didChange) {
+      return;
+    }
+
+    editor.view.dispatch(transaction.scrollIntoView());
+    editor.view.focus();
+  }
+
+  function setSelectedTableBorderColor(value: string) {
+    updateTableBorderCells("borderColor", value);
+    setOpenTablePropertiesMenu(null);
+  }
+
+  function unsetSelectedTableBorderColor() {
+    updateTableBorderCells("borderColor", null);
+    setOpenTablePropertiesMenu(null);
+  }
+
   function setSelectedTableCellBackgroundColor(value: string) {
     setSelectedTableCellAttribute("backgroundColor", value);
     setOpenCellPropertiesMenu(null);
@@ -179,6 +314,45 @@ export function useTableCellActions({
     setSelectedTableCellAttribute("padding", `${normalized}px`);
     setCellPaddingInputState({
       sourceKey: cellPaddingSourceKey,
+      value: `${normalized}`,
+    });
+  }
+
+  function commitTableBorderWidthInput() {
+    const trimmedValue = tableBorderWidthInputValue.trim();
+
+    if (trimmedValue === "") {
+      updateTableBorderCells("borderWidth", null);
+      return;
+    }
+
+    if (!/^\d+(?:\.\d+)?$/.test(trimmedValue)) {
+      setTableBorderWidthInputState({
+        sourceKey: tableBorderWidthSourceKey,
+        value: tableBorderWidthSourceValue,
+      });
+      toast.error("Border size must be a single pixel value.");
+      return;
+    }
+
+    const parsed = Number.parseFloat(trimmedValue);
+
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      setTableBorderWidthInputState({
+        sourceKey: tableBorderWidthSourceKey,
+        value: tableBorderWidthSourceValue,
+      });
+      toast.error("Border size must be a single pixel value.");
+      return;
+    }
+
+    const normalized = Number.isInteger(parsed)
+      ? parsed
+      : Number(parsed.toFixed(2));
+
+    updateTableBorderCells("borderWidth", `${normalized}px`);
+    setTableBorderWidthInputState({
+      sourceKey: tableBorderWidthSourceKey,
       value: `${normalized}`,
     });
   }
@@ -277,6 +451,7 @@ export function useTableCellActions({
   return {
     cellPaddingInputValue,
     commitCellPaddingInput,
+    commitTableBorderWidthInput,
     mergeCellInDirection,
     runTableBubbleAction,
     selectTableAxis,
@@ -285,11 +460,19 @@ export function useTableCellActions({
         sourceKey: cellPaddingSourceKey,
         value,
       }),
+    setSelectedTableBorderColor,
     setSelectedTableCellBackgroundColor,
     setSelectedTableCellHorizontalAlignment,
+    setTableBorderWidthInputValue: (value: string) =>
+      setTableBorderWidthInputState({
+        sourceKey: tableBorderWidthSourceKey,
+        value,
+      }),
     splitSelectedCell,
+    tableBorderWidthInputValue,
     toggleHeaderAxis,
     toggleMergeSelectedCells,
+    unsetSelectedTableBorderColor,
     unsetSelectedTableCellBackgroundColor,
   };
 }

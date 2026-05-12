@@ -7,6 +7,7 @@ import type {
   OpenLinkBubbleMode,
   OpenMenu,
   OpenTableBubbleSubmenu,
+  OpenTablePropertiesMenu,
 } from "../types";
 
 export function useEditorMenuState() {
@@ -15,6 +16,8 @@ export function useEditorMenuState() {
     useState<OpenTableBubbleSubmenu>(null);
   const [openCellPropertiesMenu, setOpenCellPropertiesMenu] =
     useState<OpenCellPropertiesMenu>(null);
+  const [openTablePropertiesMenu, setOpenTablePropertiesMenu] =
+    useState<OpenTablePropertiesMenu>(null);
   const [openImageBubbleSubmenu, setOpenImageBubbleSubmenu] =
     useState<OpenImageBubbleSubmenu>(null);
   const [isImageAltEditorOpen, setIsImageAltEditorOpen] = useState(false);
@@ -46,6 +49,7 @@ export function useEditorMenuState() {
     menu: Exclude<OpenTableBubbleSubmenu, null>,
   ) {
     setOpenCellPropertiesMenu(null);
+    setOpenTablePropertiesMenu(null);
     setOpenTableBubbleSubmenu((currentMenu) =>
       currentMenu === menu ? null : menu,
     );
@@ -53,6 +57,7 @@ export function useEditorMenuState() {
 
   function closeTableBubbleSubmenu() {
     setOpenCellPropertiesMenu(null);
+    setOpenTablePropertiesMenu(null);
     setOpenTableBubbleSubmenu(null);
   }
 
@@ -62,11 +67,25 @@ export function useEditorMenuState() {
 
   function openCellPropertiesView() {
     setOpenCellPropertiesMenu(null);
+    setOpenTablePropertiesMenu(null);
     setOpenTableBubbleSubmenu("cell-properties");
   }
 
   function closeCellPropertiesView() {
     setOpenCellPropertiesMenu(null);
+    setOpenTablePropertiesMenu(null);
+    setOpenTableBubbleSubmenu(null);
+  }
+
+  function openTablePropertiesView() {
+    setOpenCellPropertiesMenu(null);
+    setOpenTablePropertiesMenu(null);
+    setOpenTableBubbleSubmenu("table-properties");
+  }
+
+  function closeTablePropertiesView() {
+    setOpenCellPropertiesMenu(null);
+    setOpenTablePropertiesMenu(null);
     setOpenTableBubbleSubmenu(null);
   }
 
@@ -78,9 +97,18 @@ export function useEditorMenuState() {
     );
   }
 
+  function toggleTablePropertiesMenu(
+    menu: Exclude<OpenTablePropertiesMenu, null>,
+  ) {
+    setOpenTablePropertiesMenu((currentMenu) =>
+      currentMenu === menu ? null : menu,
+    );
+  }
+
   function closeAllMenus() {
     setOpenMenu(null);
     setOpenCellPropertiesMenu(null);
+    setOpenTablePropertiesMenu(null);
     setOpenTableBubbleSubmenu(null);
     setOpenImageBubbleSubmenu(null);
     setIsImageAltEditorOpen(false);
@@ -93,6 +121,7 @@ export function useEditorMenuState() {
     closeImageBubbleSubmenu,
     closeLinkBubble,
     closeMenu,
+    closeTablePropertiesView,
     closeTableBubbleSubmenu,
     isImageAltEditorOpen,
     openCellPropertiesMenu,
@@ -100,16 +129,20 @@ export function useEditorMenuState() {
     openImageBubbleSubmenu,
     openLinkBubbleMode,
     openMenu,
+    openTablePropertiesMenu,
+    openTablePropertiesView,
     openTableBubbleSubmenu,
     setIsImageAltEditorOpen,
     setOpenCellPropertiesMenu,
     setOpenImageBubbleSubmenu,
     setOpenLinkBubbleMode,
     setOpenMenu,
+    setOpenTablePropertiesMenu,
     setOpenTableBubbleSubmenu,
     toggleCellPropertiesMenu,
     toggleImageBubbleSubmenu,
     toggleMenu,
+    toggleTablePropertiesMenu,
     toggleTableBubbleSubmenu,
   };
 }

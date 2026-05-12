@@ -352,6 +352,8 @@
 }
 
 .news-body-editor .news-body-editor__content table {
+  --news-table-border-color: var(--border-light);
+  --news-table-border-width: 1px;
   border-collapse: collapse;
   margin: 0;
   overflow: hidden;
@@ -361,10 +363,15 @@
 .news-body-editor .news-body-editor__content th,
 .news-body-editor .news-body-editor__content td {
   position: relative;
-  border: 1px solid var(--border-light);
+  border: var(--news-table-border-width, 1px) solid
+    var(--news-table-border-color, var(--border-light));
   padding: 0.75rem 0.85rem;
+  min-width: 0;
   vertical-align: top;
   text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .news-body-editor .news-body-editor__content th {
@@ -417,10 +424,14 @@
 
 .news-body-editor .news-body-editor__content th p,
 .news-body-editor .news-body-editor__content td p {
+  min-width: 0;
   color: inherit;
   font-size: inherit;
   line-height: 1.5;
   margin: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .news-body-editor .news-body-editor__content .selectedCell::after {

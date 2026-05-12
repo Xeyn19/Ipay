@@ -143,10 +143,6 @@ export function useNewsBodyEditor({
   onChange,
 }: NewsBodyEditorProps) {
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const textColorInputRef = useRef<HTMLInputElement | null>(null);
-  const backgroundColorInputRef = useRef<HTMLInputElement | null>(null);
-  const cellBackgroundColorInputRef = useRef<HTMLInputElement | null>(null);
-  const tableBorderColorInputRef = useRef<HTMLInputElement | null>(null);
   const [lastUsedHighlightColor, setLastUsedHighlightColor] = useState(
     DEFAULT_HIGHLIGHT_COLOR,
   );
@@ -392,18 +388,12 @@ export function useNewsBodyEditor({
   };
 
   const font = useFontActions({
-    backgroundColorInputRef,
-    cellBackgroundColorInputRef,
-    closeMenu: menu.closeMenu,
     editor,
     selectedHeading,
     selectedFontSize,
-    setOpenCellPropertiesMenu: menu.setOpenCellPropertiesMenu,
-    setOpenTablePropertiesMenu: menu.setOpenTablePropertiesMenu,
-    setSelectedTableBorderColor: table.setSelectedTableBorderColor,
-    setSelectedTableCellBackgroundColor: table.setSelectedTableCellBackgroundColor,
-    tableBorderColorInputRef,
-    textColorInputRef,
+    setSelectedTableBorderColorValue: table.setSelectedTableBorderColorValue,
+    setSelectedTableCellBackgroundColorValue:
+      table.setSelectedTableCellBackgroundColorValue,
   });
 
   const activeLinkBubbleMode = menu.openLinkBubbleMode;
@@ -941,8 +931,7 @@ export function useNewsBodyEditor({
 
   return {
     colors: {
-      handleColorPickerChange: font.handleColorPickerChange,
-      openColorPicker: font.openColorPicker,
+      applyPickerColorValue: font.applyPickerColorValue,
     },
     commands: {
       applyHeading: (value: "paragraph" | 1 | 2 | 3 | 4 | 5 | 6) =>
@@ -1035,12 +1024,8 @@ export function useNewsBodyEditor({
     },
     menu,
     refs: {
-      backgroundColorInputRef,
-      cellBackgroundColorInputRef,
       imageInputRef: imageUpload.imageInputRef,
       menuRef,
-      tableBorderColorInputRef,
-      textColorInputRef,
     },
     table,
   };

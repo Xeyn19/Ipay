@@ -24,7 +24,9 @@ export type OpenMenu =
   | "toolbar-font-size"
   | "toolbar-font-family"
   | "toolbar-text-color"
+  | "toolbar-text-color-picker"
   | "toolbar-background-color"
+  | "toolbar-background-color-picker"
   | "toolbar-highlight"
   | "toolbar-text-alignment"
   | "toolbar-line-height"
@@ -43,8 +45,14 @@ export type OpenTableBubbleSubmenu =
   | "table-properties"
   | "cell-properties"
   | null;
-export type OpenCellPropertiesMenu = "background-color" | null;
-export type OpenTablePropertiesMenu = "border-color" | null;
+export type OpenCellPropertiesMenu =
+  | "background-color"
+  | "background-color-picker"
+  | null;
+export type OpenTablePropertiesMenu =
+  | "border-color"
+  | "border-color-picker"
+  | null;
 export type OpenImageBubbleSubmenu = "alignment" | "size" | null;
 export type OpenLinkBubbleMode = "insert" | "edit" | null;
 export type ColorMenuMode =

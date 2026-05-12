@@ -65,7 +65,6 @@ import {
 import {
   getActiveTableContext,
   getActiveTableElement,
-  getColorInputValue,
   getHeadingLabel,
   getSelectedImageElement,
   getSelectedImageState,
@@ -73,6 +72,7 @@ import {
 } from "./utils";
 import {
   ColorMenuContent,
+  ColorPickerMenuContent,
   ImageBubbleMenu,
   LinkBubbleMenu,
   LinkPreviewBubble,
@@ -865,6 +865,12 @@ function ToolbarSection({
   const { commands, derivedState, editor, fullscreen, menu } = controller;
   const isInlineMode = !fullscreen.isFullscreen;
   const isOverflowOpen = isToolbarOverflowMenuOpen(menu.openMenu);
+  const isTextColorMenuOpen =
+    menu.openMenu === "toolbar-text-color" ||
+    menu.openMenu === "toolbar-text-color-picker";
+  const isBackgroundColorMenuOpen =
+    menu.openMenu === "toolbar-background-color" ||
+    menu.openMenu === "toolbar-background-color-picker";
 
   function toggleOverflowPanel() {
     if (isOverflowOpen) {
@@ -966,18 +972,26 @@ function ToolbarSection({
               ariaLabel="Text color options"
               icon={<Droplets className="h-4 w-4" aria-hidden="true" />}
               isActive={derivedState.selectedTextColor !== null}
-              isOpen={menu.openMenu === "toolbar-text-color"}
+              isOpen={isTextColorMenuOpen}
               swatchColor={derivedState.selectedTextColor}
-              onClick={() => menu.toggleMenu("toolbar-text-color")}
+              onClick={() =>
+                isTextColorMenuOpen
+                  ? menu.closeMenu()
+                  : menu.setOpenMenu("toolbar-text-color")
+              }
             />
 
-            {menu.openMenu === "toolbar-text-color" ? (
+            {isTextColorMenuOpen ? (
               <ToolbarMenuPanel>
-                <ColorMenuContent
-                  controller={controller}
-                  includeColorPicker
-                  mode="text"
-                />
+                {menu.openMenu === "toolbar-text-color-picker" ? (
+                  <ColorPickerMenuContent controller={controller} mode="text" />
+                ) : (
+                  <ColorMenuContent
+                    controller={controller}
+                    includeColorPicker
+                    mode="text"
+                  />
+                )}
               </ToolbarMenuPanel>
             ) : null}
           </div>
@@ -987,18 +1001,29 @@ function ToolbarSection({
               ariaLabel="Text background color options"
               icon={<PaintBucket className="h-4 w-4" aria-hidden="true" />}
               isActive={derivedState.selectedBackgroundColor !== null}
-              isOpen={menu.openMenu === "toolbar-background-color"}
+              isOpen={isBackgroundColorMenuOpen}
               swatchColor={derivedState.selectedBackgroundColor}
-              onClick={() => menu.toggleMenu("toolbar-background-color")}
+              onClick={() =>
+                isBackgroundColorMenuOpen
+                  ? menu.closeMenu()
+                  : menu.setOpenMenu("toolbar-background-color")
+              }
             />
 
-            {menu.openMenu === "toolbar-background-color" ? (
+            {isBackgroundColorMenuOpen ? (
               <ToolbarMenuPanel>
-                <ColorMenuContent
-                  controller={controller}
-                  includeColorPicker
-                  mode="background"
-                />
+                {menu.openMenu === "toolbar-background-color-picker" ? (
+                  <ColorPickerMenuContent
+                    controller={controller}
+                    mode="background"
+                  />
+                ) : (
+                  <ColorMenuContent
+                    controller={controller}
+                    includeColorPicker
+                    mode="background"
+                  />
+                )}
               </ToolbarMenuPanel>
             ) : null}
           </div>
@@ -1091,13 +1116,9 @@ function NewsBodyEditorView({
 }: {
   controller: NewsBodyEditorController;
 }) {
-  const { colors, commands, derivedState, editor, fullscreen, image, link, refs } =
+  const { commands, derivedState, editor, fullscreen, image, link, refs } =
     controller;
   const menuRef = refs.menuRef;
-  const textColorInputRef = refs.textColorInputRef;
-  const backgroundColorInputRef = refs.backgroundColorInputRef;
-  const cellBackgroundColorInputRef = refs.cellBackgroundColorInputRef;
-  const tableBorderColorInputRef = refs.tableBorderColorInputRef;
   const imageInputRef = refs.imageInputRef;
   const fullscreenTitleId = useId();
   const fullscreenCardClassName = fullscreen.isFullscreen
@@ -1119,64 +1140,6 @@ function NewsBodyEditorView({
       }}
       className={fullscreenCardClassName}
     >
-      <input
-        ref={(node) => {
-          textColorInputRef.current = node;
-        }}
-        type="color"
-        className="sr-only"
-        aria-hidden="true"
-        tabIndex={-1}
-        value={getColorInputValue(derivedState.selectedTextColor, "#111827")}
-        onChange={(event) => colors.handleColorPickerChange(event, "text")}
-      />
-      <input
-        ref={(node) => {
-          backgroundColorInputRef.current = node;
-        }}
-        type="color"
-        className="sr-only"
-        aria-hidden="true"
-        tabIndex={-1}
-        value={getColorInputValue(
-          derivedState.selectedBackgroundColor,
-          "#f8fafc",
-        )}
-        onChange={(event) =>
-          colors.handleColorPickerChange(event, "background")
-        }
-      />
-      <input
-        ref={(node) => {
-          cellBackgroundColorInputRef.current = node;
-        }}
-        type="color"
-        className="sr-only"
-        aria-hidden="true"
-        tabIndex={-1}
-        value={getColorInputValue(
-          derivedState.selectedCellBackgroundColor,
-          "#f8fafc",
-        )}
-        onChange={(event) =>
-          colors.handleColorPickerChange(event, "cell-background")
-        }
-      />
-      <input
-        ref={(node) => {
-          tableBorderColorInputRef.current = node;
-        }}
-        type="color"
-        className="sr-only"
-        aria-hidden="true"
-        tabIndex={-1}
-        value={getColorInputValue(
-          derivedState.selectedTableBorderColor,
-          "#d1d5db",
-        )}
-        onChange={(event) => colors.handleColorPickerChange(event, "table-border")}
-      />
-
       <TopMenuBar controller={controller} />
       <ToolbarSection controller={controller} />
 

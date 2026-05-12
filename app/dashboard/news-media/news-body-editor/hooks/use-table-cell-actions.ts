@@ -250,8 +250,12 @@ export function useTableCellActions({
     editor.view.focus();
   }
 
-  function setSelectedTableBorderColor(value: string) {
+  function setSelectedTableBorderColorValue(value: string) {
     updateTableBorderCells("borderColor", value);
+  }
+
+  function setSelectedTableBorderColor(value: string) {
+    setSelectedTableBorderColorValue(value);
     setOpenTablePropertiesMenu(null);
   }
 
@@ -260,8 +264,12 @@ export function useTableCellActions({
     setOpenTablePropertiesMenu(null);
   }
 
-  function setSelectedTableCellBackgroundColor(value: string) {
+  function setSelectedTableCellBackgroundColorValue(value: string) {
     setSelectedTableCellAttribute("backgroundColor", value);
+  }
+
+  function setSelectedTableCellBackgroundColor(value: string) {
+    setSelectedTableCellBackgroundColorValue(value);
     setOpenCellPropertiesMenu(null);
   }
 
@@ -461,7 +469,9 @@ export function useTableCellActions({
         value,
       }),
     setSelectedTableBorderColor,
+    setSelectedTableBorderColorValue,
     setSelectedTableCellBackgroundColor,
+    setSelectedTableCellBackgroundColorValue,
     setSelectedTableCellHorizontalAlignment,
     setTableBorderWidthInputValue: (value: string) =>
       setTableBorderWidthInputState({

@@ -1,6 +1,8 @@
 "use client";
 
 import "../news-body-editor.css";
+import { isTextSelection } from "@tiptap/core";
+import { NodeSelection } from "@tiptap/pm/state";
 import { EditorContent } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import {
@@ -57,6 +59,7 @@ import {
   IMAGE_BUBBLE_MENU_PLUGIN_KEY,
   LINK_BUBBLE_MENU_PLUGIN_KEY,
   TABLE_BUBBLE_MENU_PLUGIN_KEY,
+  TEXT_SELECTION_BUBBLE_MENU_PLUGIN_KEY,
 } from "./extensions";
 import {
   useNewsBodyEditor,
@@ -69,6 +72,7 @@ import {
   getHeadingLabel,
   getSelectedImageElement,
   getSelectedImageState,
+  getSelectedLinkState,
   getTableBubbleAnchorRect,
 } from "./utils";
 import {
@@ -78,6 +82,7 @@ import {
   LinkBubbleMenu,
   LinkPreviewBubble,
   TableBubbleMenu,
+  TextSelectionBubbleMenu,
   textAlignmentOptions,
 } from "./components/bubble-menus";
 import { ImageUrlModal } from "./components/ImageUrlModal";
@@ -1208,6 +1213,40 @@ function NewsBodyEditorView({
         >
           <LinkBubbleMenu controller={controller} />
         </div>
+      ) : null}
+
+      {editor ? (
+        <BubbleMenu
+          editor={editor}
+          pluginKey={TEXT_SELECTION_BUBBLE_MENU_PLUGIN_KEY}
+          appendTo={() => refs.menuRef.current ?? document.body}
+          options={{
+            placement: "top",
+            offset: 10,
+            shift: true,
+          }}
+          shouldShow={({ state, view, from, to }) => {
+            const activeElement =
+              typeof document !== "undefined" ? document.activeElement : null;
+            const bubbleHasFocus =
+              activeElement instanceof Node &&
+              Boolean(refs.menuRef.current?.contains(activeElement));
+            const hasEditorFocus = view.hasFocus() || bubbleHasFocus;
+            const isLinkedSelection = getSelectedLinkState(editor) !== null;
+            const selectedText = state.doc.textBetween(from, to, " ").trim();
+
+            return (
+              hasEditorFocus &&
+              !link.isLinkFormOpen &&
+              !isLinkedSelection &&
+              isTextSelection(state.selection) &&
+              !(state.selection instanceof NodeSelection) &&
+              selectedText.length > 0
+            );
+          }}
+        >
+          <TextSelectionBubbleMenu controller={controller} />
+        </BubbleMenu>
       ) : null}
 
       {editor ? (

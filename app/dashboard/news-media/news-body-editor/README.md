@@ -106,12 +106,20 @@ It is responsible for:
 - the extension array returned by `createNewsBodyEditorExtensions`
 - registering text-style functionality such as alignment and line height
 - custom table cell/header behavior
+- enabling TableKit column resizing on the table node
 - file-drop and paste image handling
 - explicit link extension behavior such as autolink and paste-linking
 - exported plugin keys used by the bubble menus
 - exported image MIME-type allowlist
 
 If you add a new Tiptap extension, this is the primary place to register it.
+
+Table width behavior is intentionally owned by Tiptap:
+
+- `TableKit.configure({ table: { resizable: true, renderWrapper: true } })` enables the resize node view
+- saved table widths live in the table/cell attrs that Tiptap manages, especially `colwidth`
+- HTML export uses Tiptap's `<colgroup>` plus table `width` or `min-width`
+- the public renderer in `app/news-media/news-article-body.tsx` mirrors that same width model when rendering saved JSON
 
 ### `utils.ts`
 

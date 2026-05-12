@@ -345,8 +345,10 @@
 .news-body-editor .news-body-editor__content .tableWrapper {
   position: relative;
   overflow-x: auto;
-  border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
+}
+
+.news-body-editor .news-body-editor__content.resize-cursor {
+  cursor: col-resize;
 }
 
 .news-body-editor .news-body-editor__content table {
@@ -354,7 +356,6 @@
   margin: 0;
   overflow: hidden;
   table-layout: fixed;
-  width: 100%;
 }
 
 .news-body-editor .news-body-editor__content th,
@@ -374,6 +375,39 @@
 
 .news-body-editor .news-body-editor__content td {
   color: var(--text-primary);
+}
+
+.news-body-editor .news-body-editor__content .column-resize-handle {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: -0.2rem;
+  bottom: -1px;
+  width: 0.35rem;
+  background: rgba(241, 122, 30, 0.72);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease, background-color 140ms ease;
+}
+
+.news-body-editor
+  .news-body-editor__content.ProseMirror-focused
+  th:hover
+  > .column-resize-handle,
+.news-body-editor
+  .news-body-editor__content.ProseMirror-focused
+  td:hover
+  > .column-resize-handle,
+.news-body-editor
+  .news-body-editor__content
+  .selectedCell
+  > .column-resize-handle {
+  opacity: 1;
+}
+
+.news-body-editor .news-body-editor__content th:hover > .column-resize-handle,
+.news-body-editor .news-body-editor__content td:hover > .column-resize-handle {
+  background: rgba(241, 122, 30, 0.92);
 }
 
 .news-body-editor .news-body-editor__content th > * + *,

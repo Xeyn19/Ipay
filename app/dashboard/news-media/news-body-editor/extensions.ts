@@ -121,6 +121,7 @@ export function createNewsBodyEditorExtensions({
     TableKit.configure({
       table: {
         renderWrapper: true,
+        resizable: true,
       },
       tableCell: false,
       tableHeader: false,

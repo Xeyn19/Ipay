@@ -13,6 +13,7 @@ import {
   ImageUp,
   MessageSquare,
   Palette,
+  Pencil,
   Rows3,
   TableCellsMerge,
   Trash2,
@@ -70,6 +71,28 @@ export const textAlignmentOptions: Array<{
     value: "justify",
   },
 ];
+
+function UnlinkIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M10 14L21 3" />
+      <path d="M18 7V3h-4" />
+      <path d="M14 10l-1.5 1.5" />
+      <path d="M11.5 14.5L10 16" />
+      <path d="M14.5 5.5l-2-2a4 4 0 0 0-5.66 0l-3.34 3.34a4 4 0 0 0 0 5.66l2 2" />
+      <path d="M9.5 18.5l2 2a4 4 0 0 0 5.66 0l3.34-3.34a4 4 0 0 0 0-5.66l-2-2" />
+    </svg>
+  );
+}
 
 const imageAlignmentOptions: Array<{
   icon: ReactNode;
@@ -723,6 +746,139 @@ export function ImageBubbleMenu({
       <ToolbarButton ariaLabel="Delete image" onClick={image.deleteSelectedImage}>
         <Trash2 className="h-4 w-4" aria-hidden="true" />
       </ToolbarButton>
+    </div>
+  );
+}
+
+export function LinkPreviewBubble({
+  controller,
+}: {
+  controller: NewsBodyEditorController;
+}) {
+  const { link } = controller;
+  const selectedLink = link.activePreviewLink;
+
+  if (!selectedLink) {
+    return null;
+  }
+
+  return (
+    <div className="news-body-editor__table-bubble news-body-editor__link-preview-bubble">
+      <button
+        type="button"
+        title={selectedLink.href}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={link.openActiveLinkInNewTab}
+        className="news-body-editor__link-preview-trigger"
+      >
+        {selectedLink.href}
+      </button>
+
+      <div
+        className="mx-0.5 h-7 w-px self-center bg-[var(--border-light)]"
+        aria-hidden="true"
+      />
+
+      <button
+        type="button"
+        aria-label="Edit link"
+        title="Edit link"
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => link.openLinkEditFlow(selectedLink)}
+        className="news-body-editor__link-action-button"
+      >
+        <Pencil className="h-4 w-4" aria-hidden="true" />
+      </button>
+
+      <button
+        type="button"
+        aria-label="Unlink"
+        title="Unlink"
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={link.unlinkSelectedLink}
+        className="news-body-editor__link-action-button"
+      >
+        <UnlinkIcon />
+      </button>
+    </div>
+  );
+}
+
+export function LinkBubbleMenu({
+  controller,
+}: {
+  controller: NewsBodyEditorController;
+}) {
+  const { derivedState, link } = controller;
+  const bubbleMode = derivedState.activeLinkBubbleMode;
+
+  if (bubbleMode === null) {
+    return null;
+  }
+
+  const shouldAutofocusUrl =
+    bubbleMode === "edit" || link.displayedTextInputValue.trim().length > 0;
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      link.saveLink();
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      link.closeLinkBubble();
+    }
+  };
+
+  return (
+    <div className="news-body-editor__table-bubble news-body-editor__link-form-bubble">
+      <label className="space-y-2">
+        <span className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[var(--text-faint)]">
+          Displayed Text
+        </span>
+        <input
+          autoFocus={!shouldAutofocusUrl}
+          type="text"
+          value={link.displayedTextInputValue}
+          onChange={(event) => link.setLinkDisplayedTextInputValue(event.target.value)}
+          onKeyDown={handleInputKeyDown}
+          placeholder="Use the link as text"
+          className={`${dashboardInputClassName} news-body-editor__link-input !mt-0`}
+        />
+      </label>
+
+      <label className="space-y-2">
+        <span className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[var(--text-faint)]">
+          Link URL
+        </span>
+        <input
+          autoFocus={shouldAutofocusUrl}
+          type="text"
+          value={link.linkUrlInputValue}
+          onChange={(event) => link.setLinkUrlInputValue(event.target.value)}
+          onKeyDown={handleInputKeyDown}
+          placeholder="https://example.com"
+          className={`${dashboardInputClassName} news-body-editor__link-input !mt-0`}
+        />
+      </label>
+
+      <div className="flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={link.closeLinkBubble}
+          className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] px-3 text-sm font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={link.saveLink}
+          className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--border-orange)] bg-[var(--brand-pale)] px-3 text-sm font-semibold text-[var(--brand)] transition hover:bg-[var(--brand)]/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+        >
+          Save
+        </button>
+      </div>
     </div>
   );
 }

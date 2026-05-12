@@ -3,6 +3,7 @@
 import { mergeAttributes } from "@tiptap/core";
 import FileHandler from "@tiptap/extension-file-handler";
 import Highlight from "@tiptap/extension-highlight";
+import TiptapLink from "@tiptap/extension-link";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { TableKit } from "@tiptap/extension-table";
 import TableOfContents from "@tiptap/extension-table-of-contents";
@@ -27,6 +28,7 @@ import { NewsTableOfContents } from "../news-body-table-of-contents-extension";
 import {
   buildTableCellStyleValue,
   getImageInsertTarget,
+  shouldAutoLinkUrl,
   getTableCellStyleAttributes,
   tableCellAttributeConfig,
 } from "./utils";
@@ -39,6 +41,7 @@ export const EDITOR_IMAGE_ALLOWED_MIME_TYPES = [
 
 export const TABLE_BUBBLE_MENU_PLUGIN_KEY = "newsBodyEditorTableBubbleMenu";
 export const IMAGE_BUBBLE_MENU_PLUGIN_KEY = "newsBodyEditorImageBubbleMenu";
+export const LINK_BUBBLE_MENU_PLUGIN_KEY = "newsBodyEditorLinkBubbleMenu";
 
 const CustomTableCell = TableCell.extend({
   addAttributes() {
@@ -104,7 +107,9 @@ export function createNewsBodyEditorExtensions({
   onDropImages,
 }: CreateExtensionsOptions) {
   return [
-    StarterKit,
+    StarterKit.configure({
+      link: false,
+    }),
     TaskList,
     TaskItem,
     NewsTableOfContents,
@@ -130,6 +135,14 @@ export function createNewsBodyEditorExtensions({
     FontFamily,
     Color,
     BackgroundColor,
+    TiptapLink.configure({
+      autolink: true,
+      defaultProtocol: "https",
+      linkOnPaste: true,
+      openOnClick: false,
+      protocols: ["http", "https"],
+      shouldAutoLink: shouldAutoLinkUrl,
+    }),
     Highlight.configure({
       multicolor: true,
     }),

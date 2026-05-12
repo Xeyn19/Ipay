@@ -7,7 +7,12 @@ import {
   useState,
   type ChangeEvent,
 } from "react";
-import { useEditor, useEditorState, type JSONContent } from "@tiptap/react";
+import {
+  useEditor,
+  useEditorState,
+  type Editor,
+  type JSONContent,
+} from "@tiptap/react";
 import toast from "react-hot-toast";
 import { EMPTY_NEWS_BODY } from "@/app/lib/news-media";
 import {
@@ -16,10 +21,17 @@ import {
 } from "@/app/lib/news-body-text-styles";
 import {
   createNewsBodyEditorExtensions,
+  LINK_BUBBLE_MENU_PLUGIN_KEY,
   NEWS_TABLE_OF_CONTENTS_NODE_NAME,
   TABLE_BUBBLE_MENU_PLUGIN_KEY,
 } from "../extensions";
-import type { NewsBodyEditorProps, NewsBodyEditorSnapshot } from "../types";
+import type {
+  LinkBubbleTarget,
+  LinkSelectionSnapshot,
+  NewsBodyEditorProps,
+  NewsBodyEditorSnapshot,
+  SelectedLinkState,
+} from "../types";
 import {
   applyHeading,
   collectDocumentEditorColors,
@@ -28,13 +40,16 @@ import {
   getCurrentHighlightColor,
   getCurrentTextAlignment,
   getCurrentTextStyle,
-  isHeaderAxisActive,
+  getLinkBubbleAnchorRect,
+  getLinkSelectionSnapshot,
+  getMergeDirectionAvailability,
   getSelectedImageState,
+  getSelectedLinkState,
   getSelectedTableCellState,
   getSelectionComputedFontSize,
-  getMergeDirectionAvailability,
   hasTableOfContentsNode,
-  updateLink,
+  isHeaderAxisActive,
+  normalizeLinkUrl,
 } from "../utils";
 import { useEditorMenuState } from "./use-editor-menu-state";
 import { useFontActions } from "./use-font-actions";
@@ -47,6 +62,26 @@ const EMPTY_MERGE_DIRECTION_AVAILABILITY = {
   right: false,
   up: false,
 } as const;
+
+function areSelectedLinksEqual(
+  currentLink: SelectedLinkState | null,
+  nextLink: SelectedLinkState | null,
+) {
+  if (currentLink === nextLink) {
+    return true;
+  }
+
+  if (!currentLink || !nextLink) {
+    return false;
+  }
+
+  return (
+    currentLink.from === nextLink.from &&
+    currentLink.to === nextLink.to &&
+    currentLink.href === nextLink.href &&
+    currentLink.text === nextLink.text
+  );
+}
 
 function getEmptyEditorState(
   initialContent: JSONContent | null,
@@ -83,6 +118,7 @@ function getEmptyEditorState(
     link: false,
     orderedList: false,
     selectedImage: null,
+    selectedLink: null,
     strike: false,
     subscript: false,
     superscript: false,
@@ -104,10 +140,65 @@ export function useNewsBodyEditor({
     DEFAULT_HIGHLIGHT_COLOR,
   );
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [hasInteractedWithEditor, setHasInteractedWithEditor] = useState(false);
+  const [linkDisplayedTextInputValue, setLinkDisplayedTextInputValue] =
+    useState("");
+  const [linkUrlInputValue, setLinkUrlInputValue] = useState("");
+  const [linkBubbleTarget, setLinkBubbleTarget] = useState<LinkBubbleTarget | null>(
+    null,
+  );
+  const [activeLinkPreview, setActiveLinkPreview] =
+    useState<SelectedLinkState | null>(null);
+  const [lastLinkSelectionSnapshot, setLastLinkSelectionSnapshot] =
+    useState<LinkSelectionSnapshot | null>(null);
+  const [, setLinkOverlayPositionVersion] = useState(0);
   const menu = useEditorMenuState();
   const imageUpload = useImageUploadState({
     closeMenu: menu.closeMenu,
   });
+
+  function saveLinkSelectionSnapshot(currentEditor: Editor | null) {
+    const nextSnapshot = getLinkSelectionSnapshot(currentEditor);
+
+    if (!nextSnapshot) {
+      return;
+    }
+
+    setLastLinkSelectionSnapshot((currentSnapshot) => {
+      if (
+        currentSnapshot &&
+        currentSnapshot.from === nextSnapshot.from &&
+        currentSnapshot.to === nextSnapshot.to &&
+        currentSnapshot.text === nextSnapshot.text &&
+        currentSnapshot.selectedLink?.from === nextSnapshot.selectedLink?.from &&
+        currentSnapshot.selectedLink?.to === nextSnapshot.selectedLink?.to &&
+        currentSnapshot.selectedLink?.href === nextSnapshot.selectedLink?.href &&
+        currentSnapshot.selectedLink?.text === nextSnapshot.selectedLink?.text
+      ) {
+        return currentSnapshot;
+      }
+
+      return nextSnapshot;
+    });
+  }
+
+  function syncActiveLinkPreview(currentEditor: Editor | null) {
+    const nextPreviewLink = getSelectedLinkState(currentEditor);
+
+    setActiveLinkPreview((currentPreviewLink) =>
+      areSelectedLinksEqual(currentPreviewLink, nextPreviewLink)
+        ? currentPreviewLink
+        : nextPreviewLink,
+    );
+  }
+
+  function getPreferredLinkSelectionSnapshot() {
+    if (editor?.isFocused) {
+      return getLinkSelectionSnapshot(editor);
+    }
+
+    return lastLinkSelectionSnapshot;
+  }
 
   const editor = useEditor({
     content: initialContent ?? EMPTY_NEWS_BODY,
@@ -118,6 +209,19 @@ export function useNewsBodyEditor({
     onUpdate: ({ editor: currentEditor }) => {
       const nextJson = currentEditor.getJSON();
       onChange(nextJson);
+    },
+    onFocus: ({ editor: currentEditor }) => {
+      setHasInteractedWithEditor(true);
+      saveLinkSelectionSnapshot(currentEditor);
+      syncActiveLinkPreview(currentEditor);
+    },
+    onSelectionUpdate: ({ editor: currentEditor }) => {
+      if (currentEditor.isFocused) {
+        setHasInteractedWithEditor(true);
+      }
+
+      saveLinkSelectionSnapshot(currentEditor);
+      syncActiveLinkPreview(currentEditor);
     },
     shouldRerenderOnTransaction: false,
     editorProps: {
@@ -180,6 +284,7 @@ export function useNewsBodyEditor({
         link: currentEditor.isActive("link"),
         orderedList: currentEditor.isActive("orderedList"),
         selectedImage: getSelectedImageState(currentEditor),
+        selectedLink: getSelectedLinkState(currentEditor),
         strike: currentEditor.isActive("strike"),
         subscript: currentEditor.isActive("subscript"),
         superscript: currentEditor.isActive("superscript"),
@@ -208,6 +313,7 @@ export function useNewsBodyEditor({
     selectedCellProperties.horizontalAlign ?? "left";
   const documentColors = resolvedEditorState.documentColors;
   const selectedImage = resolvedEditorState.selectedImage;
+  const selectedLink = resolvedEditorState.selectedLink;
   const activeCellPos = resolvedEditorState.activeCellPos;
   const activeTablePos = resolvedEditorState.activeTablePos;
   const canMergeDirection =
@@ -266,6 +372,258 @@ export function useNewsBodyEditor({
     setSelectedTableCellBackgroundColor: table.setSelectedTableCellBackgroundColor,
     textColorInputRef,
   });
+
+  const activeLinkBubbleMode = menu.openLinkBubbleMode;
+  const activeLinkBubbleTarget = linkBubbleTarget;
+  const activeLinkBubbleTargetFrom = activeLinkBubbleTarget?.from ?? null;
+  const activeLinkBubbleTargetTo = activeLinkBubbleTarget?.to ?? null;
+  const activeLinkPreviewFrom = activeLinkPreview?.from ?? null;
+  const activeLinkPreviewTo = activeLinkPreview?.to ?? null;
+  const activeLinkPreviewHref = activeLinkPreview?.href ?? null;
+
+  function resetLinkForm() {
+    setLinkDisplayedTextInputValue("");
+    setLinkUrlInputValue("");
+    setLinkBubbleTarget(null);
+  }
+
+  function closeLinkBubble() {
+    resetLinkForm();
+    menu.closeLinkBubble();
+  }
+
+  function setLinkTargetState(target: LinkBubbleTarget, values?: {
+    displayedText?: string;
+    href?: string;
+  }) {
+    setLinkBubbleTarget(target);
+    setLinkDisplayedTextInputValue(values?.displayedText ?? "");
+    setLinkUrlInputValue(values?.href ?? "");
+  }
+
+  function getCurrentLinkReplacementMarks(from: number, href: string) {
+    if (!editor) {
+      return [
+        {
+          attrs: { href },
+          type: "link",
+        },
+      ];
+    }
+
+    const linkMarkType = editor.state.schema.marks.link;
+    const resolvedPos = editor.state.doc.resolve(
+      Math.min(Math.max(from, 1), editor.state.doc.content.size),
+    );
+    const currentMarks = resolvedPos
+      .marks()
+      .filter((mark) => mark.type !== linkMarkType);
+
+    return [
+      ...currentMarks.map((mark) => ({
+        attrs: mark.attrs,
+        type: mark.type.name,
+      })),
+      {
+        attrs: { href },
+        type: "link",
+      },
+    ];
+  }
+
+  function openLinkEditFlow(targetLink?: SelectedLinkState | null) {
+    if (!editor) {
+      return;
+    }
+
+    const resolvedLink =
+      targetLink ??
+      getPreferredLinkSelectionSnapshot()?.selectedLink ??
+      activeLinkPreview ??
+      getSelectedLinkState(editor);
+
+    if (!resolvedLink) {
+      return;
+    }
+
+    menu.closeAllMenus();
+    editor
+      .chain()
+      .focus()
+      .setTextSelection({
+        from: resolvedLink.from,
+        to: resolvedLink.to,
+      })
+      .run();
+    setLinkTargetState(
+      {
+        from: resolvedLink.from,
+        to: resolvedLink.to,
+      },
+      {
+        displayedText: resolvedLink.text,
+        href: resolvedLink.href,
+      },
+    );
+    menu.setOpenLinkBubbleMode("edit");
+  }
+
+  function openLinkInsertFlow() {
+    if (!editor) {
+      return;
+    }
+
+    const selectionSnapshot = getPreferredLinkSelectionSnapshot();
+
+    if (selectionSnapshot?.selectedLink) {
+      openLinkEditFlow(selectionSnapshot.selectedLink);
+      return;
+    }
+
+    menu.closeAllMenus();
+
+    if (selectionSnapshot) {
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({
+          from: selectionSnapshot.from,
+          to: selectionSnapshot.to,
+        })
+        .run();
+      setLinkTargetState(
+        {
+          from: selectionSnapshot.from,
+          to: selectionSnapshot.to,
+        },
+        {
+          displayedText: selectionSnapshot.text,
+          href: "",
+        },
+      );
+      menu.setOpenLinkBubbleMode("insert");
+      return;
+    }
+
+    if (!hasInteractedWithEditor) {
+      editor.chain().focus("start").run();
+    } else {
+      editor.chain().focus().run();
+    }
+
+    const fallbackSnapshot = getLinkSelectionSnapshot(editor);
+
+    if (!fallbackSnapshot) {
+      return;
+    }
+
+    setLinkTargetState(
+      {
+        from: fallbackSnapshot.from,
+        to: fallbackSnapshot.to,
+      },
+      {
+        displayedText: fallbackSnapshot.text,
+        href: "",
+      },
+    );
+    menu.setOpenLinkBubbleMode("insert");
+  }
+
+  function saveLink() {
+    if (!editor || !linkBubbleTarget) {
+      return;
+    }
+
+    const normalizedHref = normalizeLinkUrl(linkUrlInputValue, {
+      allowBareDomain: true,
+    });
+
+    if (!normalizedHref) {
+      toast.error("Enter a valid http or https URL.");
+      return;
+    }
+
+    const displayedText = linkDisplayedTextInputValue.trim() || normalizedHref;
+    const currentRangeText = editor.state.doc.textBetween(
+      linkBubbleTarget.from,
+      linkBubbleTarget.to,
+      " ",
+    );
+
+    if (
+      linkBubbleTarget.from !== linkBubbleTarget.to &&
+      currentRangeText === displayedText
+    ) {
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({
+          from: linkBubbleTarget.from,
+          to: linkBubbleTarget.to,
+        })
+        .setLink({ href: normalizedHref })
+        .run();
+    } else {
+      const selectionEnd = linkBubbleTarget.from + displayedText.length;
+
+      editor
+        .chain()
+        .focus()
+        .insertContentAt(linkBubbleTarget, {
+          marks: getCurrentLinkReplacementMarks(
+            linkBubbleTarget.from,
+            normalizedHref,
+          ),
+          text: displayedText,
+          type: "text",
+        })
+        .setTextSelection(selectionEnd)
+        .run();
+    }
+
+    closeLinkBubble();
+  }
+
+  function unlinkSelectedLink() {
+    if (!editor) {
+      return;
+    }
+
+    const activeLink =
+      activeLinkPreview ?? selectedLink ?? getSelectedLinkState(editor);
+
+    if (!activeLink) {
+      return;
+    }
+
+    editor
+      .chain()
+      .focus()
+      .setTextSelection({
+        from: activeLink.from,
+        to: activeLink.to,
+      })
+      .unsetLink()
+      .setTextSelection(activeLink.to)
+      .run();
+
+    setActiveLinkPreview(null);
+    closeLinkBubble();
+  }
+
+  function openActiveLinkInNewTab() {
+    const activeLink =
+      activeLinkPreview ??
+      selectedLink ??
+      (editor ? getSelectedLinkState(editor) : null);
+
+    if (!activeLink || typeof window === "undefined") {
+      return;
+    }
+
+    window.open(activeLink.href, "_blank", "noopener,noreferrer");
+  }
 
   function runAction(action: () => void) {
     action();
@@ -353,6 +711,52 @@ export function useNewsBodyEditor({
   ]);
 
   useEffect(() => {
+    if (
+      !editor ||
+      activeLinkPreviewFrom === null ||
+      activeLinkPreviewTo === null ||
+      activeLinkPreviewHref === null ||
+      activeLinkBubbleMode !== null
+    ) {
+      return;
+    }
+
+    editor.commands.setMeta(LINK_BUBBLE_MENU_PLUGIN_KEY, "updatePosition");
+  }, [
+    activeLinkBubbleMode,
+    editor,
+    activeLinkPreviewFrom,
+    activeLinkPreviewHref,
+    activeLinkPreviewTo,
+  ]);
+
+  useEffect(() => {
+    if (
+      activeLinkBubbleMode === null ||
+      activeLinkBubbleTargetFrom === null ||
+      activeLinkBubbleTargetTo === null
+    ) {
+      return;
+    }
+
+    function refreshLinkOverlayPosition() {
+      setLinkOverlayPositionVersion((currentValue) => currentValue + 1);
+    }
+
+    window.addEventListener("resize", refreshLinkOverlayPosition);
+    document.addEventListener("scroll", refreshLinkOverlayPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", refreshLinkOverlayPosition);
+      document.removeEventListener("scroll", refreshLinkOverlayPosition, true);
+    };
+  }, [
+    activeLinkBubbleMode,
+    activeLinkBubbleTargetFrom,
+    activeLinkBubbleTargetTo,
+  ]);
+
+  useEffect(() => {
     if (!isFullscreen) {
       return;
     }
@@ -381,6 +785,9 @@ export function useNewsBodyEditor({
         menu.setOpenMenu(null);
         menu.setOpenCellPropertiesMenu(null);
         menu.setOpenTableBubbleSubmenu(null);
+        setActiveLinkPreview(null);
+        resetLinkForm();
+        menu.closeLinkBubble();
       }
     }
 
@@ -417,6 +824,9 @@ export function useNewsBodyEditor({
         menu.setOpenMenu(null);
         menu.setOpenCellPropertiesMenu(null);
         menu.setOpenTableBubbleSubmenu(null);
+        setActiveLinkPreview(null);
+        resetLinkForm();
+        menu.closeLinkBubble();
       }
     }
 
@@ -427,7 +837,13 @@ export function useNewsBodyEditor({
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [closeFullscreen, editor, isFullscreen, menu, selectedFontSize]);
+  }, [
+    closeFullscreen,
+    editor,
+    isFullscreen,
+    menu,
+    selectedFontSize,
+  ]);
 
   function handleEditorSurfaceMouseDownCapture() {
     if (menu.openMenu !== null) {
@@ -449,6 +865,10 @@ export function useNewsBodyEditor({
     if (menu.isImageAltEditorOpen) {
       menu.setIsImageAltEditorOpen(false);
     }
+
+    if (menu.openLinkBubbleMode !== null) {
+      closeLinkBubble();
+    }
   }
 
   return {
@@ -462,10 +882,12 @@ export function useNewsBodyEditor({
       editorSurfaceMouseDownCapture: handleEditorSurfaceMouseDownCapture,
       insertTable,
       insertTableOfContents,
+      openLinkBubble: openLinkInsertFlow,
       runAction,
-      updateLink: () => updateLink(editor),
     },
     derivedState: {
+      activeLinkBubbleMode,
+      activeLinkBubbleTarget,
       activeCellPos,
       activeTablePos,
       canMergeDirection,
@@ -491,6 +913,7 @@ export function useNewsBodyEditor({
       selectedHeading,
       selectedHighlightColor,
       selectedImage,
+      selectedLink,
       selectedTextAlignment,
       selectedTextColor,
       selectedTextStyle,
@@ -511,6 +934,30 @@ export function useNewsBodyEditor({
       unsetHighlight,
     },
     image: imageController,
+    link: {
+      closeLinkBubble,
+      displayedTextInputValue: linkDisplayedTextInputValue,
+      activePreviewLink: activeLinkPreview,
+      isLinkFormOpen: menu.openLinkBubbleMode !== null,
+      linkFormAnchorRect:
+        menu.openLinkBubbleMode !== null
+          ? getLinkBubbleAnchorRect(editor, linkBubbleTarget)
+          : null,
+      linkPreviewAnchorRect: activeLinkPreview
+        ? getLinkBubbleAnchorRect(editor, {
+            from: activeLinkPreview.from,
+            to: activeLinkPreview.to,
+          })
+        : null,
+      linkUrlInputValue,
+      openActiveLinkInNewTab,
+      openLinkEditFlow,
+      openLinkInsertFlow,
+      saveLink,
+      setLinkDisplayedTextInputValue,
+      setLinkUrlInputValue,
+      unlinkSelectedLink,
+    },
     menu,
     refs: {
       backgroundColorInputRef,

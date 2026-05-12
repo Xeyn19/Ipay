@@ -54,6 +54,7 @@ import type {
 import {
   EDITOR_IMAGE_ALLOWED_MIME_TYPES,
   IMAGE_BUBBLE_MENU_PLUGIN_KEY,
+  LINK_BUBBLE_MENU_PLUGIN_KEY,
   TABLE_BUBBLE_MENU_PLUGIN_KEY,
 } from "./extensions";
 import {
@@ -72,6 +73,8 @@ import {
 import {
   ColorMenuContent,
   ImageBubbleMenu,
+  LinkBubbleMenu,
+  LinkPreviewBubble,
   TableBubbleMenu,
   textAlignmentOptions,
 } from "./components/bubble-menus";
@@ -377,7 +380,7 @@ function InsertMenu({ controller }: { controller: NewsBodyEditorController }) {
       <MenuItem
         icon={<Link className="h-4 w-4" />}
         isActive={derivedState.editorState.link}
-        onClick={() => commands.runAction(commands.updateLink)}
+        onClick={() => commands.runAction(commands.openLinkBubble)}
       >
         Link
       </MenuItem>
@@ -653,6 +656,7 @@ function TopMenuBar({ controller }: { controller: NewsBodyEditorController }) {
             type="button"
             aria-expanded={menu.openMenu === key}
             aria-haspopup="menu"
+            onMouseDown={(event) => event.preventDefault()}
             onClick={() => menu.toggleMenu(key)}
             className={`inline-flex h-8 items-center gap-1 rounded-md px-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
               menu.openMenu === key
@@ -833,6 +837,16 @@ function ToolbarSection({
 
       <ToolbarSeparator />
 
+      <ToolbarButton
+        ariaLabel="Insert or edit link"
+        isActive={Boolean(
+          derivedState.activeLinkBubbleMode || derivedState.editorState.link,
+        )}
+        onClick={commands.openLinkBubble}
+      >
+        <Link className="h-4 w-4" aria-hidden="true" />
+      </ToolbarButton>
+
       <div className="relative">
         <ToolbarMenuButton
           ariaLabel="Table options"
@@ -879,7 +893,7 @@ function NewsBodyEditorView({
 }: {
   controller: NewsBodyEditorController;
 }) {
-  const { colors, commands, derivedState, editor, fullscreen, image, refs } =
+  const { colors, commands, derivedState, editor, fullscreen, image, link, refs } =
     controller;
   const menuRef = refs.menuRef;
   const textColorInputRef = refs.textColorInputRef;
@@ -970,6 +984,59 @@ function NewsBodyEditorView({
           <EditorContent editor={editor} />
         </div>
       </div>
+
+      {link.isLinkFormOpen && link.linkFormAnchorRect ? (
+        <div
+          className="news-body-editor__floating-link-bubble"
+          style={{
+            left: `${link.linkFormAnchorRect.left}px`,
+            top: `${link.linkFormAnchorRect.top}px`,
+          }}
+        >
+          <LinkBubbleMenu controller={controller} />
+        </div>
+      ) : null}
+
+      {editor ? (
+        <BubbleMenu
+          editor={editor}
+          pluginKey={LINK_BUBBLE_MENU_PLUGIN_KEY}
+          appendTo={() => refs.menuRef.current ?? document.body}
+          options={{
+            placement: "top",
+            offset: 10,
+            shift: true,
+          }}
+          shouldShow={({ view }) => {
+            const activeElement =
+              typeof document !== "undefined" ? document.activeElement : null;
+            const bubbleHasFocus =
+              activeElement instanceof Node &&
+              Boolean(refs.menuRef.current?.contains(activeElement));
+
+            return (
+              !link.isLinkFormOpen &&
+              link.activePreviewLink !== null &&
+              link.linkPreviewAnchorRect !== null &&
+              (view.hasFocus() || bubbleHasFocus)
+            );
+          }}
+          getReferencedVirtualElement={() => {
+            const anchorRect = link.linkPreviewAnchorRect;
+
+            if (!anchorRect) {
+              return null;
+            }
+
+            return {
+              contextElement: refs.menuRef.current ?? editor.view.dom,
+              getBoundingClientRect: () => anchorRect,
+            };
+          }}
+        >
+          <LinkPreviewBubble controller={controller} />
+        </BubbleMenu>
+      ) : null}
 
       {editor ? (
         <BubbleMenu

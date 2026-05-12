@@ -59,6 +59,7 @@ It is responsible for:
 - wiring the hidden color inputs
 - wiring the hidden file input for image uploads
 - wiring the Tiptap `BubbleMenu` instances
+- wiring the link insert/edit bubble flow
 - rendering `ImageUrlModal`
 
 If you need to add a new top-level menu item, toolbar button, or toolbar dropdown, this is usually the first file to change.
@@ -72,6 +73,7 @@ It is responsible for:
 - creating the Tiptap editor instance
 - subscribing to editor state with `useEditorState`
 - deriving the editor snapshot used by the UI
+- owning link bubble insert/edit state and selection targets
 - owning fullscreen state and body scroll locking
 - composing the focused hooks:
   - `useEditorMenuState`
@@ -87,6 +89,7 @@ This is the file to update when a new extension needs:
 - a new command wrapper
 - new editor-level effects
 - new refs or cross-feature coordination
+- new link bubble behavior or save semantics
 
 ### `extensions.ts`
 
@@ -97,6 +100,7 @@ It is responsible for:
 - the extension array returned by `createNewsBodyEditorExtensions`
 - custom table cell/header behavior
 - file-drop and paste image handling
+- explicit link extension behavior such as autolink and paste-linking
 - exported plugin keys used by the bubble menus
 - exported image MIME-type allowlist
 
@@ -122,6 +126,7 @@ If new editor behavior needs document inspection, selection math, or value norma
 This file groups the tightly coupled bubble/menu UI:
 
 - `ColorMenuContent`
+- `LinkBubbleMenu`
 - `TableBubbleMenu`
 - table cell properties panel
 - `ImageBubbleMenu`

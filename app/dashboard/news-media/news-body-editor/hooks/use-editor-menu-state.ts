@@ -4,6 +4,7 @@ import { useState } from "react";
 import type {
   OpenCellPropertiesMenu,
   OpenImageBubbleSubmenu,
+  OpenLinkBubbleMode,
   OpenMenu,
   OpenTableBubbleSubmenu,
 } from "../types";
@@ -17,6 +18,8 @@ export function useEditorMenuState() {
   const [openImageBubbleSubmenu, setOpenImageBubbleSubmenu] =
     useState<OpenImageBubbleSubmenu>(null);
   const [isImageAltEditorOpen, setIsImageAltEditorOpen] = useState(false);
+  const [openLinkBubbleMode, setOpenLinkBubbleMode] =
+    useState<OpenLinkBubbleMode>(null);
 
   function closeMenu() {
     setOpenMenu(null);
@@ -53,6 +56,10 @@ export function useEditorMenuState() {
     setOpenTableBubbleSubmenu(null);
   }
 
+  function closeLinkBubble() {
+    setOpenLinkBubbleMode(null);
+  }
+
   function openCellPropertiesView() {
     setOpenCellPropertiesMenu(null);
     setOpenTableBubbleSubmenu("cell-properties");
@@ -77,23 +84,27 @@ export function useEditorMenuState() {
     setOpenTableBubbleSubmenu(null);
     setOpenImageBubbleSubmenu(null);
     setIsImageAltEditorOpen(false);
+    setOpenLinkBubbleMode(null);
   }
 
   return {
     closeAllMenus,
     closeCellPropertiesView,
     closeImageBubbleSubmenu,
+    closeLinkBubble,
     closeMenu,
     closeTableBubbleSubmenu,
     isImageAltEditorOpen,
     openCellPropertiesMenu,
     openCellPropertiesView,
     openImageBubbleSubmenu,
+    openLinkBubbleMode,
     openMenu,
     openTableBubbleSubmenu,
     setIsImageAltEditorOpen,
     setOpenCellPropertiesMenu,
     setOpenImageBubbleSubmenu,
+    setOpenLinkBubbleMode,
     setOpenMenu,
     setOpenTableBubbleSubmenu,
     toggleCellPropertiesMenu,

@@ -38,6 +38,7 @@ export type OpenTableBubbleSubmenu =
   | null;
 export type OpenCellPropertiesMenu = "background-color" | null;
 export type OpenImageBubbleSubmenu = "alignment" | "size" | null;
+export type OpenLinkBubbleMode = "insert" | "edit" | null;
 export type ColorMenuMode = "text" | "background" | "cell-background";
 
 export type ActiveTableContext = {
@@ -52,6 +53,25 @@ export type SelectedImageState = {
   pos: number;
   src: string;
   width: string;
+};
+
+export type SelectedLinkState = {
+  from: number;
+  href: string;
+  text: string;
+  to: number;
+};
+
+export type LinkBubbleTarget = {
+  from: number;
+  to: number;
+};
+
+export type LinkSelectionSnapshot = {
+  from: number;
+  selectedLink: SelectedLinkState | null;
+  text: string;
+  to: number;
 };
 
 export type MergeDirectionAvailability = Record<MergeDirection, boolean>;
@@ -112,6 +132,7 @@ export type NewsBodyEditorSnapshot = {
   link: boolean;
   orderedList: boolean;
   selectedImage: SelectedImageState | null;
+  selectedLink: SelectedLinkState | null;
   strike: boolean;
   subscript: boolean;
   superscript: boolean;

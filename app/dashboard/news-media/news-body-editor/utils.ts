@@ -1,6 +1,10 @@
 import { CellSelection, TableMap } from "@tiptap/pm/tables";
 import type { Editor, JSONContent } from "@tiptap/react";
-import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import type {
+  MarkType,
+  Node as ProseMirrorNode,
+  ResolvedPos,
+} from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 import type { TextStyleAttributes as TiptapTextStyleAttributes } from "@tiptap/extension-text-style";
 import {
@@ -18,9 +22,12 @@ import type {
   ActiveTableContext,
   HeadingLevel,
   ImageInsertTarget,
+  LinkBubbleTarget,
+  LinkSelectionSnapshot,
   MergeDirection,
   MergeDirectionAvailability,
   SelectedImageState,
+  SelectedLinkState,
   TableAxis,
   TableCellHorizontalAlignment,
   TableCellSelectionState,
@@ -503,29 +510,196 @@ export function getCurrentHighlightColor(editor: Editor | null) {
     : DEFAULT_HIGHLIGHT_COLOR;
 }
 
-export function updateLink(editor: Editor | null) {
+function createZeroWidthRect(x: number, y: number) {
+  if (typeof DOMRect !== "undefined" && typeof DOMRect.fromRect === "function") {
+    return DOMRect.fromRect({
+      x,
+      y,
+      width: 0,
+      height: 0,
+    });
+  }
+
+  return {
+    x,
+    y,
+    width: 0,
+    height: 0,
+    top: y,
+    right: x,
+    bottom: y,
+    left: x,
+    toJSON: () => ({}),
+  };
+}
+
+export function getLinkBubbleAnchorRect(
+  editor: Editor | null,
+  target: LinkBubbleTarget | null,
+) {
+  if (!editor || !target) {
+    return null;
+  }
+
+  const { from, to } = target;
+
+  try {
+    if (from === to) {
+      const caret = editor.view.coordsAtPos(from);
+      return createZeroWidthRect(caret.left, caret.top);
+    }
+
+    const start = editor.view.coordsAtPos(from);
+    const end = editor.view.coordsAtPos(to);
+    const centerX = (start.left + end.right) / 2;
+    const top = Math.min(start.top, end.top);
+
+    return createZeroWidthRect(centerX, top);
+  } catch {
+    return null;
+  }
+}
+
+function getLinkRangeAtResolvedPos(
+  $pos: ResolvedPos,
+  markType: MarkType,
+) {
+  const start =
+    $pos.parent.childAfter($pos.parentOffset).node &&
+    markType.isInSet($pos.parent.childAfter($pos.parentOffset).node?.marks ?? [])
+      ? $pos.parent.childAfter($pos.parentOffset)
+      : $pos.parent.childBefore($pos.parentOffset);
+
+  if (!start.node) {
+    return null;
+  }
+
+  const mark = start.node.marks.find((currentMark) => currentMark.type === markType);
+
+  if (!mark) {
+    return null;
+  }
+
+  let startIndex = start.index;
+  let startPos = $pos.start() + start.offset;
+  let endIndex = startIndex + 1;
+  let endPos = startPos + start.node.nodeSize;
+
+  while (
+    startIndex > 0 &&
+    mark.isInSet($pos.parent.child(startIndex - 1).marks)
+  ) {
+    startIndex -= 1;
+    startPos -= $pos.parent.child(startIndex).nodeSize;
+  }
+
+  while (
+    endIndex < $pos.parent.childCount &&
+    mark.isInSet($pos.parent.child(endIndex).marks)
+  ) {
+    endPos += $pos.parent.child(endIndex).nodeSize;
+    endIndex += 1;
+  }
+
+  return {
+    from: startPos,
+    mark,
+    to: endPos,
+  };
+}
+
+export function getSelectedLinkState(editor: Editor | null): SelectedLinkState | null {
+  if (!editor || !editor.isActive("link")) {
+    return null;
+  }
+
+  const markType = editor.state.schema.marks.link;
+
+  if (!markType) {
+    return null;
+  }
+
+  const { selection } = editor.state;
+  const range =
+    getLinkRangeAtResolvedPos(selection.$from, markType) ??
+    getLinkRangeAtResolvedPos(selection.$to, markType);
+
+  if (!range) {
+    return null;
+  }
+
+  const href = range.mark.attrs.href;
+
+  if (typeof href !== "string" || href.trim().length === 0) {
+    return null;
+  }
+
+  return {
+    from: range.from,
+    href: href.trim(),
+    text: editor.state.doc.textBetween(range.from, range.to, " ").trim(),
+    to: range.to,
+  };
+}
+
+export function getLinkSelectionSnapshot(
+  editor: Editor | null,
+): LinkSelectionSnapshot | null {
   if (!editor) {
-    return;
+    return null;
   }
 
-  const previousHref = editor.getAttributes("link").href as string | undefined;
-  const nextHref = window.prompt("Enter link URL", previousHref ?? "");
+  const {
+    selection: { from, to },
+    doc,
+  } = editor.state;
 
-  if (nextHref === null) {
-    return;
+  return {
+    from,
+    selectedLink: getSelectedLinkState(editor),
+    text: from === to ? "" : doc.textBetween(from, to, " "),
+    to,
+  };
+}
+
+export function normalizeLinkUrl(
+  value: string,
+  {
+    allowBareDomain,
+  }: {
+    allowBareDomain: boolean;
+  },
+) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return null;
   }
 
-  if (nextHref.trim() === "") {
-    editor.chain().focus().extendMarkRange("link").unsetLink().run();
-    return;
-  }
+  const prefixedValue =
+    allowBareDomain &&
+    !/^[a-z][a-z\d+.-]*:\/\//i.test(trimmed) &&
+    /^[^\s]+\.[^\s]+$/i.test(trimmed)
+      ? `https://${trimmed}`
+      : trimmed;
 
-  editor
-    .chain()
-    .focus()
-    .extendMarkRange("link")
-    .setLink({ href: nextHref.trim() })
-    .run();
+  try {
+    const url = new URL(prefixedValue);
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+export function shouldAutoLinkUrl(value: string) {
+  const normalized = normalizeLinkUrl(value, { allowBareDomain: false });
+
+  return normalized !== null && /^https?:\/\//i.test(value.trim());
 }
 
 export function getSelectionComputedFontSize(editor: Editor | null) {

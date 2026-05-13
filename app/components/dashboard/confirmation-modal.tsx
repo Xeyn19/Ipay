@@ -13,13 +13,16 @@ type ConfirmationModalProps = {
   children?: ReactNode;
   confirmLabel: string;
   description?: ReactNode;
+  isConfirmDisabled?: boolean;
   isOpen: boolean;
   isPending?: boolean;
+  maxWidthClassName?: string;
   onClose: () => void;
   onConfirm: () => void;
   pendingLabel?: string;
   title: string;
   tone?: ConfirmationModalTone;
+  zIndexClassName?: string;
 };
 
 function getConfirmButtonClassName(tone: ConfirmationModalTone) {
@@ -39,13 +42,16 @@ export function ConfirmationModal({
   children,
   confirmLabel,
   description,
+  isConfirmDisabled = false,
   isOpen,
   isPending = false,
+  maxWidthClassName = "max-w-md",
   onClose,
   onConfirm,
   pendingLabel = "Please wait...",
   title,
   tone = "neutral",
+  zIndexClassName = "z-[100]",
 }: ConfirmationModalProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -74,7 +80,7 @@ export function ConfirmationModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 py-6 sm:px-6">
+    <div className={`fixed inset-0 ${zIndexClassName} flex items-center justify-center px-4 py-6 sm:px-6`}>
       <button
         type="button"
         aria-label="Close confirmation"
@@ -90,7 +96,7 @@ export function ConfirmationModal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={hasDescription ? descriptionId : undefined}
-        className="relative flex w-full max-w-md flex-col overflow-hidden rounded-[24px] border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-large)]"
+        className={`relative flex w-full ${maxWidthClassName} flex-col overflow-hidden rounded-[24px] border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-large)]`}
       >
         <div className="border-b border-[var(--border-light)] bg-[linear-gradient(180deg,var(--bg-subtle)_0%,var(--bg-elevated)_100%)] px-5 py-4 text-center sm:px-6">
           <p
@@ -123,7 +129,7 @@ export function ConfirmationModal({
             <button
               type="button"
               onClick={onConfirm}
-              disabled={isPending}
+              disabled={isPending || isConfirmDisabled}
               className={`inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated-muted)] disabled:cursor-not-allowed disabled:opacity-60 ${getConfirmButtonClassName(
                 tone,
               )}`}

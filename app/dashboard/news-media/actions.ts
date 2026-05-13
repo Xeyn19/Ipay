@@ -58,6 +58,21 @@ export type NewsPostCategoryFormState = {
   submittedAt: number | null;
 };
 
+export type NewsPostCategoryDeletePreviewResult = {
+  categoryId: string | null;
+  message: string;
+  postCount: number;
+  status: "error" | "success";
+};
+
+export type NewsPostCategoryDeleteResult = {
+  deletedCategoryId: string | null;
+  message: string;
+  reassignedPostCount: number;
+  replacementCategoryId: string | null;
+  status: "error" | "success";
+};
+
 type NewsPostRecord = {
   featured_image_path: string | null;
   id: string;
@@ -255,7 +270,9 @@ async function getAuthenticatedUserId() {
 function revalidateNewsPaths(postId?: string) {
   revalidatePath("/dashboard/news-media");
   revalidatePath("/dashboard/news-media/new");
+  revalidatePath("/dashboard/news-media/[postId]", "page");
   revalidatePath("/news-media");
+  revalidatePath("/news-media/[slug]", "page");
 
   if (postId) {
     revalidatePath(`/dashboard/news-media/${postId}`);
@@ -263,8 +280,11 @@ function revalidateNewsPaths(postId?: string) {
 }
 
 function revalidateNewsCategoryPaths() {
+  revalidatePath("/dashboard/news-media");
   revalidatePath("/dashboard/news-media/new");
   revalidatePath("/dashboard/news-media/[postId]", "page");
+  revalidatePath("/news-media");
+  revalidatePath("/news-media/[slug]", "page");
 }
 
 function validateNewsPostPayload(
@@ -372,6 +392,23 @@ async function ensureNewsPostCategoryExists(categoryId: string) {
   }
 
   return Boolean(data);
+}
+
+async function getNewsPostCategoryUsageCount(categoryId: string) {
+  const admin = createAdminClient();
+  const { count, error } = await admin
+    .from("news_posts")
+    .select("id", {
+      count: "exact",
+      head: true,
+    })
+    .eq("category_id", categoryId);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
 }
 
 async function getNewsPostRecord(postId: string) {
@@ -821,6 +858,206 @@ export async function createNewsPostCategory(
             : "The category could not be created.",
       status: "error",
     });
+  }
+}
+
+export async function inspectNewsPostCategoryDeletion(
+  categoryId: string,
+): Promise<NewsPostCategoryDeletePreviewResult> {
+  if (!categoryId.trim()) {
+    return {
+      categoryId: null,
+      message: "Invalid category selection.",
+      postCount: 0,
+      status: "error",
+    };
+  }
+
+  try {
+    await getAuthenticatedUserId();
+    const categoryExists = await ensureNewsPostCategoryExists(categoryId);
+
+    if (!categoryExists) {
+      return {
+        categoryId: null,
+        message: "Category not found.",
+        postCount: 0,
+        status: "error",
+      };
+    }
+
+    const postCount = await getNewsPostCategoryUsageCount(categoryId);
+
+    return {
+      categoryId,
+      message:
+        postCount > 0
+          ? `${postCount} post${postCount === 1 ? "" : "s"} currently use this category.`
+          : "This category is not assigned to any posts.",
+      postCount,
+      status: "success",
+    };
+  } catch (error) {
+    unstable_rethrow(error);
+
+    return {
+      categoryId: null,
+      message:
+        error instanceof Error && error.message === "Unauthorized"
+          ? "You must be signed in to manage categories."
+          : error instanceof Error && error.message
+            ? error.message
+            : "The category usage could not be checked.",
+      postCount: 0,
+      status: "error",
+    };
+  }
+}
+
+export async function deleteNewsPostCategory(
+  categoryId: string,
+  replacementCategoryId?: string,
+): Promise<NewsPostCategoryDeleteResult> {
+  const normalizedCategoryId = categoryId.trim();
+  const normalizedReplacementCategoryId = replacementCategoryId?.trim() ?? "";
+
+  if (!normalizedCategoryId) {
+    return {
+      deletedCategoryId: null,
+      message: "Invalid category selection.",
+      reassignedPostCount: 0,
+      replacementCategoryId: null,
+      status: "error",
+    };
+  }
+
+  try {
+    await getAuthenticatedUserId();
+    const categoryExists = await ensureNewsPostCategoryExists(
+      normalizedCategoryId,
+    );
+
+    if (!categoryExists) {
+      return {
+        deletedCategoryId: null,
+        message: "Category not found.",
+        reassignedPostCount: 0,
+        replacementCategoryId: null,
+        status: "error",
+      };
+    }
+
+    const postCount = await getNewsPostCategoryUsageCount(normalizedCategoryId);
+
+    if (postCount > 0) {
+      if (!normalizedReplacementCategoryId) {
+        return {
+          deletedCategoryId: null,
+          message: "Choose a replacement category before deleting this category.",
+          reassignedPostCount: 0,
+          replacementCategoryId: null,
+          status: "error",
+        };
+      }
+
+      if (normalizedReplacementCategoryId === normalizedCategoryId) {
+        return {
+          deletedCategoryId: null,
+          message: "Choose a different replacement category.",
+          reassignedPostCount: 0,
+          replacementCategoryId: null,
+          status: "error",
+        };
+      }
+
+      const replacementExists = await ensureNewsPostCategoryExists(
+        normalizedReplacementCategoryId,
+      );
+
+      if (!replacementExists) {
+        return {
+          deletedCategoryId: null,
+          message: "Choose a valid replacement category.",
+          reassignedPostCount: 0,
+          replacementCategoryId: null,
+          status: "error",
+        };
+      }
+
+      const admin = createAdminClient();
+      const { data, error } = await admin.rpc(
+        "reassign_and_delete_news_post_category",
+        {
+          replacement_category_id: normalizedReplacementCategoryId,
+          target_category_id: normalizedCategoryId,
+        },
+      );
+
+      if (error) {
+        return {
+          deletedCategoryId: null,
+          message: error.message ?? "The category could not be deleted.",
+          reassignedPostCount: 0,
+          replacementCategoryId: null,
+          status: "error",
+        };
+      }
+
+      const reassignedPostCount = Array.isArray(data)
+        ? Number(data[0]?.reassigned_post_count ?? postCount)
+        : postCount;
+
+      revalidateNewsCategoryPaths();
+
+      return {
+        deletedCategoryId: normalizedCategoryId,
+        message: `Category deleted. ${reassignedPostCount} post${reassignedPostCount === 1 ? "" : "s"} reassigned.`,
+        reassignedPostCount,
+        replacementCategoryId: normalizedReplacementCategoryId,
+        status: "success",
+      };
+    }
+
+    const admin = createAdminClient();
+    const { error } = await admin
+      .from("news_post_categories")
+      .delete()
+      .eq("id", normalizedCategoryId);
+
+    if (error) {
+      return {
+        deletedCategoryId: null,
+        message: error.message ?? "The category could not be deleted.",
+        reassignedPostCount: 0,
+        replacementCategoryId: null,
+        status: "error",
+      };
+    }
+
+    revalidateNewsCategoryPaths();
+
+    return {
+      deletedCategoryId: normalizedCategoryId,
+      message: "Category deleted.",
+      reassignedPostCount: 0,
+      replacementCategoryId: null,
+      status: "success",
+    };
+  } catch (error) {
+    unstable_rethrow(error);
+
+    return {
+      deletedCategoryId: null,
+      message:
+        error instanceof Error && error.message === "Unauthorized"
+          ? "You must be signed in to manage categories."
+          : error instanceof Error && error.message
+            ? error.message
+            : "The category could not be deleted.",
+      reassignedPostCount: 0,
+      replacementCategoryId: null,
+      status: "error",
+    };
   }
 }
 

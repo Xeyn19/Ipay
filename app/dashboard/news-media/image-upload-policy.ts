@@ -15,6 +15,8 @@ export const NEWS_MEDIA_IMAGE_ALLOWED_MIME_TYPES = [
 export const NEWS_MEDIA_INVALID_IMAGE_TYPE_MESSAGE =
   "Upload a JPG, PNG, or WEBP image.";
 export const NEWS_MEDIA_IMAGE_TOO_LARGE_MESSAGE = `Image must be ${NEWS_MEDIA_IMAGE_MAX_SIZE_LABEL} or smaller.`;
+export const NEWS_MEDIA_FEATURED_IMAGE_REQUIRED_MESSAGE =
+  "Upload a featured image.";
 export const NEWS_MEDIA_FEATURED_IMAGE_TOO_LARGE_MESSAGE = `Featured image must be ${NEWS_MEDIA_IMAGE_MAX_SIZE_LABEL} or smaller.`;
 export const NEWS_MEDIA_IMAGE_UPLOAD_FAILURE_MESSAGE =
   "The image upload failed. Try again.";

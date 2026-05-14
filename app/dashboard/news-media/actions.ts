@@ -12,6 +12,7 @@ import {
 import { createAdminClient } from "@/app/lib/supabase-admin";
 import { createClient } from "@/app/lib/supabase-server";
 import {
+  NEWS_MEDIA_FEATURED_IMAGE_REQUIRED_MESSAGE,
   NEWS_MEDIA_FEATURED_IMAGE_TOO_LARGE_MESSAGE,
   getNewsMediaImageUploadErrorMessage,
   getNewsMediaImageExtension,
@@ -183,6 +184,10 @@ function validateImageFile(
 }
 
 function validateFeaturedImage(file: File | null) {
+  if (!file) {
+    return NEWS_MEDIA_FEATURED_IMAGE_REQUIRED_MESSAGE;
+  }
+
   return validateImageFile(file, {
     sizeMessage: NEWS_MEDIA_FEATURED_IMAGE_TOO_LARGE_MESSAGE,
   });
@@ -625,7 +630,12 @@ export async function updateNewsPost(
       allowArchivedStatus: existingPost.status === "archived",
     });
     const featuredImage = getFeaturedImageFile(formData);
-    const featuredImageError = validateFeaturedImage(featuredImage);
+    const featuredImageError =
+      featuredImage || existingPost.featured_image_path
+        ? validateImageFile(featuredImage, {
+            sizeMessage: NEWS_MEDIA_FEATURED_IMAGE_TOO_LARGE_MESSAGE,
+          })
+        : NEWS_MEDIA_FEATURED_IMAGE_REQUIRED_MESSAGE;
 
     if (featuredImageError) {
       return buildActionState({

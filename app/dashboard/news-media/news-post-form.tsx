@@ -140,6 +140,13 @@ export function NewsPostForm({
     }
   }, [formState.message, formState.status, formState.submittedAt, mode, router]);
 
+  function setFeaturedImageError(message: string) {
+    setFeaturedImageErrorOverride({
+      message,
+      submittedAt: formState.submittedAt,
+    });
+  }
+
   function clearPreviewObjectUrl() {
     if (!previewObjectUrlRef.current) {
       return;
@@ -264,10 +271,7 @@ export function NewsPostForm({
       clearPreviewObjectUrl();
       setSelectedImageName("");
       setImagePreviewSrc(initialArticle.coverImage);
-      setFeaturedImageErrorOverride({
-        message: "",
-        submittedAt: formState.submittedAt,
-      });
+      setFeaturedImageError("");
       return;
     }
 
@@ -280,10 +284,7 @@ export function NewsPostForm({
       event.target.value = "";
       setSelectedImageName("");
       setImagePreviewSrc(initialArticle.coverImage);
-      setFeaturedImageErrorOverride({
-        message: validationError,
-        submittedAt: formState.submittedAt,
-      });
+      setFeaturedImageError(validationError);
       toast.error(validationError);
       return;
     }
@@ -292,10 +293,7 @@ export function NewsPostForm({
 
     clearPreviewObjectUrl();
     previewObjectUrlRef.current = nextPreviewUrl;
-    setFeaturedImageErrorOverride({
-      message: "",
-      submittedAt: formState.submittedAt,
-    });
+    setFeaturedImageError("");
     setSelectedImageName(selectedFile.name);
     setImagePreviewSrc(nextPreviewUrl);
   }
@@ -334,7 +332,10 @@ export function NewsPostForm({
 
   return (
     <>
-      <form action={formAction} className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)]">
+      <form
+        action={formAction}
+        className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)]"
+      >
         <input type="hidden" name="status" value={article.status} />
         <textarea
           hidden
@@ -515,10 +516,17 @@ export function NewsPostForm({
                 name="featuredImage"
                 type="file"
                 accept={NEWS_MEDIA_IMAGE_ALLOWED_MIME_TYPES.join(",")}
+                aria-invalid={featuredImageError ? true : undefined}
                 onChange={handleImageChange}
                 className="sr-only"
               />
-              <div className="relative min-h-40 overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-subtle)] transition-colors group-hover:border-[var(--border-orange)] group-focus-within:border-[var(--border-orange)]">
+              <div
+                className={`relative min-h-40 overflow-hidden rounded-2xl border bg-[var(--bg-subtle)] transition-colors group-hover:border-[var(--border-orange)] group-focus-within:border-[var(--border-orange)] ${
+                  featuredImageError
+                    ? "border-[#dc2626]"
+                    : "border-[var(--border-light)]"
+                }`}
+              >
                 {hasImagePreview ? (
                   <>
                     <Image

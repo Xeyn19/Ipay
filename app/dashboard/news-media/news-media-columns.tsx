@@ -22,12 +22,10 @@ const iconButtonClassName =
   "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] transition-colors hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-[var(--border-light)] disabled:hover:bg-[var(--bg-elevated)] disabled:hover:text-[var(--text-secondary)]";
 
 type NewsMediaColumnsOptions = {
-  pendingAction:
-    | {
-        postId: string;
-        type: "archive" | "delete" | "feature" | "restore";
-      }
-    | null;
+  pendingAction: {
+    postId: string;
+    type: "archive" | "delete" | "feature" | "restore";
+  } | null;
   onArchive: (article: NewsArticle) => void;
   onDelete: (article: NewsArticle) => void;
   onToggleFeatured: (article: NewsArticle) => void;
@@ -93,7 +91,7 @@ export function getNewsMediaColumns({
                   : "Only published posts can be featured"
               }
               onClick={() => onToggleFeatured(article)}
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed ${
+              className={`inline-flex h-9 w-9 items-center cursor-pointer justify-center rounded-lg border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed ${
                 article.isFeatured
                   ? "border-[var(--border-orange)] bg-[var(--brand-pale)] text-[var(--brand)] shadow-[0_0_16px_rgba(245,166,35,0.35)]"
                   : "border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-faint)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] disabled:hover:border-[var(--border-light)] disabled:hover:bg-[var(--bg-elevated)] disabled:hover:text-[var(--text-faint)]"
@@ -165,20 +163,18 @@ export function getNewsMediaColumns({
             >
               <Pencil className="h-4 w-4" aria-hidden="true" />
             </Link>
-            {
-              !isArchived && (
-                <Link
-                  href={`/news-media/${article.slug}?preview=true`}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`Preview ${article.title}`}
-                  title="Preview"
-                  className={iconButtonClassName}
-                >
-                  <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                </Link>
-              )
-            }
+            {!isArchived && (
+              <Link
+                href={`/news-media/${article.slug}?preview=true`}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Preview ${article.title}`}
+                title="Preview"
+                className={iconButtonClassName}
+              >
+                <ExternalLink className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            )}
             {isArchived ? (
               <>
                 <button
@@ -190,7 +186,10 @@ export function getNewsMediaColumns({
                   className={iconButtonClassName}
                 >
                   {isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    <Loader2
+                      className="h-4 w-4 animate-spin"
+                      aria-hidden="true"
+                    />
                   ) : (
                     <Undo2 className="h-4 w-4" aria-hidden="true" />
                   )}
@@ -204,7 +203,10 @@ export function getNewsMediaColumns({
                   className={iconButtonClassName}
                 >
                   {isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    <Loader2
+                      className="h-4 w-4 animate-spin"
+                      aria-hidden="true"
+                    />
                   ) : (
                     <Trash2 className="h-4 w-4" aria-hidden="true" />
                   )}
@@ -220,7 +222,10 @@ export function getNewsMediaColumns({
                 className={iconButtonClassName}
               >
                 {isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  <Loader2
+                    className="h-4 w-4 animate-spin"
+                    aria-hidden="true"
+                  />
                 ) : (
                   <Archive className="h-4 w-4" aria-hidden="true" />
                 )}

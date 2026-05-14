@@ -1,7 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Archive, ExternalLink, Loader2, Pencil, Trash2, Undo2 } from "lucide-react";
+import {
+  Archive,
+  ExternalLink,
+  Loader2,
+  Pencil,
+  Sparkle,
+  Sparkles,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
   getNewsStatusClassName,
@@ -16,11 +25,12 @@ type NewsMediaColumnsOptions = {
   pendingAction:
     | {
         postId: string;
-        type: "archive" | "delete" | "restore";
+        type: "archive" | "delete" | "feature" | "restore";
       }
     | null;
   onArchive: (article: NewsArticle) => void;
   onDelete: (article: NewsArticle) => void;
+  onToggleFeatured: (article: NewsArticle) => void;
   onRestore: (article: NewsArticle) => void;
 };
 
@@ -28,6 +38,7 @@ export function getNewsMediaColumns({
   pendingAction,
   onArchive,
   onDelete,
+  onToggleFeatured,
   onRestore,
 }: NewsMediaColumnsOptions): ColumnDef<NewsArticle>[] {
   return [
@@ -53,6 +64,55 @@ export function getNewsMediaColumns({
         </p>
       ),
       header: "Excerpt",
+    },
+    {
+      accessorKey: "isFeatured",
+      cell: ({ row }) => {
+        const article = row.original;
+        const isPending =
+          pendingAction?.postId === article.id &&
+          pendingAction.type === "feature";
+        const isFeatureEligible = article.status === "published";
+
+        return (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              disabled={!isFeatureEligible || isPending}
+              aria-label={
+                article.isFeatured
+                  ? `Clear featured post for ${article.title}`
+                  : `Feature ${article.title}`
+              }
+              aria-pressed={article.isFeatured}
+              title={
+                isFeatureEligible
+                  ? article.isFeatured
+                    ? "Featured post"
+                    : "Set as featured post"
+                  : "Only published posts can be featured"
+              }
+              onClick={() => onToggleFeatured(article)}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] disabled:cursor-not-allowed ${
+                article.isFeatured
+                  ? "border-[var(--border-orange)] bg-[var(--brand-pale)] text-[var(--brand)] shadow-[0_0_16px_rgba(245,166,35,0.35)]"
+                  : "border-[var(--border-light)] bg-[var(--bg-elevated)] text-[var(--text-faint)] hover:border-[var(--border-orange)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] disabled:hover:border-[var(--border-light)] disabled:hover:bg-[var(--bg-elevated)] disabled:hover:text-[var(--text-faint)]"
+              } ${isPending ? "opacity-80" : ""}`}
+            >
+              {isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : article.isFeatured ? (
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Sparkle className="h-4 w-4" aria-hidden="true" />
+              )}
+            </button>
+          </div>
+        );
+      },
+      enableSorting: false,
+      header: "Featured",
+      id: "featured",
     },
     {
       accessorKey: "status",
@@ -81,9 +141,11 @@ export function getNewsMediaColumns({
     {
       accessorKey: "views",
       cell: ({ getValue }) => (
-        <span className="text-sm font-medium text-[var(--text-secondary)]">
-          {getValue<number>().toLocaleString()}
-        </span>
+        <div className="text-center">
+          <span className="text-sm font-medium text-[var(--text-secondary)]">
+            {getValue<number>().toLocaleString()}
+          </span>
+        </div>
       ),
       header: "Views",
     },

@@ -75,6 +75,7 @@ export type NewsPostCategoryDeleteResult = {
 type NewsPostRecord = {
   featured_image_path: string | null;
   id: string;
+  is_featured: boolean;
   published_at: string | null;
   status: NewsArticleStatus;
 };
@@ -364,7 +365,7 @@ async function getNewsPostRecord(postId: string) {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("news_posts")
-    .select("id, status, published_at, featured_image_path")
+    .select("id, status, published_at, featured_image_path, is_featured")
     .eq("id", postId)
     .maybeSingle();
 
@@ -694,6 +695,10 @@ export async function updateNewsPost(
         excerpt: validation.payload.excerpt,
         featured_image_path:
           uploadedImagePath ?? existingPost.featured_image_path,
+        is_featured:
+          validation.payload.status === "published"
+            ? existingPost.is_featured
+            : false,
         publish_date: validation.payload.publishDate,
         published_at: nextPublishedAt,
         slug: validation.payload.slug,
@@ -1037,6 +1042,7 @@ export async function archiveNewsPost(
     const { error } = await admin
       .from("news_posts")
       .update({
+        is_featured: false,
         status: "archived",
         updated_by: userId,
       })
@@ -1102,6 +1108,7 @@ export async function restoreNewsPost(
     const { error } = await admin
       .from("news_posts")
       .update({
+        is_featured: false,
         status: "draft",
         updated_by: userId,
       })
@@ -1247,6 +1254,7 @@ export async function unpublishNewsPost(
     const { error } = await admin
       .from("news_posts")
       .update({
+        is_featured: false,
         published_at: existingPost.published_at,
         status: "draft",
         updated_by: userId,
@@ -1369,6 +1377,93 @@ export async function permanentlyDeleteNewsPost(
           : error instanceof Error && error.message
             ? error.message
             : "The post could not be deleted.",
+      status: "error",
+    };
+  }
+}
+
+export async function toggleFeaturedNewsPost(
+  postId: string,
+): Promise<NewsPostMutationResult> {
+  if (!postId.trim()) {
+    return {
+      message: "Invalid post selection.",
+      status: "error",
+    };
+  }
+
+  try {
+    const userId = await getAuthenticatedUserId();
+    const existingPost = await getNewsPostRecord(postId);
+
+    if (!existingPost) {
+      return {
+        message: "Post not found.",
+        status: "error",
+      };
+    }
+
+    const admin = createAdminClient();
+
+    if (existingPost.is_featured) {
+      const { error } = await admin
+        .from("news_posts")
+        .update({
+          is_featured: false,
+          updated_by: userId,
+        })
+        .eq("id", postId);
+
+      if (error) {
+        return {
+          message: error.message ?? "The featured post could not be cleared.",
+          status: "error",
+        };
+      }
+
+      revalidateNewsPaths(postId);
+
+      return {
+        message: "Featured post cleared.",
+        status: "success",
+      };
+    }
+
+    if (existingPost.status !== "published") {
+      return {
+        message: "Only published posts can be featured.",
+        status: "error",
+      };
+    }
+
+    const { error } = await admin.rpc("set_featured_news_post", {
+      actor_user_id: userId,
+      target_post_id: postId,
+    });
+
+    if (error) {
+      return {
+        message: error.message ?? "The featured post could not be updated.",
+        status: "error",
+      };
+    }
+
+    revalidateNewsPaths(postId);
+
+    return {
+      message: "Featured post updated.",
+      status: "success",
+    };
+  } catch (error) {
+    unstable_rethrow(error);
+
+    return {
+      message:
+        error instanceof Error && error.message === "Unauthorized"
+          ? "You must be signed in to manage the featured post."
+          : error instanceof Error && error.message
+            ? error.message
+            : "The featured post could not be updated.",
       status: "error",
     };
   }

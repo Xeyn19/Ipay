@@ -29,6 +29,7 @@ export type NewsPostRow = {
   body: JSONContent;
   status: NewsPostStatus;
   featured_image_path: string | null;
+  is_featured: boolean;
   publish_date: string;
   published_at: string | null;
   created_at: string;
@@ -56,7 +57,7 @@ export type NewsPostStatusCounts = {
 };
 
 export const newsPostSelect =
-  "id,title,slug,category_id,news_post_categories(name),excerpt,body,status,featured_image_path,publish_date,published_at,created_at,view_count";
+  "id,title,slug,category_id,news_post_categories(name),excerpt,body,status,featured_image_path,is_featured,publish_date,published_at,created_at,view_count";
 
 const newsPostSortColumnMap: Record<string, string> = {
   excerpt: "excerpt",
@@ -177,6 +178,7 @@ export function mapNewsPostRow(
     excerpt: row.excerpt,
     body: row.body,
     coverImage: getPublicImageUrl(supabase, row.featured_image_path),
+    isFeatured: row.is_featured,
     publishDate: row.publish_date,
     status: row.status,
     views: row.view_count ?? 0,
@@ -407,4 +409,25 @@ export async function fetchMostRecentPublishedNewsArticles(
   }
 
   return (data ?? []).map((row) => mapNewsPostRow(row as NewsPostRow, supabase));
+}
+
+export async function fetchFeaturedPublishedNewsArticle(
+  supabase: SupabaseClient,
+) {
+  const { data, error } = await supabase
+    .from("news_posts")
+    .select(newsPostSelect)
+    .eq("status", "published")
+    .eq("is_featured", true)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return mapNewsPostRow(data as NewsPostRow, supabase);
 }

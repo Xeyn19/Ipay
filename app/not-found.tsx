@@ -60,7 +60,7 @@ export default async function NotFound() {
             </h1>
 
             <p className="mt-5 max-w-sm text-base leading-relaxed text-white/65 sm:text-lg">
-              This page doesn't exist or may have moved. Let's get you back on
+              This page doesn&apos;t exist or may have moved. Let&apos;s get you back on
               track.
             </p>
 

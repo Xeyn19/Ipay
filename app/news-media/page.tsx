@@ -7,6 +7,7 @@ import { BackToTop } from "@/app/components/home/back-to-top";
 import { Footer } from "@/app/components/home/footer";
 import { Navbar } from "@/app/components/home/navbar";
 import {
+  fetchFeaturedPublishedNewsArticle,
   PUBLIC_NEWS_POSTS_PAGE_SIZE,
   fetchMostRecentPublishedNewsArticles,
   fetchMostViewedPublishedNewsArticles,
@@ -166,7 +167,8 @@ export default async function NewsMediaPage({ searchParams }: NewsMediaPageProps
     ? requestedCategoryId
     : undefined;
 
-  const [gridResult, mostViewedArticles, mostRecentArticles] = await Promise.all([
+  const [featuredArticle, gridResult, mostViewedArticles, mostRecentArticles] = await Promise.all([
+    fetchFeaturedPublishedNewsArticle(supabase),
     fetchPublishedNewsArticlesPage(supabase, {
       categoryId: activeCategoryId,
       page: requestedPage,
@@ -189,7 +191,6 @@ export default async function NewsMediaPage({ searchParams }: NewsMediaPageProps
           page: currentPage,
           pageSize: PUBLIC_NEWS_POSTS_PAGE_SIZE,
         });
-  const featuredArticle = mostRecentArticles[0] ?? postsPage.data[0] ?? null;
   const paginationItems = getPaginationItems(totalPages, currentPage);
   const [primaryMostViewed, ...secondaryMostViewed] = mostViewedArticles;
   const hasPosts = Boolean(featuredArticle) || postsPage.data.length > 0;

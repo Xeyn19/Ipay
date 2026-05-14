@@ -16,6 +16,7 @@ export type NewsArticle = {
   categoryName: string;
   excerpt: string;
   coverImage: string;
+  isFeatured: boolean;
   publishDate: string;
   status: NewsArticleStatus;
   views: number;
@@ -74,6 +75,7 @@ export const newsSeedArticles: NewsArticle[] = [
     excerpt:
       "A stronger operations flow for merchants that need faster visibility, cleaner reconciliation, and dependable collection channels across locations.",
     coverImage: "/img/main-hero.jpg",
+    isFeatured: false,
     publishDate: "2026-05-01",
     status: "published",
     views: 1840,
@@ -92,6 +94,7 @@ export const newsSeedArticles: NewsArticle[] = [
     excerpt:
       "A refined view of transaction timing, reporting signals, and settlement progress for teams that need stronger operational clarity.",
     coverImage: "/img/services-bg.jpg",
+    isFeatured: false,
     publishDate: "2026-04-24",
     status: "published",
     views: 1265,
@@ -110,6 +113,7 @@ export const newsSeedArticles: NewsArticle[] = [
     excerpt:
       "A continuing focus on structured payment flows, rollout readiness, and clearer partner communications for institutional and platform use cases.",
     coverImage: "/img/ipay-sol.jpg",
+    isFeatured: false,
     publishDate: "2026-04-15",
     status: "published",
     views: 930,
@@ -128,6 +132,7 @@ export const newsSeedArticles: NewsArticle[] = [
     excerpt:
       "A draft newsroom entry focused on merchant rollout messaging, payment acceptance clarity, and supporting launch materials.",
     coverImage: "/img/requestproposal.jpg",
+    isFeatured: false,
     publishDate: "2026-05-08",
     status: "draft",
     views: 0,
@@ -145,6 +150,7 @@ export const newsSeedArticles: NewsArticle[] = [
     excerpt:
       "An internal draft for a future public update covering visibility improvements, reporting guidance, and support readiness.",
     coverImage: "/img/report-recon.jpg",
+    isFeatured: false,
     publishDate: "2026-05-06",
     status: "draft",
     views: 0,
@@ -220,6 +226,7 @@ export function createEmptyNewsArticle(): NewsArticle {
     categoryName: "",
     excerpt: "",
     coverImage: "",
+    isFeatured: false,
     publishDate: "",
     status: "draft",
     views: 0,

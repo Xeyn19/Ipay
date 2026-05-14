@@ -14,6 +14,7 @@ import {
   archiveNewsPost,
   permanentlyDeleteNewsPost,
   restoreNewsPost,
+  toggleFeaturedNewsPost,
 } from "@/app/dashboard/news-media/actions";
 import { ConfirmationModal } from "@/app/components/dashboard/confirmation-modal";
 import type { NewsArticle, NewsArticleStatus } from "@/app/lib/news-media";
@@ -26,10 +27,13 @@ const searchButtonClassName =
 const columnClassNames: Record<string, string> = {
   actions: "w-[10.75rem]",
   excerpt: "w-[26rem]",
+  featured: "w-[5.5rem]",
   status: "w-[7.5rem]",
   title: "w-[18rem]",
   views: "w-[5.25rem]",
 };
+
+const centeredHeaderColumnIds = new Set(["featured", "status", "views"]);
 
 function FilterPill({
   count,
@@ -128,7 +132,7 @@ export function NewsMediaManageTable({
   const [, startTransition] = useTransition();
   const [pendingPostAction, setPendingPostAction] = useState<{
     postId: string;
-    type: "archive" | "delete" | "restore";
+    type: "archive" | "delete" | "feature" | "restore";
   } | null>(null);
   const [deleteConfirmationPost, setDeleteConfirmationPost] =
     useState<NewsArticle | null>(null);
@@ -136,6 +140,7 @@ export function NewsMediaManageTable({
     pendingAction: pendingPostAction,
     onArchive: handleArchivePost,
     onDelete: handleDeletePost,
+    onToggleFeatured: handleToggleFeaturedPost,
     onRestore: handleRestorePost,
   });
   const table = useReactTable({
@@ -157,7 +162,9 @@ export function NewsMediaManageTable({
   const pageCount = Math.max(table.getPageCount(), 1);
   const rows = table.getRowModel().rows;
   const emptyStateTitle =
-    activeFilter === "archived" ? "No archived posts yet" : "No posts match the current filters";
+    activeFilter === "archived"
+      ? "No archived posts yet"
+      : "No posts match the current filters";
   const emptyStateDescription =
     activeFilter === "archived"
       ? "Archived posts will appear here once items are moved out of the active newsroom."
@@ -169,10 +176,15 @@ export function NewsMediaManageTable({
 
   function runPostAction(
     article: NewsArticle,
-    type: "archive" | "delete" | "restore",
-    action: (postId: string) => Promise<{ message: string; status: "error" | "success" }>,
+    type: "archive" | "delete" | "feature" | "restore",
+    action: (
+      postId: string,
+    ) => Promise<{ message: string; status: "error" | "success" }>,
     options?: {
-      onFinish?: (result: { message: string; status: "error" | "success" }) => void;
+      onFinish?: (result: {
+        message: string;
+        status: "error" | "success";
+      }) => void;
     },
   ) {
     setPendingPostAction({
@@ -197,9 +209,11 @@ export function NewsMediaManageTable({
           toast.error(
             type === "archive"
               ? "The post could not be archived."
-              : type === "restore"
-                ? "The post could not be restored."
-                : "The post could not be deleted.",
+              : type === "feature"
+                ? "The featured post could not be updated."
+                : type === "restore"
+                  ? "The post could not be restored."
+                  : "The post could not be deleted.",
           );
         } finally {
           setPendingPostAction((current) =>
@@ -218,6 +232,10 @@ export function NewsMediaManageTable({
     runPostAction(article, "restore", restoreNewsPost);
   }
 
+  function handleToggleFeaturedPost(article: NewsArticle) {
+    runPostAction(article, "feature", toggleFeaturedNewsPost);
+  }
+
   function handleDeletePost(article: NewsArticle) {
     setDeleteConfirmationPost(article);
   }
@@ -227,16 +245,11 @@ export function NewsMediaManageTable({
       return;
     }
 
-    runPostAction(
-      deleteConfirmationPost,
-      "delete",
-      permanentlyDeleteNewsPost,
-      {
-        onFinish: () => {
-          setDeleteConfirmationPost(null);
-        },
+    runPostAction(deleteConfirmationPost, "delete", permanentlyDeleteNewsPost, {
+      onFinish: () => {
+        setDeleteConfirmationPost(null);
       },
-    );
+    });
   }
 
   return (
@@ -310,7 +323,7 @@ export function NewsMediaManageTable({
                     {table.getHeaderGroups().map((headerGroup) => (
                       <tr
                         key={headerGroup.id}
-                        className="text-left text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]"
+                        className="text-left text-[0.68rem] font-semibold tracking-[0.08em] text-[var(--text-faint)]"
                       >
                         {headerGroup.headers.map((header) => {
                           const columnId = header.column.id;
@@ -324,15 +337,25 @@ export function NewsMediaManageTable({
                             <th
                               key={header.id}
                               className={`${columnClassNames[columnId] ?? ""} px-3 py-3 ${
-                                columnId === "actions" ? "text-center" : ""
+                                columnId === "actions" ||
+                                centeredHeaderColumnIds.has(columnId)
+                                  ? "text-center"
+                                  : ""
                               }`}
                             >
                               {header.isPlaceholder ? null : header.column.getCanSort() ? (
                                 <button
                                   type="button"
                                   onClick={header.column.getToggleSortingHandler()}
-                                  aria-label={getSortLabel(sortState, headerText)}
-                                  className="inline-flex max-w-full items-center gap-1.5 text-left transition-colors hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)]"
+                                  aria-label={getSortLabel(
+                                    sortState,
+                                    headerText,
+                                  )}
+                                  className={`inline-flex max-w-full items-center gap-1.5 transition-colors hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elevated)] ${
+                                    centeredHeaderColumnIds.has(columnId)
+                                      ? "justify-center text-center"
+                                      : "text-left"
+                                  }`}
                                 >
                                   <span className="truncate">
                                     {flexRender(
@@ -345,7 +368,10 @@ export function NewsMediaManageTable({
                               ) : (
                                 <span
                                   className={`block ${
-                                    columnId === "actions" ? "text-center" : "truncate"
+                                    columnId === "actions" ||
+                                    centeredHeaderColumnIds.has(columnId)
+                                      ? "text-center"
+                                      : "truncate"
                                   }`}
                                 >
                                   {flexRender(

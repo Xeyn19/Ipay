@@ -11,15 +11,15 @@ import {
 } from "@/app/lib/news-media";
 import { createAdminClient } from "@/app/lib/supabase-admin";
 import { createClient } from "@/app/lib/supabase-server";
+import {
+  NEWS_MEDIA_FEATURED_IMAGE_REQUIRED_MESSAGE,
+  NEWS_MEDIA_FEATURED_IMAGE_TOO_LARGE_MESSAGE,
+  getNewsMediaImageUploadErrorMessage,
+  getNewsMediaImageExtension,
+  validateNewsMediaImageFile,
+} from "./image-upload-policy";
 
 const NEWS_MEDIA_BUCKET = "news-media";
-const MAX_FEATURED_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
-const FEATURED_IMAGE_ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "webp"] as const;
-const FEATURED_IMAGE_ALLOWED_MIME_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-] as const;
 
 type NewsPostFieldErrorKey =
   | "body"
@@ -76,6 +76,7 @@ export type NewsPostCategoryDeleteResult = {
 type NewsPostRecord = {
   featured_image_path: string | null;
   id: string;
+  is_featured: boolean;
   published_at: string | null;
   status: NewsArticleStatus;
 };
@@ -159,30 +160,6 @@ function parseBody(value: string) {
   }
 }
 
-function getImageExtension(filename: string, mimeType: string) {
-  const segments = filename.split(".");
-  const fromFilename =
-    segments.length > 1 ? segments.at(-1)?.trim().toLowerCase() ?? "" : "";
-
-  if (fromFilename) {
-    return fromFilename;
-  }
-
-  if (mimeType === "image/jpeg") {
-    return "jpg";
-  }
-
-  if (mimeType === "image/png") {
-    return "png";
-  }
-
-  if (mimeType === "image/webp") {
-    return "webp";
-  }
-
-  return "";
-}
-
 function getImageFile(formData: FormData, key: string) {
   const value = formData.get(key);
 
@@ -203,38 +180,16 @@ function validateImageFile(
     sizeMessage?: string;
   },
 ) {
-  if (!file) {
-    return null;
-  }
-
-  const mimeType = file.type.trim().toLowerCase();
-  const extension = getImageExtension(file.name, mimeType);
-
-  if (!FEATURED_IMAGE_ALLOWED_EXTENSIONS.includes(
-    extension as (typeof FEATURED_IMAGE_ALLOWED_EXTENSIONS)[number],
-  )) {
-    return "Upload a JPG, PNG, or WEBP image.";
-  }
-
-  if (
-    mimeType &&
-    !FEATURED_IMAGE_ALLOWED_MIME_TYPES.includes(
-      mimeType as (typeof FEATURED_IMAGE_ALLOWED_MIME_TYPES)[number],
-    )
-  ) {
-    return "Upload a JPG, PNG, or WEBP image.";
-  }
-
-  if (file.size > MAX_FEATURED_IMAGE_SIZE_BYTES) {
-    return options?.sizeMessage ?? "Image must be 5 MB or smaller.";
-  }
-
-  return null;
+  return validateNewsMediaImageFile(file, options);
 }
 
 function validateFeaturedImage(file: File | null) {
+  if (!file) {
+    return NEWS_MEDIA_FEATURED_IMAGE_REQUIRED_MESSAGE;
+  }
+
   return validateImageFile(file, {
-    sizeMessage: "Featured image must be 5 MB or smaller.",
+    sizeMessage: NEWS_MEDIA_FEATURED_IMAGE_TOO_LARGE_MESSAGE,
   });
 }
 
@@ -415,7 +370,7 @@ async function getNewsPostRecord(postId: string) {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("news_posts")
-    .select("id, status, published_at, featured_image_path")
+    .select("id, status, published_at, featured_image_path, is_featured")
     .eq("id", postId)
     .maybeSingle();
 
@@ -432,7 +387,7 @@ async function uploadFeaturedImage(
   file: File,
 ) {
   const mimeType = file.type.trim().toLowerCase() || "application/octet-stream";
-  const extension = getImageExtension(file.name, mimeType);
+  const extension = getNewsMediaImageExtension(file.name, mimeType);
   const safeSlug = buildNewsSlug(slug) || "news-post";
   const path = `posts/${postId}/${Date.now()}-${safeSlug}.${extension}`;
   const admin = createAdminClient();
@@ -465,7 +420,7 @@ function getPublicNewsMediaUrl(path: string) {
 
 async function uploadNewsBodyImageFile(userId: string, file: File) {
   const mimeType = file.type.trim().toLowerCase() || "application/octet-stream";
-  const extension = getImageExtension(file.name, mimeType);
+  const extension = getNewsMediaImageExtension(file.name, mimeType);
   const safeName = buildNewsSlug(file.name.replace(/\.[^.]+$/, "")) || "image";
   const path = `body/${userId}/${Date.now()}-${safeName}.${extension}`;
   const admin = createAdminClient();
@@ -539,12 +494,7 @@ export async function uploadNewsBodyImage(
     unstable_rethrow(error);
 
     return {
-      message:
-        error instanceof Error && error.message === "Unauthorized"
-          ? "You must be signed in to upload newsroom images."
-          : error instanceof Error && error.message
-            ? error.message
-            : "The image could not be uploaded.",
+      message: getNewsMediaImageUploadErrorMessage(error),
       status: "error",
     };
   }
@@ -680,7 +630,12 @@ export async function updateNewsPost(
       allowArchivedStatus: existingPost.status === "archived",
     });
     const featuredImage = getFeaturedImageFile(formData);
-    const featuredImageError = validateFeaturedImage(featuredImage);
+    const featuredImageError =
+      featuredImage || existingPost.featured_image_path
+        ? validateImageFile(featuredImage, {
+            sizeMessage: NEWS_MEDIA_FEATURED_IMAGE_TOO_LARGE_MESSAGE,
+          })
+        : NEWS_MEDIA_FEATURED_IMAGE_REQUIRED_MESSAGE;
 
     if (featuredImageError) {
       return buildActionState({
@@ -750,6 +705,10 @@ export async function updateNewsPost(
         excerpt: validation.payload.excerpt,
         featured_image_path:
           uploadedImagePath ?? existingPost.featured_image_path,
+        is_featured:
+          validation.payload.status === "published"
+            ? existingPost.is_featured
+            : false,
         publish_date: validation.payload.publishDate,
         published_at: nextPublishedAt,
         slug: validation.payload.slug,
@@ -1093,6 +1052,7 @@ export async function archiveNewsPost(
     const { error } = await admin
       .from("news_posts")
       .update({
+        is_featured: false,
         status: "archived",
         updated_by: userId,
       })
@@ -1158,6 +1118,7 @@ export async function restoreNewsPost(
     const { error } = await admin
       .from("news_posts")
       .update({
+        is_featured: false,
         status: "draft",
         updated_by: userId,
       })
@@ -1303,6 +1264,7 @@ export async function unpublishNewsPost(
     const { error } = await admin
       .from("news_posts")
       .update({
+        is_featured: false,
         published_at: existingPost.published_at,
         status: "draft",
         updated_by: userId,
@@ -1425,6 +1387,93 @@ export async function permanentlyDeleteNewsPost(
           : error instanceof Error && error.message
             ? error.message
             : "The post could not be deleted.",
+      status: "error",
+    };
+  }
+}
+
+export async function toggleFeaturedNewsPost(
+  postId: string,
+): Promise<NewsPostMutationResult> {
+  if (!postId.trim()) {
+    return {
+      message: "Invalid post selection.",
+      status: "error",
+    };
+  }
+
+  try {
+    const userId = await getAuthenticatedUserId();
+    const existingPost = await getNewsPostRecord(postId);
+
+    if (!existingPost) {
+      return {
+        message: "Post not found.",
+        status: "error",
+      };
+    }
+
+    const admin = createAdminClient();
+
+    if (existingPost.is_featured) {
+      const { error } = await admin
+        .from("news_posts")
+        .update({
+          is_featured: false,
+          updated_by: userId,
+        })
+        .eq("id", postId);
+
+      if (error) {
+        return {
+          message: error.message ?? "The featured post could not be cleared.",
+          status: "error",
+        };
+      }
+
+      revalidateNewsPaths(postId);
+
+      return {
+        message: "Featured post cleared.",
+        status: "success",
+      };
+    }
+
+    if (existingPost.status !== "published") {
+      return {
+        message: "Only published posts can be featured.",
+        status: "error",
+      };
+    }
+
+    const { error } = await admin.rpc("set_featured_news_post", {
+      actor_user_id: userId,
+      target_post_id: postId,
+    });
+
+    if (error) {
+      return {
+        message: error.message ?? "The featured post could not be updated.",
+        status: "error",
+      };
+    }
+
+    revalidateNewsPaths(postId);
+
+    return {
+      message: "Featured post updated.",
+      status: "success",
+    };
+  } catch (error) {
+    unstable_rethrow(error);
+
+    return {
+      message:
+        error instanceof Error && error.message === "Unauthorized"
+          ? "You must be signed in to manage the featured post."
+          : error instanceof Error && error.message
+            ? error.message
+            : "The featured post could not be updated.",
       status: "error",
     };
   }

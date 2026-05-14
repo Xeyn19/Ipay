@@ -4,7 +4,7 @@ import { supabaseProjectHost } from "./app/lib/supabase-config";
 const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
-      bodySizeLimit: "6mb",
+      bodySizeLimit: "8mb",
     },
   },
   serverExternalPackages: ["nodemailer"],

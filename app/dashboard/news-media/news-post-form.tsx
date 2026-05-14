@@ -25,6 +25,11 @@ import {
   type NewsArticle,
   type NewsPostCategory,
 } from "@/app/lib/news-media";
+import {
+  NEWS_MEDIA_FEATURED_IMAGE_TOO_LARGE_MESSAGE,
+  NEWS_MEDIA_IMAGE_ALLOWED_MIME_TYPES,
+  validateNewsMediaImageFile,
+} from "./image-upload-policy";
 import { dashboardInputClassName } from "./news-modal";
 import { NewsBodyEditor } from "./news-body-editor";
 import { NewsCategoryPanel } from "./news-category-panel";
@@ -80,6 +85,10 @@ export function NewsPostForm({
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImageName, setSelectedImageName] = useState("");
   const [imagePreviewSrc, setImagePreviewSrc] = useState(initialArticle.coverImage);
+  const [featuredImageErrorOverride, setFeaturedImageErrorOverride] = useState<{
+    message: string;
+    submittedAt: number | null;
+  } | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const previewObjectUrlRef = useRef<string | null>(null);
   const imageModalTitleId = useId();
@@ -99,6 +108,11 @@ export function NewsPostForm({
   const imageModalDate = article.publishDate
     ? formatNewsDate(article.publishDate)
     : "No publish date selected";
+  const featuredImageError =
+    featuredImageErrorOverride &&
+    featuredImageErrorOverride.submittedAt === formState.submittedAt
+      ? featuredImageErrorOverride.message
+      : fieldErrors.featuredImage;
   const saveButtonLabel =
     mode === "create"
       ? isPending
@@ -125,6 +139,13 @@ export function NewsPostForm({
       toast.error(formState.message);
     }
   }, [formState.message, formState.status, formState.submittedAt, mode, router]);
+
+  function setFeaturedImageError(message: string) {
+    setFeaturedImageErrorOverride({
+      message,
+      submittedAt: formState.submittedAt,
+    });
+  }
 
   function clearPreviewObjectUrl() {
     if (!previewObjectUrlRef.current) {
@@ -250,6 +271,21 @@ export function NewsPostForm({
       clearPreviewObjectUrl();
       setSelectedImageName("");
       setImagePreviewSrc(initialArticle.coverImage);
+      setFeaturedImageError("");
+      return;
+    }
+
+    const validationError = validateNewsMediaImageFile(selectedFile, {
+      sizeMessage: NEWS_MEDIA_FEATURED_IMAGE_TOO_LARGE_MESSAGE,
+    });
+
+    if (validationError) {
+      clearPreviewObjectUrl();
+      event.target.value = "";
+      setSelectedImageName("");
+      setImagePreviewSrc(initialArticle.coverImage);
+      setFeaturedImageError(validationError);
+      toast.error(validationError);
       return;
     }
 
@@ -257,6 +293,7 @@ export function NewsPostForm({
 
     clearPreviewObjectUrl();
     previewObjectUrlRef.current = nextPreviewUrl;
+    setFeaturedImageError("");
     setSelectedImageName(selectedFile.name);
     setImagePreviewSrc(nextPreviewUrl);
   }
@@ -295,7 +332,10 @@ export function NewsPostForm({
 
   return (
     <>
-      <form action={formAction} className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)]">
+      <form
+        action={formAction}
+        className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)]"
+      >
         <input type="hidden" name="status" value={article.status} />
         <textarea
           hidden
@@ -475,11 +515,18 @@ export function NewsPostForm({
                 ref={imageInputRef}
                 name="featuredImage"
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept={NEWS_MEDIA_IMAGE_ALLOWED_MIME_TYPES.join(",")}
+                aria-invalid={featuredImageError ? true : undefined}
                 onChange={handleImageChange}
                 className="sr-only"
               />
-              <div className="relative min-h-40 overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-subtle)] transition-colors group-hover:border-[var(--border-orange)] group-focus-within:border-[var(--border-orange)]">
+              <div
+                className={`relative min-h-40 overflow-hidden rounded-2xl border bg-[var(--bg-subtle)] transition-colors group-hover:border-[var(--border-orange)] group-focus-within:border-[var(--border-orange)] ${
+                  featuredImageError
+                    ? "border-[#dc2626]"
+                    : "border-[var(--border-light)]"
+                }`}
+              >
                 {hasImagePreview ? (
                   <>
                     <Image
@@ -539,7 +586,7 @@ export function NewsPostForm({
                 ) : null}
               </div>
             </label>
-            <FieldError message={fieldErrors.featuredImage} />
+            <FieldError message={featuredImageError} />
           </section>
 
           <section className="flex items-center gap-3">

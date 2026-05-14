@@ -4,7 +4,11 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import type { Editor } from "@tiptap/react";
 import toast from "react-hot-toast";
 import { uploadNewsBodyImage } from "@/app/dashboard/news-media/actions";
-import { EDITOR_IMAGE_ALLOWED_MIME_TYPES } from "../extensions";
+import {
+  NEWS_MEDIA_IMAGE_UPLOAD_FAILURE_MESSAGE,
+  getNewsMediaImageUploadErrorMessage,
+  validateNewsMediaImageFile,
+} from "../../image-upload-policy";
 import type { ImageInsertTarget, SelectedImageState } from "../types";
 import { getImageInsertTarget, insertImageNode } from "../utils";
 
@@ -27,15 +31,37 @@ export function useImageUploadState({
       const result = await uploadNewsBodyImage(formData);
 
       if (result.status === "error" || !result.url) {
-        toast.error(result.message || "The image could not be uploaded.");
+        toast.error(result.message || NEWS_MEDIA_IMAGE_UPLOAD_FAILURE_MESSAGE);
         return null;
       }
 
       return result.url;
-    } catch {
-      toast.error("The image could not be uploaded.");
+    } catch (error) {
+      toast.error(getNewsMediaImageUploadErrorMessage(error));
       return null;
     }
+  }
+
+  function getValidImageFiles(files: File[]) {
+    const validFiles: File[] = [];
+    const validationMessages = new Set<string>();
+
+    for (const file of files) {
+      const validationError = validateNewsMediaImageFile(file);
+
+      if (validationError) {
+        validationMessages.add(validationError);
+        continue;
+      }
+
+      validFiles.push(file);
+    }
+
+    for (const message of validationMessages) {
+      toast.error(message);
+    }
+
+    return validFiles;
   }
 
   async function uploadAndInsertImages(
@@ -43,11 +69,7 @@ export function useImageUploadState({
     files: File[],
     target?: ImageInsertTarget,
   ) {
-    const imageFiles = files.filter((file) =>
-      EDITOR_IMAGE_ALLOWED_MIME_TYPES.includes(
-        file.type as (typeof EDITOR_IMAGE_ALLOWED_MIME_TYPES)[number],
-      ),
-    );
+    const imageFiles = getValidImageFiles(files);
 
     if (imageFiles.length === 0) {
       return;

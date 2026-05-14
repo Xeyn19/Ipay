@@ -11,15 +11,14 @@ import {
 } from "@/app/lib/news-media";
 import { createAdminClient } from "@/app/lib/supabase-admin";
 import { createClient } from "@/app/lib/supabase-server";
+import {
+  NEWS_MEDIA_FEATURED_IMAGE_TOO_LARGE_MESSAGE,
+  getNewsMediaImageUploadErrorMessage,
+  getNewsMediaImageExtension,
+  validateNewsMediaImageFile,
+} from "./image-upload-policy";
 
 const NEWS_MEDIA_BUCKET = "news-media";
-const MAX_FEATURED_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
-const FEATURED_IMAGE_ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "webp"] as const;
-const FEATURED_IMAGE_ALLOWED_MIME_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-] as const;
 
 type NewsPostFieldErrorKey =
   | "body"
@@ -159,30 +158,6 @@ function parseBody(value: string) {
   }
 }
 
-function getImageExtension(filename: string, mimeType: string) {
-  const segments = filename.split(".");
-  const fromFilename =
-    segments.length > 1 ? segments.at(-1)?.trim().toLowerCase() ?? "" : "";
-
-  if (fromFilename) {
-    return fromFilename;
-  }
-
-  if (mimeType === "image/jpeg") {
-    return "jpg";
-  }
-
-  if (mimeType === "image/png") {
-    return "png";
-  }
-
-  if (mimeType === "image/webp") {
-    return "webp";
-  }
-
-  return "";
-}
-
 function getImageFile(formData: FormData, key: string) {
   const value = formData.get(key);
 
@@ -203,38 +178,12 @@ function validateImageFile(
     sizeMessage?: string;
   },
 ) {
-  if (!file) {
-    return null;
-  }
-
-  const mimeType = file.type.trim().toLowerCase();
-  const extension = getImageExtension(file.name, mimeType);
-
-  if (!FEATURED_IMAGE_ALLOWED_EXTENSIONS.includes(
-    extension as (typeof FEATURED_IMAGE_ALLOWED_EXTENSIONS)[number],
-  )) {
-    return "Upload a JPG, PNG, or WEBP image.";
-  }
-
-  if (
-    mimeType &&
-    !FEATURED_IMAGE_ALLOWED_MIME_TYPES.includes(
-      mimeType as (typeof FEATURED_IMAGE_ALLOWED_MIME_TYPES)[number],
-    )
-  ) {
-    return "Upload a JPG, PNG, or WEBP image.";
-  }
-
-  if (file.size > MAX_FEATURED_IMAGE_SIZE_BYTES) {
-    return options?.sizeMessage ?? "Image must be 5 MB or smaller.";
-  }
-
-  return null;
+  return validateNewsMediaImageFile(file, options);
 }
 
 function validateFeaturedImage(file: File | null) {
   return validateImageFile(file, {
-    sizeMessage: "Featured image must be 5 MB or smaller.",
+    sizeMessage: NEWS_MEDIA_FEATURED_IMAGE_TOO_LARGE_MESSAGE,
   });
 }
 
@@ -432,7 +381,7 @@ async function uploadFeaturedImage(
   file: File,
 ) {
   const mimeType = file.type.trim().toLowerCase() || "application/octet-stream";
-  const extension = getImageExtension(file.name, mimeType);
+  const extension = getNewsMediaImageExtension(file.name, mimeType);
   const safeSlug = buildNewsSlug(slug) || "news-post";
   const path = `posts/${postId}/${Date.now()}-${safeSlug}.${extension}`;
   const admin = createAdminClient();
@@ -465,7 +414,7 @@ function getPublicNewsMediaUrl(path: string) {
 
 async function uploadNewsBodyImageFile(userId: string, file: File) {
   const mimeType = file.type.trim().toLowerCase() || "application/octet-stream";
-  const extension = getImageExtension(file.name, mimeType);
+  const extension = getNewsMediaImageExtension(file.name, mimeType);
   const safeName = buildNewsSlug(file.name.replace(/\.[^.]+$/, "")) || "image";
   const path = `body/${userId}/${Date.now()}-${safeName}.${extension}`;
   const admin = createAdminClient();
@@ -539,12 +488,7 @@ export async function uploadNewsBodyImage(
     unstable_rethrow(error);
 
     return {
-      message:
-        error instanceof Error && error.message === "Unauthorized"
-          ? "You must be signed in to upload newsroom images."
-          : error instanceof Error && error.message
-            ? error.message
-            : "The image could not be uploaded.",
+      message: getNewsMediaImageUploadErrorMessage(error),
       status: "error",
     };
   }

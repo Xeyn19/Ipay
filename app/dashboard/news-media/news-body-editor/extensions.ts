@@ -24,6 +24,7 @@ import Typography from "@tiptap/extension-typography";
 import StarterKit from "@tiptap/starter-kit";
 import type { Editor } from "@tiptap/react";
 import { NEWS_TABLE_OF_CONTENTS_NODE_NAME } from "@/app/lib/news-body-table-of-contents";
+import { NEWS_MEDIA_IMAGE_ALLOWED_MIME_TYPES } from "../image-upload-policy";
 import { NewsBodyImage } from "../news-body-image-extension";
 import { NewsTableOfContents } from "../news-body-table-of-contents-extension";
 import {
@@ -35,11 +36,7 @@ import {
   tableCellAttributeConfig,
 } from "./utils";
 
-export const EDITOR_IMAGE_ALLOWED_MIME_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-] as const;
+export const EDITOR_IMAGE_ALLOWED_MIME_TYPES = NEWS_MEDIA_IMAGE_ALLOWED_MIME_TYPES;
 
 export const TABLE_BUBBLE_MENU_PLUGIN_KEY = "newsBodyEditorTableBubbleMenu";
 export const IMAGE_BUBBLE_MENU_PLUGIN_KEY = "newsBodyEditorImageBubbleMenu";

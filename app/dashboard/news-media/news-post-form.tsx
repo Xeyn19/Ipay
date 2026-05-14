@@ -25,6 +25,11 @@ import {
   type NewsArticle,
   type NewsPostCategory,
 } from "@/app/lib/news-media";
+import {
+  NEWS_MEDIA_FEATURED_IMAGE_TOO_LARGE_MESSAGE,
+  NEWS_MEDIA_IMAGE_ALLOWED_MIME_TYPES,
+  validateNewsMediaImageFile,
+} from "./image-upload-policy";
 import { dashboardInputClassName } from "./news-modal";
 import { NewsBodyEditor } from "./news-body-editor";
 import { NewsCategoryPanel } from "./news-category-panel";
@@ -80,6 +85,10 @@ export function NewsPostForm({
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImageName, setSelectedImageName] = useState("");
   const [imagePreviewSrc, setImagePreviewSrc] = useState(initialArticle.coverImage);
+  const [featuredImageErrorOverride, setFeaturedImageErrorOverride] = useState<{
+    message: string;
+    submittedAt: number | null;
+  } | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const previewObjectUrlRef = useRef<string | null>(null);
   const imageModalTitleId = useId();
@@ -99,6 +108,11 @@ export function NewsPostForm({
   const imageModalDate = article.publishDate
     ? formatNewsDate(article.publishDate)
     : "No publish date selected";
+  const featuredImageError =
+    featuredImageErrorOverride &&
+    featuredImageErrorOverride.submittedAt === formState.submittedAt
+      ? featuredImageErrorOverride.message
+      : fieldErrors.featuredImage;
   const saveButtonLabel =
     mode === "create"
       ? isPending
@@ -250,6 +264,27 @@ export function NewsPostForm({
       clearPreviewObjectUrl();
       setSelectedImageName("");
       setImagePreviewSrc(initialArticle.coverImage);
+      setFeaturedImageErrorOverride({
+        message: "",
+        submittedAt: formState.submittedAt,
+      });
+      return;
+    }
+
+    const validationError = validateNewsMediaImageFile(selectedFile, {
+      sizeMessage: NEWS_MEDIA_FEATURED_IMAGE_TOO_LARGE_MESSAGE,
+    });
+
+    if (validationError) {
+      clearPreviewObjectUrl();
+      event.target.value = "";
+      setSelectedImageName("");
+      setImagePreviewSrc(initialArticle.coverImage);
+      setFeaturedImageErrorOverride({
+        message: validationError,
+        submittedAt: formState.submittedAt,
+      });
+      toast.error(validationError);
       return;
     }
 
@@ -257,6 +292,10 @@ export function NewsPostForm({
 
     clearPreviewObjectUrl();
     previewObjectUrlRef.current = nextPreviewUrl;
+    setFeaturedImageErrorOverride({
+      message: "",
+      submittedAt: formState.submittedAt,
+    });
     setSelectedImageName(selectedFile.name);
     setImagePreviewSrc(nextPreviewUrl);
   }
@@ -475,7 +514,7 @@ export function NewsPostForm({
                 ref={imageInputRef}
                 name="featuredImage"
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept={NEWS_MEDIA_IMAGE_ALLOWED_MIME_TYPES.join(",")}
                 onChange={handleImageChange}
                 className="sr-only"
               />
@@ -539,7 +578,7 @@ export function NewsPostForm({
                 ) : null}
               </div>
             </label>
-            <FieldError message={fieldErrors.featuredImage} />
+            <FieldError message={featuredImageError} />
           </section>
 
           <section className="flex items-center gap-3">

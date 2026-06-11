@@ -26,6 +26,17 @@ type Lead = {
   trashed_at?: string | null;
 };
 
+type NewsPostStatus = "archived" | "draft" | "published";
+
+type NewsPost = {
+  created_at?: string;
+  id?: string;
+  publish_date?: string;
+  slug?: string;
+  status?: NewsPostStatus;
+  title?: string;
+};
+
 type SummaryCard = {
   icon: "read" | "requests" | "trash" | "unread";
   label: string;
@@ -51,6 +62,35 @@ function ReadStatusBadge({ lead }: { lead: Pick<Lead, "read_at"> }) {
       className={`inline-flex min-w-[5.5rem] items-center justify-center rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] ${status.className}`}
     >
       {status.label}
+    </span>
+  );
+}
+
+function NewsStatusBadge({ status }: { status: NewsPost["status"] }) {
+  const badge =
+    status === "published"
+      ? {
+          className:
+            "border-[var(--tone-green-soft)] bg-[var(--tone-green-soft)] text-[var(--tone-green)]",
+          label: "Published",
+        }
+      : status === "draft"
+        ? {
+            className:
+              "border-[var(--tone-gold-soft)] bg-[var(--tone-gold-soft)] text-[var(--tone-gold)]",
+            label: "Draft",
+          }
+        : {
+            className:
+              "border-red-200 bg-red-50 text-red-600 dark:border-red-500/20 dark:bg-red-950/30 dark:text-red-300",
+            label: "Archived",
+          };
+
+  return (
+    <span
+      className={`inline-flex min-w-[5.5rem] items-center justify-center rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] ${badge.className}`}
+    >
+      {badge.label}
     </span>
   );
 }
@@ -81,9 +121,46 @@ function getSummaryCards(leads: Lead[]): SummaryCard[] {
     },
     {
       icon: "trash",
-      label: "Trashed Requests",
+      label: "Archived Requests",
       tone: "red",
       value: trashedCount,
+    },
+  ];
+}
+
+function getNewsSummaryCards(newsPosts: NewsPost[]): SummaryCard[] {
+  const publishedCount = newsPosts.filter(
+    (post) => post.status === "published",
+  ).length;
+  const draftCount = newsPosts.filter((post) => post.status === "draft").length;
+  const archivedCount = newsPosts.filter(
+    (post) => post.status === "archived",
+  ).length;
+
+  return [
+    {
+      icon: "requests",
+      label: "Total Posts",
+      tone: "brand",
+      value: publishedCount + draftCount,
+    },
+    {
+      icon: "read",
+      label: "Published Posts",
+      tone: "green",
+      value: publishedCount,
+    },
+    {
+      icon: "unread",
+      label: "Draft Posts",
+      tone: "gold",
+      value: draftCount,
+    },
+    {
+      icon: "trash",
+      label: "Archived Posts",
+      tone: "red",
+      value: archivedCount,
     },
   ];
 }
@@ -142,18 +219,31 @@ function MetricIcon({
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const { data: leads, error } = await supabase
-    .from("leads")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const [leadsResult, newsPostsResult] = await Promise.all([
+    supabase.from("leads").select("*").order("created_at", { ascending: false }),
+    supabase
+      .from("news_posts")
+      .select("id,title,slug,status,publish_date,created_at")
+      .order("created_at", { ascending: false }),
+  ]);
 
-  const leadRows = (leads ?? []) as Lead[];
+  const error = leadsResult.error ?? newsPostsResult.error;
+  const leadRows = (leadsResult.data ?? []) as Lead[];
+  const newsPostRows = (newsPostsResult.data ?? []) as NewsPost[];
   const activeLeadRows = leadRows.filter((lead) => !isLeadTrashed(lead));
+  const activeNewsPostRows = newsPostRows.filter(
+    (post) => post.status !== "archived",
+  );
   const summaryCards = getSummaryCards(leadRows);
+  const newsSummaryCards = getNewsSummaryCards(newsPostRows);
   const requestDates = activeLeadRows
     .map((lead) => lead.created_at)
     .filter((date): date is string => Boolean(date));
+  const newsPostDates = activeNewsPostRows
+    .map((post) => post.created_at)
+    .filter((date): date is string => Boolean(date));
   const recentLeads = activeLeadRows.slice(0, 3);
+  const recentNewsPosts = activeNewsPostRows.slice(0, 3);
 
   return (
     <div className="space-y-6">
@@ -216,7 +306,20 @@ export default async function DashboardPage() {
             ))}
           </section>
 
-          <DashboardCharts requestDates={requestDates} />
+          <DashboardCharts
+            ariaLabelSubject="request proposal"
+            datasetLabel="Request proposals"
+            dates={requestDates}
+            descriptions={{
+              custom: "Request movement for your selected date range.",
+              daily: "Daily request movement for the last seven days.",
+              monthly:
+                "Monthly request movement from January to December this year.",
+              weekly: "Weekly request movement for the last six weeks.",
+            }}
+            eyebrow="Request Trend"
+            title="Request proposal activity over time"
+          />
 
           <section className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
             <div className="flex flex-col gap-2 border-b border-[var(--border-light)] bg-[var(--bg-subtle)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -274,6 +377,121 @@ export default async function DashboardPage() {
                 ))}
               </div>
             )}
+          </section>
+
+          <section className="space-y-6 pt-2">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-faint)]">
+                  News & Media
+                </p>
+                <h2 className="mt-1 font-heading text-2xl font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
+                  News & Media Analytics
+                </h2>
+                <p className="mt-1 text-sm text-[var(--text-muted)]">
+                  Review newsroom post activity, publishing status, and recent content.
+                </p>
+              </div>
+              <Link
+                href="/dashboard/news-media"
+                className="inline-flex h-10 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white shadow-[var(--shadow-button)] hover:bg-[var(--brand-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)]"
+              >
+                View all posts
+              </Link>
+            </div>
+
+            <section className="grid gap-4 lg:grid-cols-4">
+              {newsSummaryCards.map((metric) => (
+                <article
+                  key={metric.label}
+                  className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-elevated)] p-5 shadow-[var(--shadow-card)]"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                        {metric.label}
+                      </p>
+                      <p className="mt-3 font-heading text-3xl font-semibold tracking-[-0.03em] text-[var(--text-primary)]">
+                        {metric.value}
+                      </p>
+                    </div>
+                    <MetricIcon icon={metric.icon} tone={metric.tone} />
+                  </div>
+                </article>
+              ))}
+            </section>
+
+            <DashboardCharts
+              ariaLabelSubject="news media"
+              datasetLabel="News & Media posts"
+              dates={newsPostDates}
+              descriptions={{
+                custom: "News post movement for your selected date range.",
+                daily: "Daily news post movement for the last seven days.",
+                monthly:
+                  "Monthly news post movement from January to December this year.",
+                weekly: "Weekly news post movement for the last six weeks.",
+              }}
+              eyebrow="News & Media Trend"
+              title="Newsroom post activity over time"
+            />
+
+            <section className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
+              <div className="flex flex-col gap-2 border-b border-[var(--border-light)] bg-[var(--bg-subtle)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="font-heading text-lg font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
+                    Recent News & Media Posts
+                  </h2>
+                  <p className="mt-1 text-sm text-[var(--text-muted)]">
+                    Latest non-archived newsroom posts prepared for the website.
+                  </p>
+                </div>
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Latest {recentNewsPosts.length}
+                </span>
+              </div>
+
+              {recentNewsPosts.length === 0 ? (
+                <div className="px-6 py-14 text-center">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--border-light)] bg-[var(--bg-subtle)]">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-[var(--text-faint)]" aria-hidden="true">
+                      <path d="M4 19.5V5a2 2 0 012-2h9.5L20 7.5V19a2 2 0 01-2 2H6a2 2 0 01-2-1.5z" />
+                      <path d="M14 3v5h5M8 13h8M8 17h5" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">
+                    No active news posts yet
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--text-muted)]">
+                    Analytics will update once draft or published newsroom posts are created.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-[var(--border-light)]">
+                  {recentNewsPosts.map((post, index) => (
+                    <div
+                      key={post.id ?? `${post.slug ?? "news-post"}-${index}`}
+                      className="grid gap-3 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-[var(--text-primary)]">
+                          {post.title || "Untitled news post"}
+                        </p>
+                        <p className="mt-1 truncate text-xs text-[var(--text-muted)]">
+                          {post.slug ? `/${post.slug}` : "No slug provided"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 sm:flex-col sm:items-end">
+                        <NewsStatusBadge status={post.status} />
+                        <p className="text-xs font-medium text-[var(--text-faint)] sm:text-right">
+                          {formatDate(post.publish_date ?? post.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
           </section>
         </>
       )}

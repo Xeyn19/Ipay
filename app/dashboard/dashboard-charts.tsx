@@ -94,8 +94,19 @@ function getStartOfWeek(date: Date) {
   return start;
 }
 
-function getValidRequestDates(requestDates: string[]) {
-  return requestDates
+type TrendDescriptions = Record<TrendRange, string>;
+
+type DashboardChartsProps = {
+  ariaLabelSubject: string;
+  datasetLabel: string;
+  dates: string[];
+  descriptions: TrendDescriptions;
+  eyebrow: string;
+  title: string;
+};
+
+function getValidDates(dates: string[]) {
+  return dates
     .map((dateString) => new Date(dateString))
     .filter((date) => !Number.isNaN(date.getTime()));
 }
@@ -239,14 +250,6 @@ function buildCustomData(dates: Date[], startValue: string, endValue: string) {
   };
 }
 
-function getTrendDescription(range: TrendRange) {
-  if (range === "daily") return "Daily request movement for the last seven days.";
-  if (range === "weekly") return "Weekly request movement for the last six weeks.";
-  if (range === "custom") return "Request movement for your selected date range.";
-
-  return "Monthly request movement from January to December this year.";
-}
-
 function ChartFallback({ message }: { message: string }) {
   return (
     <div className="flex h-full min-h-[18rem] items-center justify-center rounded-xl border border-dashed border-[var(--border-light)] bg-[var(--bg-subtle)] px-6 text-center">
@@ -257,7 +260,14 @@ function ChartFallback({ message }: { message: string }) {
   );
 }
 
-export function DashboardCharts({ requestDates }: { requestDates: string[] }) {
+export function DashboardCharts({
+  ariaLabelSubject,
+  datasetLabel,
+  dates,
+  descriptions,
+  eyebrow,
+  title,
+}: DashboardChartsProps) {
   const trendCanvasId = useId();
   const trendCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const trendChartRef = useRef<ChartInstance | null>(null);
@@ -273,20 +283,20 @@ export function DashboardCharts({ requestDates }: { requestDates: string[] }) {
   });
   const [customEnd, setCustomEnd] = useState(() => getDateInputValue(new Date()));
 
-  const validRequestDates = useMemo(
-    () => getValidRequestDates(requestDates),
-    [requestDates],
+  const validDates = useMemo(
+    () => getValidDates(dates),
+    [dates],
   );
 
   const trendData: ChartData = useMemo(() => {
-    if (selectedRange === "daily") return buildDailyData(validRequestDates);
-    if (selectedRange === "weekly") return buildWeeklyData(validRequestDates);
+    if (selectedRange === "daily") return buildDailyData(validDates);
+    if (selectedRange === "weekly") return buildWeeklyData(validDates);
     if (selectedRange === "custom") {
-      return buildCustomData(validRequestDates, customStart, customEnd);
+      return buildCustomData(validDates, customStart, customEnd);
     }
 
-    return buildMonthlyData(validRequestDates);
-  }, [customEnd, customStart, selectedRange, validRequestDates]);
+    return buildMonthlyData(validDates);
+  }, [customEnd, customStart, selectedRange, validDates]);
 
   const selectedRangeLabel =
     trendOptions.find((option) => option.value === selectedRange)?.label ??
@@ -352,7 +362,7 @@ export function DashboardCharts({ requestDates }: { requestDates: string[] }) {
         labels: trendData.labels,
         datasets: [
           {
-            label: "Request proposals",
+            label: datasetLabel,
             data: trendData.values,
             borderColor: brand,
             backgroundColor: "rgba(241, 122, 30, 0.14)",
@@ -416,7 +426,7 @@ export function DashboardCharts({ requestDates }: { requestDates: string[] }) {
       trendChartRef.current?.destroy();
       trendChartRef.current = null;
     };
-  }, [chartReady, scriptError, themeVersion, trendData]);
+  }, [chartReady, datasetLabel, scriptError, themeVersion, trendData]);
 
   return (
     <>
@@ -438,13 +448,13 @@ export function DashboardCharts({ requestDates }: { requestDates: string[] }) {
           <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                Request Trend
+                {eyebrow}
               </p>
               <h2 className="mt-2 font-heading text-lg font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
-                Request proposal activity over time
+                {title}
               </h2>
               <p className="mt-1 text-sm text-[var(--text-muted)]">
-                {getTrendDescription(selectedRange)}
+                {descriptions[selectedRange]}
               </p>
             </div>
 
@@ -528,7 +538,7 @@ export function DashboardCharts({ requestDates }: { requestDates: string[] }) {
                 ref={trendCanvasRef}
                 id={trendCanvasId}
                 role="img"
-                aria-label={`${selectedRangeLabel} request proposal trend chart`}
+                aria-label={`${selectedRangeLabel} ${ariaLabelSubject} trend chart`}
               />
             )}
           </div>

@@ -35,7 +35,8 @@ test("builds a no-reply auto-reply with submitted request details", () => {
   assert.match(html, /Request received/);
   assert.match(html, /Request details/);
   assert.match(html, /src="cid:ipay-logo"/);
-  assert.match(html, /background:#08111d/);
+  assert.match(html, /background:#ffffff/);
+  assert.doesNotMatch(html, /background:#08111d/);
   assert.ok(
     html.indexOf("Regards,<br />iPay Team") <
       html.indexOf("cid:ipay-logo")

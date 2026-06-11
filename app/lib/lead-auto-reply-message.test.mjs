@@ -16,13 +16,13 @@ test("builds a no-reply auto-reply with submitted request details", () => {
   assert.match(text, /Hi Juan dela Cruz,/);
   assert.match(
     text,
-    /We have received your request and our team is reviewing the details\./
+    /We've received your request and our team is now reviewing the details you shared\./
   );
   assert.match(
     text,
-    /We will follow up with you soon regarding the next steps\./
+    /A member of our team will get back to you soon with the next steps\./
   );
-  assert.match(text, /Request details:/);
+  assert.match(text, /Your submitted details:/);
   assert.match(text, /Full Name: Juan dela Cruz/);
   assert.match(text, /Company: Company Name/);
   assert.match(text, /Email: you@company\.com/);
@@ -33,7 +33,11 @@ test("builds a no-reply auto-reply with submitted request details", () => {
   assert.match(html, /background:#f6f7f9/);
   assert.match(html, /background:#f17a1e/);
   assert.match(html, /Request received/);
-  assert.match(html, /Request details/);
+  assert.match(html, /Your submitted details/);
+  assert.match(
+    html,
+    /Please wait for our team to contact you directly\./
+  );
   assert.match(html, /src="cid:ipay-logo"/);
   assert.match(html, /background:#ffffff/);
   assert.doesNotMatch(html, /background:#08111d/);
@@ -45,6 +49,7 @@ test("builds a no-reply auto-reply with submitted request details", () => {
   assert.doesNotMatch(text, /request for Company Name/);
   assert.doesNotMatch(text, /reply to this email/i);
   assert.doesNotMatch(html, /reply to this email/i);
+  assert.doesNotMatch(text, /Request details:/);
 });
 
 test("omits an empty message field from request details", () => {

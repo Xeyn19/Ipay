@@ -85,7 +85,7 @@ async function validateProposalForm(formData: FormData) {
   const message = getFormValue(formData, "message");
   const terms = formData.get("terms") === "on";
   const captchaToken = getFormValue(formData, "cf-turnstile-response");
-  const honeypot = getFormValue(formData, "website");
+  const honeypot = getFormValue(formData, "ipp_trap_field");
   const fieldErrors: ProposalFormState["fieldErrors"] = {};
 
   if (!name || name.length > 120) {
@@ -150,11 +150,12 @@ export async function submitProposal(
 
   try {
     if (values.honeypot) {
+      console.warn("Proposal request ignored because honeypot field was filled.");
       await markProposalSuccess();
 
       return {
         status: "success",
-        message: "Your proposal request has been sent successfully.",
+        message: "Your proposal request has been received.",
         resetCaptcha: true,
         submittedAt: Date.now(),
       };
@@ -198,7 +199,7 @@ export async function submitProposal(
         contact_number: values.contactNumber,
         message: values.message,
       })
-      .select("id, name, company, email")
+      .select("id, name, company, email, contact_number, message")
       .single();
 
     if (error || !lead) {
@@ -220,6 +221,7 @@ export async function submitProposal(
     const autoReplyResult = await sendLeadAutoReplyForLead(lead, {
       actorUserId: null,
       idempotencyKey: `proposal-auto-reply-${lead.id}`,
+      messageVariant: "request-submission",
     });
 
     if (autoReplyResult.status === "success") {

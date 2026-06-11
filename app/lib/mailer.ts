@@ -3,6 +3,7 @@ import "server-only";
 import nodemailer from "nodemailer";
 
 type MailAttachment = {
+  cid?: string;
   content: Buffer;
   contentType?: string;
   filename: string;
@@ -20,6 +21,7 @@ type SendEmailOptions = {
 };
 
 type SendAutoReplyEmailOptions = {
+  attachments?: MailAttachment[];
   html: string;
   idempotencyKey: string;
   subject: string;
@@ -122,6 +124,7 @@ export async function sendEmail({
 }
 
 export async function sendAutoReplyEmail({
+  attachments = [],
   html,
   idempotencyKey,
   subject,
@@ -136,6 +139,7 @@ export async function sendAutoReplyEmail({
   const replyTo = getRequiredEnv("AUTO_REPLY_REPLY_TO_EMAIL");
 
   return sendEmail({
+    attachments,
     from,
     html,
     idempotencyKey,

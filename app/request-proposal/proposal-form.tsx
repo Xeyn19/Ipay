@@ -319,13 +319,13 @@ export function ProposalForm() {
           aria-hidden="true"
           className="absolute left-[-9999px] h-px w-px overflow-hidden"
         >
-          <label htmlFor="proposal-website">Website</label>
+          <label htmlFor="proposal-trap-field">Leave this field empty</label>
           <input
-            id="proposal-website"
+            id="proposal-trap-field"
             type="text"
-            name="website"
+            name="ipp_trap_field"
             tabIndex={-1}
-            autoComplete="off"
+            autoComplete="new-password"
           />
         </div>
 

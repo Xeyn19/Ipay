@@ -1,5 +1,8 @@
 import "server-only";
 
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { buildLeadAutoReplyMessage } from "@/app/lib/lead-auto-reply-message.mjs";
 import { sendAutoReplyEmail } from "@/app/lib/mailer";
 import { createAdminClient } from "@/app/lib/supabase-admin";
 
@@ -11,8 +14,10 @@ export type LeadAutoReplyRecord = {
   auto_reply_status?: string | null;
   auto_reply_subject?: string | null;
   company?: string | null;
+  contact_number?: string | null;
   email?: string | null;
   id: number;
+  message?: string | null;
   name?: string | null;
 };
 
@@ -36,9 +41,16 @@ export type SendLeadAutoReplyResult = {
 type SendLeadAutoReplyOptions = {
   actorUserId?: string | null;
   idempotencyKey?: string;
+  messageVariant?: "dashboard-auto-reply" | "request-submission";
 };
 
 export const AUTO_REPLY_SUBJECT = "Thanks for reaching out to iPay";
+const requestSubmissionLogoCid = "ipay-logo";
+const requestSubmissionLogoPath = path.join(
+  process.cwd(),
+  "public",
+  "ipaylogo-white.png"
+);
 
 const leadAutoReplyStateSelect =
   "id, auto_reply_status, auto_reply_sent_at, auto_reply_message_id, auto_reply_subject, auto_reply_sent_by, auto_reply_last_error";
@@ -56,7 +68,7 @@ function getGreeting(name: string | null | undefined) {
   return name?.trim() ? `Hi ${name.trim()},` : "Hi,";
 }
 
-function buildAutoReplyMessage(lead: LeadAutoReplyRecord) {
+function buildDashboardAutoReplyMessage(lead: LeadAutoReplyRecord) {
   const greeting = getGreeting(lead.name);
   const companyLine = lead.company?.trim()
     ? `We have received your request for ${lead.company.trim()}.`
@@ -132,6 +144,7 @@ export async function sendLeadAutoReplyForLead(
   {
     actorUserId = null,
     idempotencyKey = `lead-auto-reply-${lead.id}`,
+    messageVariant = "dashboard-auto-reply",
   }: SendLeadAutoReplyOptions = {}
 ): Promise<SendLeadAutoReplyResult> {
   const recipientEmail = lead.email?.trim().toLowerCase();
@@ -183,8 +196,23 @@ export async function sendLeadAutoReplyForLead(
   }
 
   try {
-    const { html, text } = buildAutoReplyMessage(lead);
+    const { html, text } =
+      messageVariant === "request-submission"
+        ? buildLeadAutoReplyMessage(lead)
+        : buildDashboardAutoReplyMessage(lead);
+    const attachments =
+      messageVariant === "request-submission"
+        ? [
+            {
+              cid: requestSubmissionLogoCid,
+              content: await readFile(requestSubmissionLogoPath),
+              contentType: "image/png",
+              filename: "ipay-logo-white.png",
+            },
+          ]
+        : [];
     const response = await sendAutoReplyEmail({
+      attachments,
       html,
       idempotencyKey,
       subject: AUTO_REPLY_SUBJECT,

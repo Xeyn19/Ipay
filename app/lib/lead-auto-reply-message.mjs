@@ -95,8 +95,8 @@ export function buildLeadAutoReplyMessage(lead) {
 
   htmlParts.push(
     '<p style="margin:0 0 10px;font-size:15px;line-height:1.6;color:#111827;">Regards,<br />iPay Team</p>',
-    '<div style="display:inline-block;margin-top:8px;padding:10px 12px;background:#08111d;border-radius:6px;">',
-    '<img src="cid:ipay-logo" alt="iPay logo" width="96" style="display:block;width:96px;max-width:96px;height:auto;border:0;outline:none;text-decoration:none;" />',
+    '<div style="display:inline-block;margin-top:8px;padding:0;background:#ffffff;">',
+    '<img src="cid:ipay-logo" alt="iPay logo" width="104" style="display:block;width:104px;max-width:104px;height:auto;border:0;outline:none;text-decoration:none;" />',
     "</div>",
     "</td></tr>",
     '<tr><td style="padding:16px 30px;background:#fbfbfc;border-top:1px solid #e5e7eb;">',

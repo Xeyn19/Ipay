@@ -49,7 +49,8 @@ const requestSubmissionLogoCid = "ipay-logo";
 const requestSubmissionLogoPath = path.join(
   process.cwd(),
   "public",
-  "ipaylogo-white.png"
+  "img",
+  "ipaylogo-email.png"
 );
 
 const leadAutoReplyStateSelect =
@@ -207,7 +208,7 @@ export async function sendLeadAutoReplyForLead(
               cid: requestSubmissionLogoCid,
               content: await readFile(requestSubmissionLogoPath),
               contentType: "image/png",
-              filename: "ipay-logo-white.png",
+              filename: "ipay-logo.png",
             },
           ]
         : [];

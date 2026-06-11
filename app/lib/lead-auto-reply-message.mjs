@@ -59,13 +59,13 @@ export function buildLeadAutoReplyMessage(lead) {
     "",
     "Thank you for reaching out to iPay.",
     "",
-    "We have received your request and our team is reviewing the details.",
+    "We've received your request and our team is now reviewing the details you shared.",
     "",
-    "We will follow up with you soon regarding the next steps.",
+    "A member of our team will get back to you soon with the next steps.",
   ];
 
   if (details.length > 0) {
-    textParts.push("", "Request details:", formatTextDetails(details));
+    textParts.push("", "Your submitted details:", formatTextDetails(details));
   }
 
   textParts.push("", "Regards,", "iPay Team");
@@ -77,17 +77,17 @@ export function buildLeadAutoReplyMessage(lead) {
     '<tr><td style="height:5px;background:#f17a1e;line-height:5px;font-size:0;">&nbsp;</td></tr>',
     '<tr><td style="padding:28px 30px 24px;">',
     '<p style="margin:0 0 8px;font-size:12px;line-height:1.4;text-transform:uppercase;letter-spacing:0.08em;color:#f17a1e;font-weight:700;">Request received</p>',
-    `<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#111827;">${escapeHtml(
+    `<p style="margin:0 0 18px;font-size:15px;line-height:1.65;color:#111827;">${escapeHtml(
       greeting
     )}</p>`,
-    '<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#111827;">Thank you for reaching out to iPay.</p>',
-    '<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#111827;">We have received your request and our team is reviewing the details.</p>',
-    '<p style="margin:0 0 22px;font-size:15px;line-height:1.6;color:#111827;">We will follow up with you soon regarding the next steps.</p>',
+    '<p style="margin:0 0 14px;font-size:15px;line-height:1.65;color:#111827;">Thank you for reaching out to iPay.</p>',
+    '<p style="margin:0 0 14px;font-size:15px;line-height:1.65;color:#111827;">We&#39;ve received your request and our team is now reviewing the details you shared.</p>',
+    '<p style="margin:0 0 22px;font-size:15px;line-height:1.65;color:#111827;">A member of our team will get back to you soon with the next steps.</p>',
   ];
 
   if (details.length > 0) {
     htmlParts.push(
-      `<div style="border:1px solid #e5e7eb;border-radius:8px;background:#fbfbfc;padding:16px 18px;margin:0 0 24px;"><p style="margin:0 0 12px;font-size:12px;line-height:1.4;text-transform:uppercase;letter-spacing:0.08em;color:#f17a1e;font-weight:700;">Request details</p>${formatHtmlDetails(
+      `<div style="border:1px solid #e5e7eb;border-radius:8px;background:#fbfbfc;padding:16px 18px;margin:0 0 24px;"><p style="margin:0 0 12px;font-size:12px;line-height:1.4;text-transform:uppercase;letter-spacing:0.08em;color:#f17a1e;font-weight:700;">Your submitted details</p>${formatHtmlDetails(
         details
       )}</div>`
     );
@@ -100,7 +100,7 @@ export function buildLeadAutoReplyMessage(lead) {
     "</div>",
     "</td></tr>",
     '<tr><td style="padding:16px 30px;background:#fbfbfc;border-top:1px solid #e5e7eb;">',
-    '<p style="margin:0;font-size:12px;line-height:1.5;color:#6b7280;">This is an automated confirmation from iPay.</p>',
+    '<p style="margin:0;font-size:12px;line-height:1.5;color:#6b7280;">This is an automated confirmation from iPay. Please wait for our team to contact you directly.</p>',
     "</td></tr>",
     "</table>",
     "</td></tr>",
